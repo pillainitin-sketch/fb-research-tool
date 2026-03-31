@@ -247,7 +247,7 @@ body{font-family:var(--fb);background:var(--bg);color:var(--dark);min-height:100
     <div class="dz-tags"><span class="dz-tag">PPTX</span><span class="dz-tag">PDF</span><span class="dz-tag">Life Sciences</span><span class="dz-tag">Food & Nutrition</span><span class="dz-tag">Mobility & Industrial</span><span class="dz-tag">Home & Personal Care</span><span class="dz-tag">Energy</span><span class="dz-tag">Supply Chain</span></div>
   </div>
   <div style="margin-top:18px;padding-top:18px;border-top:.5px solid var(--gray)">
-    <div style="font-size:11px;font-weight:500;color:var(--dark);margin-bottom:6px">Anthropic API key <span style="font-size:10px;font-weight:400;color:var(--mgray)">(required for live research — not needed for demo)</span></div>
+    <div style="font-size:11px;font-weight:500;color:var(--dark);margin-bottom:6px">Anthropic API key <span style="font-size:10px;font-weight:400;color:var(--mgray)">(not needed — proxy handles authentication)</span></div>
     <input type="password" id="apiKeyInput" placeholder="Your Anthropic API key..." autocomplete="off"
       style="width:100%;padding:8px 12px;border-radius:7px;border:.5px solid var(--gray);background:var(--white);font-size:12px;font-family:var(--fm,monospace);color:var(--dark);outline:none"
       oninput="localStorage.setItem('fb_api_key',this.value)"
@@ -1060,7 +1060,8 @@ function runDemo(){
 
 async function runResearch(){
   var key=getApiKey();
-  if(!key||key.trim().length<20){
+  var usingProxy=!!(window.FB_PROXY_URL&&window.FB_PROXY_URL.length>0);
+  if(!usingProxy&&(!key||key.trim().length<20)){
     alert('Please enter your Anthropic API key in the field on the upload screen.\n\nGet your key at console.anthropic.com → API Keys');
     return;
   }
