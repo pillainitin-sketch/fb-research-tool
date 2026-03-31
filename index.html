@@ -375,6 +375,12 @@ body{font-family:var(--fb);background:var(--bg);color:var(--dark);min-height:100
 
 <script>
 // ═══ STATE ═══════════════════════════════════════
+// ── PROXY CONFIG ─────────────────────────────────────────────────────────
+// Set this to your Cloudflare Worker URL to bypass CORS
+// Leave empty to call api.anthropic.com directly (only works server-side)
+window.FB_PROXY_URL = 'https://fb-proxy-swart.vercel.app/api/proxy';
+// ─────────────────────────────────────────────────────────────────────────
+
 var S={key:null,proposal:null,selBQs:[],bqResults:{},allSources:[],profiles:[],summary:'',editCtx:null,stage:1,synthesis:null,detectedEngType:'general'};
 var FB_API_KEY='';
 try{FB_API_KEY=localStorage.getItem('fb_api_key')||'';}catch(e){}
@@ -851,7 +857,7 @@ async function researchBQ(bq, p, onLog){
     for(var attempt=1;attempt<=3;attempt++){
       var _apiKey=getApiKey();
       console.log('BQ fetch attempt',attempt,'| model: claude-sonnet-4-6 | key length:',_apiKey.length,'| key prefix:',_apiKey.slice(0,12));
-      var _fetchPromise=fetch('https://api.anthropic.com/v1/messages',{
+      var _fetchPromise=fetch(window.FB_PROXY_URL||'https://api.anthropic.com/v1/messages',{
         method:'POST',
         headers:{'Content-Type':'application/json','anthropic-version':'2023-06-01','x-api-key':getApiKey()},
         body:JSON.stringify({
@@ -1415,7 +1421,7 @@ async function runMore(gk,bqId){
   var p=S.proposal, bq=p.bqs.find(function(b){return b.id===bqId;});
   try{
     var resp=await Promise.race([
-      fetch('https://api.anthropic.com/v1/messages',{method:'POST',
+      fetch(window.FB_PROXY_URL||'https://api.anthropic.com/v1/messages',{method:'POST',
         headers:{'Content-Type':'application/json','anthropic-version':'2023-06-01','x-api-key':getApiKey()},
         body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:600,
           system:'You are a research analyst. Answer concisely with specific facts and source URLs. Plain prose, no JSON.',
@@ -1434,7 +1440,7 @@ async function runBQMore(bqId){
   var res=document.getElementById('bqmorer-'+bqId); res.className='bq-more-res show'; res.textContent='Researching...';
   var p=S.proposal, bq=p.bqs.find(function(b){return b.id===bqId;});
   try{
-    var resp=await Promise.race([fetch('https://api.anthropic.com/v1/messages',{method:'POST',
+    var resp=await Promise.race([fetch(window.FB_PROXY_URL||'https://api.anthropic.com/v1/messages',{method:'POST',
       headers:{'Content-Type':'application/json','anthropic-version':'2023-06-01','x-api-key':getApiKey()},
       body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:800,
         system:'You are a research analyst. Answer with specific facts, company names, numbers, and source URLs. Plain prose.',
@@ -2295,7 +2301,7 @@ async function runSynthesis() {
   try {
     var resp=null;
     for(var sa=1;sa<=3;sa++){
-      var _sFetch=fetch('https://api.anthropic.com/v1/messages',{
+      var _sFetch=fetch(window.FB_PROXY_URL||'https://api.anthropic.com/v1/messages',{
         method:'POST',
         headers:{'Content-Type':'application/json','anthropic-version':'2023-06-01','x-api-key':getApiKey()},
         body:JSON.stringify({
