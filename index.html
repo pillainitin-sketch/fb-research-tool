@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>FB Research Data Collection — Version 1</title>
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=DM+Sans:wght@300;400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=DM+Sans:wght@300;400;500&display=swap'},240000)
 :root{--red:#F94F5E;--dark:#4B4B55;--teal:#22AE8A;--gray:#DBDBDD;--mgray:#6F6F77;--lgray:#F5F5F5;--amber:#FBAE40;--white:#fff;--bg:#F7F6F3;--fh:'Playfair Display',Georgia,serif;--fb:'DM Sans',system-ui,sans-serif}
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:var(--fb);background:var(--bg);color:var(--dark);min-height:100vh}
@@ -65,7 +65,6 @@ body{font-family:var(--fb);background:var(--bg);color:var(--dark);min-height:100
 .bq-kws{display:flex;gap:4px;flex-wrap:wrap;margin-top:4px}
 .kw{font-size:9px;padding:2px 6px;border-radius:20px;background:var(--lgray);color:var(--mgray)}
 .gap-pill{font-size:8px;font-weight:500;padding:2px 7px;border-radius:20px;background:#FEF5E4;color:#633806;border:.5px solid var(--amber);margin-left:auto;flex-shrink:0}
-.demo-banner{background:#EEEDFE;border:.5px solid #7F77DD;border-radius:6px;padding:6px 12px;font-size:11px;color:#26215C;font-weight:500;text-align:center;margin-bottom:10px}
 /* RUNNING */
 .run-wrap{padding:28px 28px;max-width:860px;margin:0 auto}
 .run-title{font-family:var(--fh);font-size:22px;color:var(--dark);margin-bottom:4px}
@@ -245,14 +244,12 @@ body{font-family:var(--fb);background:var(--bg);color:var(--dark);min-height:100
     <div class="dz-t">Drop your proposal here</div>
     <div class="dz-s">or click to browse</div>
     <div class="dz-tags"><span class="dz-tag">PPTX</span><span class="dz-tag">PDF</span><span class="dz-tag">Life Sciences</span><span class="dz-tag">Food & Nutrition</span><span class="dz-tag">Mobility & Industrial</span><span class="dz-tag">Home & Personal Care</span><span class="dz-tag">Energy</span><span class="dz-tag">Supply Chain</span></div>
-  </div>
-  <div style="margin-top:18px;padding-top:18px;border-top:.5px solid var(--gray)">
+  <div style="margin-top:16px;padding-top:16px;border-top:.5px solid var(--gray)">
     <div style="font-size:11px;font-weight:500;color:var(--dark);margin-bottom:6px">Anthropic API key <span style="font-size:10px;font-weight:400;color:var(--mgray)">(not needed — proxy handles authentication)</span></div>
     <input type="password" id="apiKeyInput" placeholder="Your Anthropic API key..." autocomplete="off"
-      style="width:100%;padding:8px 12px;border-radius:7px;border:.5px solid var(--gray);background:var(--white);font-size:12px;font-family:var(--fm,monospace);color:var(--dark);outline:none"
-      oninput="localStorage.setItem('fb_api_key',this.value)"
-    >
-    <div style="font-size:10px;color:var(--mgray);margin-top:5px">Get your key at <a href="https://console.anthropic.com" target="_blank" style="color:var(--red)">console.anthropic.com</a> — stored locally in your browser only</div>
+      style="width:100%;padding:8px 12px;border-radius:7px;border:.5px solid var(--gray);background:var(--white);font-size:12px;color:var(--dark);outline:none"
+      oninput="localStorage.setItem('fb_api_key',this.value)">
+    <div style="font-size:10px;color:var(--mgray);margin-top:5px">Get your key at <a href="https://console.anthropic.com" target="_blank" style="color:var(--red)">console.anthropic.com</a></div>
   </div>
 </div></div>
 </div>
@@ -282,19 +279,6 @@ body{font-family:var(--fb);background:var(--bg);color:var(--dark);min-height:100
     </div>
   </div>
   <div class="scope-bar" id="scopeBar"></div>
-  <div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:10px 0 6px;border-bottom:.5px solid var(--gray);margin-bottom:10px">
-    <span style="font-size:9px;font-weight:500;letter-spacing:1px;color:var(--mgray);text-transform:uppercase">BQ tags:</span>
-    <span style="font-size:9px;padding:2px 8px;border-radius:20px;background:#FEF5E4;color:#633806;border:.5px solid var(--amber);font-weight:500">Gap likely</span>
-    <span style="font-size:9px;color:var(--mgray)">— this BQ covers data that web search rarely finds (pricing, OEM relationships, primary market data). Expect paid source flags or primary research gaps in the output.</span>
-  </div>
-  <div style="background:#EEEDFE22;border:.5px solid #AFA9EC;border-radius:8px;padding:11px 14px;margin-bottom:12px">
-    <div style="font-size:9px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:#534AB7;margin-bottom:6px">How synthesising works</div>
-    <div style="font-size:11px;color:var(--dark);line-height:1.7">After all BQs complete, click <strong>⚡ Synthesise into sections</strong> in the results view. A second AI pass — no web search — reads all BQ outputs and reorganises them into the standard delivery section structure. Each section gets a <span style="font-size:9px;background:#e0f5ee;color:#085041;padding:1px 5px;border-radius:3px;font-weight:600">Complete</span> <span style="font-size:9px;background:#FEF5E4;color:#633806;padding:1px 5px;border-radius:3px;font-weight:600">Partial</span> or <span style="font-size:9px;background:#fdecea;color:#A32D2D;padding:1px 5px;border-radius:3px;font-weight:600">Gap</span> coverage badge — Partial and Gap sections show exactly what paid source or primary research would fill them.</div>
-  </div>
-  <div style="background:var(--white);border:.5px solid var(--gray);border-radius:8px;padding:11px 14px;margin-bottom:12px;border-left:3px solid #F94F5E">
-    <div style="font-size:9px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--red);margin-bottom:5px">Primary research gaps</div>
-    <div style="font-size:11px;color:var(--dark);line-height:1.7">Every BQ output includes specific data points that web search cannot find — with the expert profile needed, suggested interview questions, and a hypothesis. These feed into the <strong>Primary Research Planner</strong> tool.</div>
-  </div>
   <div id="bqReview"></div>
 </div>
 </div>
@@ -327,12 +311,6 @@ body{font-family:var(--fb);background:var(--bg);color:var(--dark);min-height:100
     </div>
   </div>
   <div class="exec-box"><div class="ex-lbl">Executive summary</div><div class="ex-txt" id="exTxt"></div></div>
-  <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px;flex-wrap:wrap">
-    <span style="font-size:9px;font-weight:500;letter-spacing:1px;color:var(--mgray);text-transform:uppercase">Finding type:</span>
-    <span style="font-size:9px;font-weight:600;background:#e0f5ee;color:#085041;padding:2px 8px;border-radius:3px">FACT — directly cited, verifiable</span>
-    <span style="font-size:9px;font-weight:600;background:#FEF5E4;color:#633806;padding:2px 8px;border-radius:3px">INFERENCE — logical conclusion from facts</span>
-    <span style="font-size:9px;font-weight:600;background:#fdecea;color:#A32D2D;padding:2px 8px;border-radius:3px">HYPOTHESIS — unverified, needs validation</span>
-  </div>
   <div class="tabs">
     <div class="tab active" onclick="showTab('findings',this)">Findings by BQ</div>
     <div class="tab" id="tab-sections" onclick="showTab('sections',this)">Section view <span id="secBadge" style="display:none;font-size:9px;background:#534AB7;color:#fff;padding:1px 6px;border-radius:10px;margin-left:4px">new</span></div>
@@ -375,27 +353,15 @@ body{font-family:var(--fb);background:var(--bg);color:var(--dark);min-height:100
 
 <script>
 // ═══ STATE ═══════════════════════════════════════
-// ── PROXY CONFIG ─────────────────────────────────────────────────────────
-// Set this to your Cloudflare Worker URL to bypass CORS
-// Leave empty to call api.anthropic.com directly (only works server-side)
 window.FB_PROXY_URL = 'https://fb-proxy-swart.vercel.app/api/proxy';
-// ─────────────────────────────────────────────────────────────────────────
-
-var S={key:null,proposal:null,selBQs:[],bqResults:{},allSources:[],profiles:[],summary:'',editCtx:null,stage:1,synthesis:null,detectedEngType:'general'};
 var FB_API_KEY='';
 try{FB_API_KEY=localStorage.getItem('fb_api_key')||'';}catch(e){}
-window.addEventListener('load',function(){
-  var inp=document.getElementById('apiKeyInput');
-  if(inp&&FB_API_KEY){inp.value=FB_API_KEY;}
-});
-function getApiKey(){
-  try{var v=(localStorage.getItem('fb_api_key')||'').trim();FB_API_KEY=v;return v;}catch(e){return (FB_API_KEY||'').trim();}
-}
+window.addEventListener('load',function(){var inp=document.getElementById('apiKeyInput');if(inp&&FB_API_KEY){inp.value=FB_API_KEY;}});
+function getApiKey(){try{var v=(localStorage.getItem('fb_api_key')||'').trim();FB_API_KEY=v;return v;}catch(e){return (FB_API_KEY||'').trim();}}
+function escH(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+var S={key:null,proposal:null,selBQs:[],bqResults:{},allSources:[],profiles:[],summary:'',editCtx:null,stage:1,synthesis:null,detectedEngType:'general'};
 
 // ═══ NAV ═════════════════════════════════════════
-function escH(s){
-  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
 function goTo(n){
   S.stage=n;
   for(var i=1;i<=5;i++){
@@ -530,8 +496,8 @@ function getBQFocus(bq) {
   if (/market size|volume|revenue|segmentation|premium|mid|value tier|country|market share/.test(t)) return 'market';
   if (/purchas|after.?sale|journey|trigger|discovery|warranty|service/.test(t)) return 'process';
   if (/component|cost|price|bom|material|part|breakdown/.test(t)) return 'components';
-  if (/patent|ip landscape|assignee|filing|fixativ|activ|formula/.test(t)) return 'ip';
-  if (/trend|future|innovat|disruption|emerging/.test(t)) return 'trends';
+  if (/trend|future|innovat|technolog|disruption|emerging/.test(t)) return 'trends';
+  if (/patent|ip|assignee|filing|technology|formula|activ/.test(t)) return 'ip';
   if (/clinical|scientific|evidence|microbe|metabolite|study/.test(t)) return 'science';
   if (/manufactur|strateg|make.*buy|locali|outsourc|plant/.test(t)) return 'manufacturing';
   return 'general';
@@ -619,15 +585,14 @@ function buildResearchPrompt(bq, p) {
     '',
     'BUSINESS QUESTION: ' + (bq.text||''),
     '',
-    '── SEARCH STRATEGY (run ALL 8 searches in this exact order) ──',
+    '── SEARCH STRATEGY (run all 6 searches in order) ────────',
     '1. LANDSCAPE: "' + ((bq.kw||[])[0]||p.title||'') + ' ' + (geos[0]||'global') + ' players market 2024 2025"',
     '2. COMPETITORS: Search each of these by name + topic: ' + (p.competitors||[]).slice(0,3).join(', '),
-    geos.length > 1 ? '3. PER GEOGRAPHY: One dedicated search per geography: ' + geos.slice(0,3).join(' / ') : '3. MARKET DATA: Trade data, market size, import/export for this category',
-    '4. PRIMARY SOURCES: "' + ((bq.kw||[])[0]||'') + ' annual report investor presentation earnings call 2023 2024"',
-    '5. TRADE DATA: "' + ((bq.kw||[])[0]||'') + ' export import trade statistics government association 2024"',
-    geos.length > 1 ? '6. GEOGRAPHY: "' + ((bq.kw||[])[0]||'') + ' ' + (geos[1]||geos[0]||'') + ' 2024 2025"' : '6. MARKET SIZE: "' + ((bq.kw||[])[0]||'') + ' market size volume CAGR forecast 2025 2026"',
-    '7. HIRING SIGNAL: Search for "' + (p.competitors||[])[0] + ' ' + ((bq.kw||[])[0]||'') + ' jobs engineer manager" — job postings reveal strategy before press releases',
-    '8. DISRUPTION: "' + ((bq.kw||[])[0]||'') + ' bankruptcy acquisition new entrant funding 2024 2025"',
+    '3. PRIMARY SOURCES: "' + ((bq.kw||[])[0]||'') + ' annual report investor presentation 2023 2024"',
+    geos.length > 1 ? '4. GEOGRAPHY: "' + ((bq.kw||[])[0]||'') + ' ' + (geos[1]||geos[0]||'') + ' 2024 2025"' : '4. MARKET DATA: "' + ((bq.kw||[])[0]||'') + ' market size statistics 2024 2025"',
+    '5. HIRING SIGNAL: "' + (p.competitors||[])[0] + ' ' + ((bq.kw||[])[0]||'') + ' jobs engineer hiring" — job postings reveal strategy before press releases',
+    '6. DISRUPTION: "' + ((bq.kw||[])[0]||'') + ' bankruptcy acquisition new entrant 2024 2025"',
+  '5. CLIENT LENS: "' + client + ' ' + ((bq.kw||[])[0]||'strategy') + ' strategy"',
     '',
     '── WHAT TO RESEARCH AND INCLUDE ────────────────────────',
     typeInstruction,
@@ -635,16 +600,17 @@ function buildResearchPrompt(bq, p) {
     '── FINDING QUALITY STANDARDS (ALL 8 required per finding) ──',
     '1. NAMED — specific company/product/person, never "leading players"',
     '2. NUMBERED — specific %, price, volume, year, count',
-    '3. MECHANISTIC — WHY/HOW not just WHAT — explain the full causal chain, not just the observation',
+    '3. MECHANISTIC — WHY/HOW not just WHAT — explain the full causal chain',
     '4. GEO-TAGGED — which geography this applies to',
-        '5. REVIEWER-FRAMED — written for a partner presenting to the client. End every finding body with: So what for ' + client + ': [one sentence — specific actionable decision implication, not a generic observation]',
-        '6. DEEP — if you find a lead (company plant, product, contract), search for more specifics before writing. Never accept the first result.',
-    '7. SOURCED — name the specific report, portal, or company filing. Never vague sourcing.',
-        '8. TYPED — evidence_type: FACT (directly cited) | INFERENCE (logical conclusion) | HYPOTHESIS (unverified). Be strict — most findings are INFERENCE.',
+    '5. REVIEWER-FRAMED — written for a partner presenting to client CEO/CFO. End every finding: So what for ' + client + ': [one sentence — specific actionable decision implication]',
+    '6. DEEP — if you find a lead, search for more specifics before writing',
+    '7. SOURCED — name the specific report, filing, or portal. Never vague.',
+    '8. TYPED — FACT (directly cited) | INFERENCE (logical conclusion) | HYPOTHESIS (needs validation)',
     '',
-    '── PARALLEL INDUSTRY INTELLIGENCE ─────────────────────',
-    'Before writing findings, search one parallel industry that solved the same problem first.',
-    'Examples: wind bearings → aerospace bearing localisation India. Hair salon ergonomics → dental chair clinical data. Kefir → pharma probiotic fermentation scale-up. Include 1-2 parallel findings tagged P001, P002.',
+    '── PARALLEL INDUSTRY INTELLIGENCE ──────────────────────',
+    'Identify which OTHER industry solved the same problem first. Search for that analog.',
+    'Examples: wind bearings → aerospace bearing localisation India. Hair salon → dental chair ergonomics. Kefir → pharma probiotic fermentation.',
+    'Add 1-2 parallel findings in the creative_angles array.',
     '',
     '── DISRUPTION SIGNALS ──────────────────────────────────',
     'Search specifically for: company bankruptcies, acquisitions, new entrants, regulatory changes, supply disruptions in this market (last 24 months). Include even if only 1-2 found.',
@@ -658,21 +624,16 @@ function buildResearchPrompt(bq, p) {
     '  executive_summary: string (3-4 sentences, named+numbered+client-framed)',
     '  engagement_type: string',
     '  stats: array of {value, label, confidence, source, url}',
-    '  findings: array of {evidence_id, evidence_type, headline, body, client_implication, confidence, geo, data_date, source_name, source_url}',
+    '  findings: array of {headline, body, client_implication, confidence, geo, source_name, source_url}',
     '  disruption_signals: array of {signal, company, date, type, client_implication} — empty array [] if none found',
     '  client_decision_frame: object {option_a, option_b, key_condition}',
     '  paid_source_flags: array of {source, what_it_unlocks, why_needed, priority}',
     '  primary_research_gaps: array of {gap, why_impossible, expert_profile, questions, hypothesis, priority}',
     '  profiles: array of {name, hq, role, geography, key_product, key_fact, client_relevance, source, url}',
-    '  creative_angles: array of 2-3 objects {angle_title, parallel_industry, insight, why_relevant_to_client, search_terms_used}',
-    '  — creative_angles are SEPARATE from findings. Each must identify a parallel industry that solved the same problem first, what they learned, and why it is relevant to ' + client + '. Examples: wind bearings → aerospace bearing localisation. Hair salon backwash → dental chair ergonomics. Kefir → pharmaceutical probiotic fermentation. These should surprise the reviewer — things no standard RA would find.',
+    '  creative_angles: array of 2-3 objects {angle_title, parallel_industry, insight, why_relevant_to_client} — SEPARATE from findings. Each identifies a parallel industry that solved the same problem first.',
     '',
     'RULES:',
-    '  - findings: 4-5 entries maximum — prioritise DEPTH over count. 4 deep findings beat 7 shallow ones. Each finding body must be 4-6 sentences minimum with full causal explanation. Each must meet ALL 8 quality standards above.',
-    '  - Run ALL 8 searches in the strategy above before writing findings. Do not stop early.',
-    '  - evidence_id: sequential E001, E002, E003... within this BQ response',
-    '  - evidence_type: FACT | INFERENCE | HYPOTHESIS — be strict and honest',
-    '  - data_date: year or quarter the data refers to (not the article retrieval date)',
+    '  - findings: 4-5 entries maximum — DEPTH over count. Each body 4-6 sentences.',
     '  - profiles: 2-4 named companies with one specific fact each',
     '  - client_decision_frame: always include — Option A and Option B, explicit and actionable',
     '  - APOSTROPHES: every apostrophe in a string value MUST have a backslash before it (write Japan\\\'s)',
@@ -686,96 +647,133 @@ function buildResearchPrompt(bq, p) {
 
 // Parse research JSON safely
 function parseResearch(text){
-  if(!text||text.length<10) return null;
   var clean=text.replace(/```json\s*/gi,'').replace(/```\s*/g,'').trim();
-  var raw=null;
-  var startIdx=clean.indexOf('{');
-  if(startIdx>=0){
-    var depth=0; var lastClose=-1;
-    for(var ci=startIdx;ci<clean.length;ci++){
-      if(clean[ci]==='{')depth++;
-      else if(clean[ci]==='}'){depth--;lastClose=ci;if(depth===0){raw=clean.slice(startIdx,ci+1);break;}}
-    }
-    if(!raw&&lastClose>startIdx) raw=clean.slice(startIdx,lastClose+1);
-  }
-  if(!raw) return null;
+  var m=clean.match(/\{[\s\S]*\}/);
+  if(!m)return null;
+  var raw=m[0];
 
-  function preSanitise(s){
-    var out=''; var inStr=false; var esc=false;
+  // Strategy 1: direct parse (works if model escaped properly)
+  try{return JSON.parse(raw);}catch(e0){}
+
+  // Strategy 2: sanitize apostrophes inside JSON string values
+  // Walk the string: when inside a quoted value, replace bare ' with \'
+  function sanitizeApostrophes(s){
+    var out=''; var inStr=false; var escape=false;
     for(var i=0;i<s.length;i++){
       var c=s[i];
-      if(esc){out+=c;esc=false;continue;}
-      if(c==='\\'){out+=c;esc=true;continue;}
+      if(escape){out+=c;escape=false;continue;}
+      if(c==='\\'){out+=c;escape=true;continue;}
       if(c==='"'){inStr=!inStr;out+=c;continue;}
-      if(inStr){
-        if(c==='\n'||c==='\r'){out+=' ';continue;}
-        if(c==='\t'){out+=' ';continue;}
-        if(c==="'"){out+="\\'";continue;}
-        if(c.charCodeAt(0)<32){out+=' ';continue;}
-      }
+      if(inStr && c==="'"){out+="\\'";continue;}
       out+=c;
     }
-    return out.replace(/,\s*([}\]])/g,'$1');
+    return out;
   }
 
-  var sanitised=preSanitise(raw);
-  try{return JSON.parse(sanitised);}catch(e1){}
-  try{return JSON.parse(raw);}catch(e2){}
-  try{return JSON.parse(sanitised.replace(/([{,]\s*)([a-zA-Z_][a-zA-Z0-9_]*)\s*:/g,'$1"$2":'));}catch(e3){}
-
-  function extractArray(src,key){
-    var ki=src.indexOf('"'+key+'"');
-    if(ki<0) return [];
-    var ai=src.indexOf('[',ki);
-    if(ai<0) return [];
-    var depth=0; var objects=[]; var objStart=-1;
-    for(var i=ai;i<Math.min(src.length,ai+50000);i++){
-      if(src[i]==='['&&i===ai){depth++;continue;}
-      if(src[i]==='{'){if(depth===1)objStart=i;depth++;}
-      else if(src[i]==='}'){depth--;if(depth===1&&objStart>=0){objects.push(src.slice(objStart,i+1));objStart=-1;}}
-      else if(src[i]===']'&&depth===1) break;
-    }
-    return objects;
+  // Strategy 3: remove control chars + trailing commas + sanitize apostrophes
+  function fullSanitize(s){
+    return sanitizeApostrophes(s)
+      .replace(/[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]/g,' ')
+      .replace(/,\s*([}\]])/g,'$1')
+      .replace(/([{,]\s*)(\w+)\s*:/g,'$1"$2":');
   }
 
-  var result={executive_summary:'',engagement_type:'general',stats:[],findings:[],
-    disruption_signals:[],client_decision_frame:{option_a:'',option_b:'',key_condition:''},
-    paid_source_flags:[],primary_research_gaps:[],profiles:[]};
+  try{return JSON.parse(sanitizeApostrophes(raw));}catch(e1){}
+  try{return JSON.parse(fullSanitize(raw));}catch(e2){}
 
-  var sumM=raw.match(/"executive_summary"\s*:\s*"([\s\S]{0,2000}?)(?=",\s*"[a-z_]+"\s*:)/);
-  if(sumM) result.executive_summary=sumM[1].replace(/\\n/g,' ').replace(/\\"/g,'"');
+  // Strategy 4: line-by-line apostrophe fix
+  // The apostrophe breaks the array — find lines with unescaped apostrophes in strings
+  function lineByLine(s){
+    return s.split('\n').map(function(line){
+      // Find string values on this line and escape apostrophes within them
+      return line.replace(/"([^"\\]*(\\.[^"\\]*)*)"/g,function(match){
+        return match.replace(/(?<!\\)'/g,"\\'");
+      });
+    }).join('\n');
+  }
+  try{return JSON.parse(lineByLine(raw));}catch(e3){}
 
-  extractArray(raw,'findings').forEach(function(obj){
-    try{result.findings.push(JSON.parse(preSanitise(obj)));}
-    catch(ex){
-      var hm=obj.match(/"headline"\s*:\s*"([^"]{0,300})"/);
-      var bm=obj.match(/"body"\s*:\s*"([^"]{0,500})"/);
-      var im=obj.match(/"client_implication"\s*:\s*"([^"]{0,300})"/);
-      var gm=obj.match(/"geo"\s*:\s*"([^"]{0,50})"/);
-      var em=obj.match(/"evidence_type"\s*:\s*"([^"]{0,20})"/);
-      var eim=obj.match(/"evidence_id"\s*:\s*"([^"]{0,10})"/);
-      var dm=obj.match(/"data_date"\s*:\s*"([^"]{0,20})"/);
-      var cm=obj.match(/"confidence"\s*:\s*"([^"]{0,10})"/);
-      if(hm) result.findings.push({headline:hm[1],body:bm?bm[1]:'',client_implication:im?im[1]:'',
-        geo:gm?gm[1]:'',evidence_type:em?em[1]:'INFERENCE',evidence_id:eim?eim[1]:'',
-        data_date:dm?dm[1]:'',confidence:cm?cm[1]:'medium',source_name:'Research',source_url:'#'});
+  // Strategy 5: parse outer fields individually to rescue partial data
+  function rescueFields(s){
+    var result={executive_summary:'',stats:[],findings:[],paid_source_flags:[],primary_research_gaps:[],profiles:[]};
+    // Extract executive_summary
+    var sumM=s.match(/"executive_summary"\s*:\s*"([\s\S]{0,1500}?)(?=",\s*"(?:stats|findings|paid|primary|profiles)")/);
+    if(sumM) result.executive_summary=sumM[1].replace(/\\n/g,' ').replace(/\\"/g,'"');
+
+    // Extract each finding object individually
+    var findSection=s.match(/"findings"\s*:\s*\[([\s\S]*?)\]\s*[,}]/);
+    if(findSection){
+      var findStr=findSection[1];
+      // Split on object boundaries
+      var depth=0; var start=-1; var objects=[];
+      for(var i=0;i<findStr.length;i++){
+        if(findStr[i]==='{'){if(depth===0)start=i;depth++;}
+        else if(findStr[i]==='}'){depth--;if(depth===0&&start>=0){objects.push(findStr.slice(start,i+1));start=-1;}}
+      }
+      objects.forEach(function(obj){
+        try{
+          var fixed=sanitizeApostrophes(obj).replace(/[\x00-\x08\x0b\x0e-\x1f]/g,' ').replace(/,\s*}/g,'}');
+          result.findings.push(JSON.parse(fixed));
+        }catch(ex){
+          // Extract headline at minimum
+          var hm=obj.match(/"headline"\s*:\s*"([^"]{0,300})"/);
+          var bm=obj.match(/"body"\s*:\s*"([^"]{0,500})"/);
+          if(hm) result.findings.push({headline:hm[1],body:bm?bm[1]:'',type:'finding',confidence:'medium',source_name:'Research',source_url:'#'});
+        }
+      });
     }
-  });
 
-  ['stats','disruption_signals','paid_source_flags','primary_research_gaps','profiles'].forEach(function(key){
-    extractArray(raw,key).forEach(function(obj){
-      try{result[key].push(JSON.parse(preSanitise(obj)));}catch(ex){}
-    });
-  });
+    // Extract paid_source_flags
+    var paidSection=s.match(/"paid_source_flags"\s*:\s*\[([\s\S]{0,2000}?)\]\s*[,}]/);
+    if(paidSection){
+      var psStr=paidSection[1];
+      var depth2=0; var start2=-1;
+      for(var j=0;j<psStr.length;j++){
+        if(psStr[j]==='{'){if(depth2===0)start2=j;depth2++;}
+        else if(psStr[j]==='}'){depth2--;if(depth2===0&&start2>=0){
+          try{
+            var fixed2=sanitizeApostrophes(psStr.slice(start2,j+1)).replace(/,\s*}/g,'}');
+            result.paid_source_flags.push(JSON.parse(fixed2));
+          }catch(ex2){
+            var sm=psStr.slice(start2,j+1).match(/"source"\s*:\s*"([^"]{0,100})"/);
+            var wm=psStr.slice(start2,j+1).match(/"what_it_unlocks"\s*:\s*"([^"]{0,200})"/);
+            if(sm) result.paid_source_flags.push({source:sm[1],what_it_unlocks:wm?wm[1]:'',why_needed:'',priority:'HIGH'});
+          }
+          start2=-1;
+        }}
+      }
+    }
 
-  var dfM=raw.match(/"client_decision_frame"\s*:\s*\{([^}]{0,600})\}/);
-  if(dfM){try{result.client_decision_frame=JSON.parse('{'+preSanitise(dfM[1])+'}');}catch(ex){}}
+    // Extract primary_research_gaps
+    var gapSection=s.match(/"primary_research_gaps"\s*:\s*\[([\s\S]{0,2000}?)\]\s*[,}]/);
+    if(gapSection){
+      var gsStr=gapSection[1];
+      var depth3=0; var start3=-1;
+      for(var k=0;k<gsStr.length;k++){
+        if(gsStr[k]==='{'){if(depth3===0)start3=k;depth3++;}
+        else if(gsStr[k]==='}'){depth3--;if(depth3===0&&start3>=0){
+          try{
+            var fixed3=sanitizeApostrophes(gsStr.slice(start3,k+1)).replace(/,\s*}/g,'}');
+            result.primary_research_gaps.push(JSON.parse(fixed3));
+          }catch(ex3){
+            var gm=gsStr.slice(start3,k+1).match(/"gap"\s*:\s*"([^"]{0,200})"/);
+            if(gm) result.primary_research_gaps.push({gap:gm[1],why_impossible:'',expert_profile:'Industry expert',questions:[],priority:'HIGH'});
+          }
+          start3=-1;
+        }}
+      }
+    }
 
-  if(result.executive_summary||result.findings.length>0){
-    console.log('parseResearch: field-rescue — findings:',result.findings.length);
     return result;
   }
-  console.error('parseResearch: all failed. Raw length:',raw.length);
+
+  var rescued=rescueFields(raw);
+  if(rescued.executive_summary||rescued.findings.length){
+    console.log('parseResearch: used field-rescue strategy, findings recovered:',rescued.findings.length);
+    return rescued;
+  }
+
+  console.error('parseResearch: all strategies failed. Raw length:',raw.length,'First 300:',raw.slice(0,300));
   return null;
 }
 
@@ -860,61 +858,49 @@ async function researchBQ(bq, p, onLog){
     ];
     var stepIdx=0;
     onLog('info', steps[0]);
-    var _bqStart=Date.now();
     var ticker=setInterval(function(){
       stepIdx=(stepIdx+1)%steps.length;
-      var _elapsed=Math.round((Date.now()-_bqStart)/1000);
-      onLog('tick',steps[stepIdx]+' ('+_elapsed+'s elapsed)');
-    },4500);
+      onLog('tick', steps[stepIdx]);
+    }, 4500);
 
-    var resp=null;
+    var resp, lastErr;
     for(var attempt=1;attempt<=3;attempt++){
-      var _apiKey=getApiKey();
-      console.log('BQ fetch attempt',attempt,'| model: claude-sonnet-4-6 | key length:',_apiKey.length,'| key prefix:',_apiKey.slice(0,12));
-      var _fetchPromise=fetch(window.FB_PROXY_URL||'https://api.anthropic.com/v1/messages',{
-        method:'POST',
-        headers:{'Content-Type':'application/json','anthropic-version':'2023-06-01','x-api-key':getApiKey()},
-        body:JSON.stringify({
-          model:'claude-sonnet-4-6',
-          max_tokens:6000,
-          system:'You are a senior FutureBridge research analyst. Use web_search to run EXACTLY 4 searches — no more, no fewer. CRITICAL JSON RULES: respond ONLY with valid JSON, no markdown. ALL strings use double quotes. APOSTROPHES must be escaped with backslash. No literal newlines in strings. No trailing commas.',
-          tools:[{type:'web_search_20250305',name:'web_search'}],
-          messages:[{role:'user',content:buildResearchPrompt(bq,p)}]
-        })
-      });
-      var _timeout=new Promise(function(_,rej){setTimeout(function(){rej(new Error('API timeout — no response after 90s. Try again.'));},90000);});
-      resp=await Promise.race([_fetchPromise,_timeout]);
-
-      clearInterval(ticker);
-      console.log('BQ fetch response | status:',resp.status,'| ok:',resp.ok);
-
-      if(resp.ok) break;
-
-      var errBody='';try{errBody=await resp.clone().text();}catch(e){}
-
-      if(resp.status===429){
-        var isHardCap=errBody.indexOf('exceeded_limit')>=0;
-        if(isHardCap){
-          var rm=errBody.match(/"resetsAt"\s*:\s*(\d+)/);
-          var resetInfo=rm?' Resets: '+new Date(parseInt(rm[1])*1000).toUTCString():'';
-          throw new Error('MONTHLY_CAP: Monthly token limit reached.'+resetInfo+' Top up credit at console.anthropic.com to continue.');
+      try{
+        console.log('BQ fetch attempt',attempt,'| model: claude-sonnet-4-6 | key length:',getApiKey().length,'| key prefix:',getApiKey().slice(0,12));
+        var _fp=fetch(window.FB_PROXY_URL||'https://api.anthropic.com/v1/messages',{
+          method:'POST',
+          headers:{'Content-Type':'application/json','anthropic-version':'2023-06-01','x-api-key':getApiKey()},
+          body:JSON.stringify({
+            model:'claude-sonnet-4-6',
+            max_tokens:6000,
+            system:'You are a senior FutureBridge research analyst. Use web_search to run 4-6 focused searches. CRITICAL JSON RULES — violations will break the parser: (1) Respond ONLY with a valid JSON object, no text before or after, no markdown. (2) ALL strings use double quotes. (3) APOSTROPHES MUST BE ESCAPED — write Japan\'s not Japan\'s, L\'Oréal not L\'Oréal, it\'s not it\'s. Every single apostrophe inside a string value must be preceded by a backslash. (4) No literal newlines inside strings — use a space. (5) No trailing commas. Required keys: executive_summary, stats, findings, paid_source_flags, primary_research_gaps, profiles.',
+            tools:[{type:'web_search_20250305',name:'web_search'}],
+            messages:[{role:'user',content:buildResearchPrompt(bq,p)}]
+          })
+        });
+        var _to=new Promise(function(_,rej){setTimeout(function(){rej(new Error('API timeout — no response after 4 minutes. Try again.'));},240000);});
+        resp=await Promise.race([_fp,_to]);
+        if(resp.ok) break;
+        var errText=await resp.text();
+        // Detect monthly cap
+        if(resp.status===529||errText.indexOf('credit balance')>=0||errText.indexOf('monthly')>=0){
+          clearInterval(ticker);
+          throw new Error('MONTHLY_CAP: Credit balance too low. Please add credit at console.anthropic.com → Plans & Billing.');
         }
-        var waitSec=attempt===1?30:attempt===2?60:120;
-        onLog('warn','Rate limited — waiting '+waitSec+'s (retry '+attempt+'/3)...');
-        ticker=setInterval(function(){stepIdx=(stepIdx+1)%steps.length;onLog('tick',steps[stepIdx]);},4500);
-        await sl(waitSec*1000);
-        clearInterval(ticker);
-        if(attempt<3) continue;
-        throw new Error('API 429 — Rate limit exceeded after 3 retries. Wait a few minutes then try again.');
+        lastErr=new Error('API '+resp.status+' — '+errText.slice(0,120));
+        if(attempt<3){await new Promise(function(r){setTimeout(r,attempt*2000);});}
+      }catch(e){
+        if(e.message.indexOf('MONTHLY_CAP')>=0) throw e;
+        lastErr=e;
+        if(attempt<3){await new Promise(function(r){setTimeout(r,attempt*2000);});}
       }
-
-      var errText=errBody||'';
-      throw new Error('API '+resp.status+' — '+errText.slice(0,200));
     }
+    clearInterval(ticker);
+    if(!resp||!resp.ok) throw (lastErr||new Error('Research failed after 3 attempts'));
 
     onLog('info','Processing results...');
-    var _jsonTimeout=new Promise(function(_,rej){setTimeout(function(){rej(new Error('Response parsing timeout — try again'));},45000);});
-    var data=await Promise.race([resp.json(),_jsonTimeout]);
+    var _jt=new Promise(function(_,rej){setTimeout(function(){rej(new Error('Response parsing timeout — try again'));},60000);});
+    var data=await Promise.race([resp.json(),_jt]);
     var blocks=data.content||[];
 
     // Extract searches and pages from content blocks
@@ -980,6 +966,7 @@ async function researchBQ(bq, p, onLog){
 
 
 // Main research orchestrator — sequential, one BQ at a time
+
 function runDemo(){
   var p=S.proposal;
   if(!p){alert('Please upload a proposal file first.');return;}
@@ -987,26 +974,20 @@ function runDemo(){
     alert('Demo mode is only available for the Miba AG — Wind Turbine Bearings proposal.\nPlease upload the Miba proposal file to use demo mode.');
     return;
   }
-  // Switch to running stage
   goTo(4);
   var sel=S.selBQs.map(function(i){return p.bqs[i];});
-  var allResults=[];
-  var delay=0;
-
-  // Clear previous cards
   var grid=document.getElementById('agentsGrid');
   if(grid) grid.innerHTML='';
   document.getElementById('progFill').style.width='0%';
 
-  // Show demo banner
   var demoDiv=document.createElement('div');
-  demoDiv.className='demo-banner';
-  demoDiv.textContent='⚡ Demo mode — pre-loaded research data (no API calls)';
-  document.getElementById('runSub').parentNode.insertBefore(demoDiv, document.getElementById('runSub'));
+  demoDiv.style.cssText='background:#EEEDFE;border:.5px solid #7F77DD;border-radius:6px;padding:6px 12px;font-size:11px;color:#26215C;font-weight:500;text-align:center;margin-bottom:10px';
+  demoDiv.textContent='Demo mode — pre-loaded research data (no API calls)';
+  var runSubEl=document.getElementById('runSub');
+  if(runSubEl&&runSubEl.parentNode) runSubEl.parentNode.insertBefore(demoDiv,runSubEl);
 
-  // Simulate research running with animation per BQ
+  var allResults=[];
   sel.forEach(function(bq,i){
-    // Create agent card
     var card=document.createElement('div');
     card.className='agent-card';
     card.id='ac-'+i;
@@ -1014,12 +995,11 @@ function runDemo(){
     card.innerHTML='<div class="ac-top"><span class="ac-id" id="agi-'+i+'">↺</span><span class="ac-title">'+bq.id+': '+bq.text.slice(0,60)+'...</span></div>'+
       '<div class="ac-log" id="alog-'+i+'"><div class="log-row"><span class="log-tick">→</span><span>'+steps[0]+'</span></div></div>'+
       '<div class="ac-meta"><span id="src-'+i+'">0</span> sources</div>';
-    document.getElementById('agentsGrid').appendChild(card);
+    var g=document.getElementById('agentsGrid');
+    if(g) g.appendChild(card);
 
-    // Animate with delay per BQ
     setTimeout(function(bqId,bqIdx,bqSteps){
       return function(){
-        var logEl=document.getElementById('alog-'+bqIdx);
         var stepI=0;
         var ticker=setInterval(function(){
           stepI++;
@@ -1033,50 +1013,55 @@ function runDemo(){
           clearInterval(ticker);
           var data=DEMO_RESULTS.bqs[bqId];
           if(!data) return;
-          // Fill in sources count
           var srcEl=document.getElementById('src-'+bqIdx);
-          if(srcEl) srcEl.textContent=(data.profiles.length+data.paid_source_flags.length+4);
-          // Mark done
-          var card=document.getElementById('ac-'+bqIdx);
-          if(card) card.className='agent-card done';
+          if(srcEl) srcEl.textContent=((data.profiles||[]).length+(data.paid_source_flags||[]).length+4);
+          var c=document.getElementById('ac-'+bqIdx);
+          if(c) c.className='agent-card done';
           var agi=document.getElementById('agi-'+bqIdx);
           if(agi) agi.textContent='✓';
-          // Store result
-          allResults.push({bq:bqId, bqText:bq.text, data:data});
+          allResults.push({bq:bqId,bqText:bq.text,data:data});
           S.bqResults[bqId]=data;
-          // Update progress
           document.getElementById('progFill').style.width=Math.round((allResults.length/sel.length)*100)+'%';
 
-          // When all done
           if(allResults.length===sel.length){
             S.allSources=[];
             S.detectedEngType=DEMO_RESULTS.engagement_type;
-            // Build summary
             var parts=allResults.map(function(r){return r.data.executive_summary;}).filter(Boolean);
-            S.summary=parts[0]+(parts.length>1?' '+parts.slice(1).map(function(s){var m=s.match(/[^.!?]+[.!?]+/);return m?m[0]:'';}).filter(Boolean).join(' '):'');
+            S.summary=parts[0]||(parts.length>1?parts.slice(1).map(function(s){var m=s.match(/[^.!?]+[.!?]+/);return m?m[0]:'';}).filter(Boolean).join(' '):'');
             setTimeout(function(){
-              goTo(5);
-              renderResults();
-              // Show synth button wired to demo synthesis
-              var synthBtn=document.getElementById('synthBtn');
-              if(synthBtn){
-                synthBtn.disabled=false;
-                synthBtn.textContent='⚡ Synthesise into sections (demo)';
-                synthBtn.onclick=function(){runDemoSynthesis();};
-              }
+              goTo(5);renderResults();
+              var sb=document.getElementById('synthBtn');
+              if(sb){sb.disabled=false;sb.textContent='Synthesise into sections (demo)';sb.onclick=function(){runDemoSynthesis();};}
             },400);
           }
         },sel.length>1?2800:1800);
       };
-    }(bq.id, i, steps), i*1200);
+    }(bq.id,i,steps),i*1200);
   });
 }
+
+function runDemoSynthesis(){
+  var btn=document.getElementById('synthBtn');
+  var statusEl=document.getElementById('synthStatus');
+  if(btn){btn.disabled=true;btn.textContent='Synthesising...';}
+  if(statusEl){statusEl.textContent='Building section view from demo data...';}
+  setTimeout(function(){
+    S.synthesis=DEMO_SYNTHESIS;
+    S.detectedEngType=DEMO_SYNTHESIS.engagement.type;
+    renderSectionView(DEMO_SYNTHESIS);
+    var secTab=document.getElementById('tab-sections');
+    if(secTab) showTab('sections',secTab);
+    if(btn){btn.disabled=false;btn.textContent='Synthesise into sections (demo)';}
+    if(statusEl){statusEl.textContent='Demo synthesis complete — 6 sections generated';}
+  },1800);
+}
+
 
 async function runResearch(){
   var key=getApiKey();
   var usingProxy=!!(window.FB_PROXY_URL&&window.FB_PROXY_URL.length>0);
   if(!usingProxy&&(!key||key.trim().length<20)){
-    alert('Please enter your Anthropic API key in the field on the upload screen.\n\nGet your key at console.anthropic.com → API Keys');
+    alert('Please enter your Anthropic API key in the field on the upload screen.');
     return;
   }
   if(!S.selBQs.length){alert('Select at least one BQ');return;}
@@ -1149,7 +1134,7 @@ async function runResearch(){
       document.getElementById('agi-'+i).textContent='✗';
       onLog('error','BQ failed: '+(r.errorMsg||'no response'));
       // Only hard-stop on API auth errors (401/403), continue on parse/empty failures
-      if(r.errorMsg&&(r.errorMsg.indexOf('401')>=0||r.errorMsg.indexOf('403')>=0||r.errorMsg.indexOf('MONTHLY_CAP')>=0)){
+      if(r.errorMsg&&(r.errorMsg.indexOf('401')>=0||r.errorMsg.indexOf('403')>=0)){
         document.getElementById('progFill').style.background='var(--red)';
         showApiError(bq.id, r.errorMsg);
         return;
@@ -1167,7 +1152,6 @@ async function runResearch(){
     card.className='agent-card done';
     document.getElementById('agi-'+i).textContent='✓';
     rcEl.textContent=r.sources.length;
-    if(i<sel.length-1){onLog('info','Cooling down 3s before next BQ...');await sl(3000);}
   }
 
   await sl(500);
@@ -1207,9 +1191,7 @@ async function runResearch(){
   console.log('Summary parts count:', parts.length, 'parts:', parts.map(function(p){return p.slice(0,50);}));
   // Use full executive summaries joined, not just 2 sentences each
   var fullParts=allResults.filter(Boolean).map(function(r){
-    var s=r.data.executive_summary||r.data.summary||'';
-    if(s.indexOf('Research failed for this BQ')>=0||s.indexOf('no JSON response received')>=0) return '';
-    return s;
+    return r.data.executive_summary||r.data.summary||'';
   }).filter(Boolean);
   S.summary=fullParts.length
     ? fullParts[0] + (fullParts.length>1 ? ' ' + fullParts.slice(1).map(function(s){var m=s.match(/[^.!?]+[.!?]+/);return m?m[0]:'';}).filter(Boolean).join(' ') : '')
@@ -1225,15 +1207,8 @@ async function runResearch(){
 }
 
 function showApiError(bqId, msg){
-  var isMonthlyLimit=msg&&(msg.indexOf('MONTHLY_CAP')>=0||msg.indexOf('Monthly token limit')>=0||msg.indexOf('exceeded_limit')>=0);
-  var isRateLimit=msg&&msg.indexOf('429')>=0&&!isMonthlyLimit;
-  var isAuth=msg&&(msg.indexOf('401')>=0||msg.indexOf('403')>=0);
-  var displayMsg=isMonthlyLimit
-    ? (msg.indexOf('Resets:')>=0?'Monthly limit reached. '+msg.split('Resets:').pop().trim():'Monthly token limit reached. Top up credit at console.anthropic.com.')
-    : isRateLimit?'Rate limit hit. Wait a few minutes then try again.'
-    : isAuth?'API key invalid. Check your Anthropic key in the tool settings.'
-    : (msg||'Unknown error');
-  document.getElementById('runSub').textContent=(isMonthlyLimit?'Monthly limit reached':isRateLimit?'Rate limited':'Research stopped')+' on '+bqId;
+  // Replace the running panel with a clear error state
+  document.getElementById('runSub').textContent='Research stopped — API error on '+bqId;
   var errBanner=document.createElement('div');
   errBanner.style.cssText='background:#FEF0F0;border:1px solid #F94F5E;border-radius:9px;padding:18px 22px;margin-top:16px';
   errBanner.innerHTML=
@@ -1271,7 +1246,6 @@ function renderResults(){
     var st=d.stats||[];
     var g=d.primary_research_gaps||d.gaps||[];
     var pf=d.paid_source_flags||[];
-    var ca=d.creative_angles||[];
     var isMod2=parseInt((bq.id||'').replace(/\D/g,''))>=7;
 
     var pills='<span class="mp" style="background:#fdecea;color:var(--red)">'+f.length+' finding'+(f.length!==1?'s':'')+'</span>'+
@@ -1295,18 +1269,13 @@ function renderResults(){
       f.map(function(fi,idx){
         var gk=bq.id+'-'+idx;
         var geoTag=fi.geo?'<span style="font-size:9px;background:#e0f5ee;color:#085041;padding:1px 6px;border-radius:3px;margin-left:6px">'+fi.geo+'</span>':'';
-        var fihColor={'FACT':'#085041','INFERENCE':'#633806','HYPOTHESIS':'#A32D2D'}[fi.evidence_type]||'#888780';
-        var fihBg={'FACT':'#e0f5ee','INFERENCE':'#FEF5E4','HYPOTHESIS':'#fdecea'}[fi.evidence_type]||'#F1EFE8';
-        var fihBadge=fi.evidence_type?'<span style="font-size:9px;font-weight:600;background:'+fihBg+';color:'+fihColor+';padding:2px 7px;border-radius:3px;margin-left:6px">'+fi.evidence_type+'</span>':'';
-        var eidBadge=fi.evidence_id?'<span style="font-size:9px;font-family:var(--fm,monospace);background:#F1EFE8;color:#888780;padding:1px 5px;border-radius:3px;margin-left:4px">'+fi.evidence_id+'</span>':'';
-        var dateBadge=fi.data_date?'<span style="font-size:9px;color:var(--mgray);margin-left:6px">'+fi.data_date+'</span>':'';
         return'<div class="finding" id="fb-'+gk+'">'+
-          '<div class="f-top"><span class="f-type">'+(fi.type||fi.evidence_type||'finding').replace(/_/g,' ')+'</span>'+geoTag+fihBadge+eidBadge+
+          '<div class="f-top"><span class="f-type">'+(fi.type||'').replace(/_/g,' ')+'</span>'+geoTag+
           '<span class="f-conf '+(fi.confidence==='high'?'conf-h':'conf-m')+'">'+(fi.confidence==='high'?'● High':'◐ Medium')+'</span>'+
           '<div class="f-acts"><button class="f-btn fb-more" onclick="toggleMore(\''+gk+'\')">+ More</button>'+
           '<button class="f-btn fb-edit" onclick="openEdit(\''+gk+'\','+bi+','+idx+')">✎ Edit</button></div></div>'+
           '<div class="f-hl" id="fh-'+gk+'">'+fi.headline+'</div>'+
-          '<div class="f-body" id="fbo-'+gk+'">'+fi.body+dateBadge+'</div>'+
+          '<div class="f-body" id="fbo-'+gk+'">'+fi.body+'</div>'+
           '<div class="f-impl"><strong style="color:var(--amber)">→ For '+p.client+':</strong> <span id="fi-'+gk+'">'+(fi.client_implication||fi.implication||'')+'</span></div>'+
           '<div class="f-src">◆<div><strong id="fsn-'+gk+'">'+fi.source_name+'</strong><br>'+
           '<a href="'+(fi.source_url||'#')+'" target="_blank" id="fsu-'+gk+'">'+fi.source_url+'</a></div></div>'+
@@ -1364,18 +1333,19 @@ function renderResults(){
 
     // PRIMARY RESEARCH GAPS — enhanced
     var creativeH='';
+    var ca=d.creative_angles||[];
     if(ca.length){
       var caItems=ca.map(function(c){
-        return '<div style="border:.5px solid #AFA9EC;border-radius:8px;padding:11px 14px;margin-bottom:8px;background:#EEEDFE22">'+
+        return '<div style="border:.5px solid #AFA9EC;border-radius:8px;padding:11px 14px;margin-bottom:8px">'+
           '<div style="font-size:11px;font-weight:500;color:#3C3489;margin-bottom:3px">'+escH(c.angle_title||'')+'</div>'+
-          '<div style="font-size:10px;font-weight:500;color:#534AB7;margin-bottom:5px">Parallel industry: '+escH(c.parallel_industry||'')+'</div>'+
-          '<div style="font-size:11px;color:var(--dark);line-height:1.65;margin-bottom:6px">'+escH(c.insight||'')+'</div>'+
-          (c.why_relevant_to_client?'<div style="font-size:10px;color:#26215C;padding:5px 8px;background:#EEEDFE;border-radius:4px;line-height:1.5">Relevance to '+escH(p.client||'client')+': '+escH(c.why_relevant_to_client)+'</div>':'')+
+          '<div style="font-size:10px;font-weight:500;color:#534AB7;margin-bottom:5px">Parallel: '+escH(c.parallel_industry||'')+'</div>'+
+          '<div style="font-size:11px;color:var(--dark);line-height:1.65;margin-bottom:5px">'+escH(c.insight||'')+'</div>'+
+          (c.why_relevant_to_client?'<div style="font-size:10px;color:#26215C;padding:5px 8px;background:#EEEDFE;border-radius:4px">Relevance: '+escH(c.why_relevant_to_client)+'</div>':'')+
         '</div>';
       }).join('');
       creativeH='<div class="bq-gap" style="border-color:#AFA9EC">'+
-        '<div class="gap-lbl" style="color:#534AB7">Creative intelligence — parallel industry signals</div>'+
-        '<div style="font-size:10px;color:#534AB7;margin-bottom:10px;font-style:italic">Insights from adjacent industries that solved the same problem first</div>'+
+        '<div class="gap-lbl" style="color:#534AB7">Creative intelligence — parallel industry</div>'+
+        '<div style="font-size:10px;color:#534AB7;margin-bottom:10px;font-style:italic">Adjacent industries that solved this problem first</div>'+
         caItems+'</div>';
     }
 
@@ -1452,16 +1422,12 @@ async function runMore(gk,bqId){
   var res=document.getElementById('morer-'+gk); res.className='more-res show'; res.textContent='Researching...';
   var p=S.proposal, bq=p.bqs.find(function(b){return b.id===bqId;});
   try{
-    var resp=await Promise.race([
-      fetch(window.FB_PROXY_URL||'https://api.anthropic.com/v1/messages',{method:'POST',
-        headers:{'Content-Type':'application/json','anthropic-version':'2023-06-01','x-api-key':getApiKey()},
-        body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:600,
-          system:'You are a research analyst. Answer concisely with specific facts and source URLs. Plain prose, no JSON.',
-          tools:[{type:'web_search_20250305',name:'web_search'}],
-          messages:[{role:'user',content:'Context: '+p.client+' — '+p.title+' — '+bqId+': '+((bq&&bq.text)||'')+'\n\nAdditional question: "'+q+'"\n\nGive a 3-5 sentence focused answer with specific evidence and a source URL.'}]})
-      }),
-      new Promise(function(_,rej){setTimeout(function(){rej(new Error('Request timeout'));},30000);})
-    ]);
+    var resp=await fetch(window.FB_PROXY_URL||'https://api.anthropic.com/v1/messages',{method:'POST',
+      headers:{'Content-Type':'application/json','anthropic-version':'2023-06-01','x-api-key':getApiKey()},
+      body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:600,
+        system:'You are a research analyst. Answer concisely with specific facts and source URLs. Plain prose, no JSON.',
+        tools:[{type:'web_search_20250305',name:'web_search'}],
+        messages:[{role:'user',content:'Context: '+p.client+' — '+p.title+' — '+bqId+': '+((bq&&bq.text)||'')+'\n\nAdditional question: "'+q+'"\n\nGive a 3-5 sentence focused answer with specific evidence and a source URL.'}]})});
     if(resp.ok){var data=await resp.json();res.textContent=data.content.filter(function(c){return c.type==='text';}).map(function(c){return c.text;}).join(' ')||'No additional information found.';}
     else throw new Error('');
   }catch(e){res.textContent='Could not complete additional research at this time. This question is a good candidate for a primary research expert call.';}
@@ -1472,14 +1438,12 @@ async function runBQMore(bqId){
   var res=document.getElementById('bqmorer-'+bqId); res.className='bq-more-res show'; res.textContent='Researching...';
   var p=S.proposal, bq=p.bqs.find(function(b){return b.id===bqId;});
   try{
-    var resp=await Promise.race([fetch(window.FB_PROXY_URL||'https://api.anthropic.com/v1/messages',{method:'POST',
+    var resp=await fetch(window.FB_PROXY_URL||'https://api.anthropic.com/v1/messages',{method:'POST',
       headers:{'Content-Type':'application/json','anthropic-version':'2023-06-01','x-api-key':getApiKey()},
       body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:800,
         system:'You are a research analyst. Answer with specific facts, company names, numbers, and source URLs. Plain prose.',
         tools:[{type:'web_search_20250305',name:'web_search'}],
-        messages:[{role:'user',content:'Research context: '+p.client+' — '+p.title+'\n'+bqId+': '+((bq&&bq.text)||'')+'\n\nFollow-on research: "'+q+'"\n\nGive a structured 4-6 sentence answer with specific evidence and source URLs.'}]})
-      }),
-      new Promise(function(_,rej){setTimeout(function(){rej(new Error('Request timeout'));},30000);})]);
+        messages:[{role:'user',content:'Research context: '+p.client+' — '+p.title+'\n'+bqId+': '+((bq&&bq.text)||'')+'\n\nFollow-on research: "'+q+'"\n\nGive a structured 4-6 sentence answer with specific evidence and source URLs.'}]})});
     if(resp.ok){var data=await resp.json();res.textContent=data.content.filter(function(c){return c.type==='text';}).map(function(c){return c.text;}).join(' ')||'No additional information found.';}
     else throw new Error('');
   }catch(e){res.textContent='Could not complete additional research. Consider adding this to the expert interview list.';}
@@ -1524,7 +1488,7 @@ function dlReport(){
     h+='<h2>'+bq.id+'</h2><p style="font-size:14px;font-weight:bold;font-style:italic;margin:0 0 6px">'+bq.text+'</p>';
     if(d.summary)h+='<div class="sum">'+d.summary+'</div>';
     if(d.stats&&d.stats.length)h+='<div>'+d.stats.map(function(s){return'<div class="stat"><div class="stat-v">'+s.value+'</div><div style="font-size:11px">'+s.label+'</div><div style="font-size:9px;color:#A4A3A4">'+s.source+'</div></div>';}).join('')+'</div>';
-    if(d.findings&&d.findings.length){h+='<p style="font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:#6F6F77;margin:12px 0 5px">Key findings</p>';d.findings.forEach(function(f){var _fc={'FACT':'#085041','INFERENCE':'#633806','HYPOTHESIS':'#A32D2D'}[f.evidence_type]||'#888'; var _fb={'FACT':'#e0f5ee','INFERENCE':'#FEF5E4','HYPOTHESIS':'#fdecea'}[f.evidence_type]||'#F1EFE8'; var _fh=f.evidence_type?'<span style="font-size:9px;font-weight:600;background:'+_fb+';color:'+_fc+';padding:2px 7px;border-radius:3px;margin-right:6px">'+f.evidence_type+'</span>':''; var _fe=f.evidence_id?'<span style="font-size:9px;font-family:monospace;color:#888;margin-right:4px">'+f.evidence_id+'</span>':''; h+='<div class="finding"><div style="margin-bottom:4px">'+_fh+_fe+'</div><h4>'+f.headline+(f.data_date?'<span style="font-size:10px;color:#6F6F77;margin-left:8px">'+f.data_date+'</span>':'')+'</h4><p style="font-size:12px;color:#6F6F77;margin:0 0 4px">'+f.body+'</p><div class="impl">→ For '+p.client+': '+(f.client_implication||f.implication||'')+'</div><div style="font-size:10px;color:#6F6F77;margin-top:3px">Source: <a href="'+f.source_url+'">'+f.source_name+'</a></div></div>';});}
+    if(d.findings&&d.findings.length){h+='<p style="font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:#6F6F77;margin:12px 0 5px">Key findings</p>';d.findings.forEach(function(f){h+='<div class="finding"><h4>'+f.headline+'</h4><p style="font-size:12px;color:#6F6F77;margin:0 0 4px">'+f.body+'</p><div class="impl">→ For '+p.client+': '+f.implication+'</div><div style="font-size:10px;color:#6F6F77;margin-top:3px">Source: <a href="'+f.source_url+'">'+f.source_name+'</a></div></div>';});}
     if(d.gaps&&d.gaps.length){h+='<p style="font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:#633806;margin:12px 0 5px">Gaps</p>';d.gaps.forEach(function(g){h+='<div class="gap"><h4>'+g.gap+' <span style="font-size:9px;background:#FBAE40;color:#633806;padding:1px 6px;border-radius:3px">'+g.priority+'</span></h4><p style="font-size:11px;color:#6F6F77;margin:4px 0">'+g.why+'</p><b style="font-size:11px;color:#22AE8A">Expert: '+g.expert+'</b><ol>'+g.questions.map(function(q){return'<li>'+q+'</li>';}).join('')+'</ol><div class="hyp">Hypothesis: '+g.hypothesis+'</div></div>';});}
     h+='<hr>';
   });
@@ -1545,8 +1509,8 @@ function dlReport(){
 function dlData(){
   var p=S.proposal,sel=S.selBQs.map(function(i){return p.bqs[i];});
   var e=function(v){return'"'+String(v||'').replace(/"/g,'""')+'"';};
-  var c='"Client","'+p.client+'"\n"Engagement","'+p.title+'"\n\n"BQ","Question","EvidenceID","EvidenceType","Confidence","Geo","DataDate","Headline","Body","ClientImplication","Source","URL"\n';
-  sel.forEach(function(bq){var d=S.bqResults[bq.id]||{};(d.findings||[]).forEach(function(f){c+=e(bq.id)+','+e(bq.text)+','+e(f.evidence_id||'')+','+e(f.evidence_type||'')+','+e(f.confidence)+','+e(f.geo||'')+','+e(f.data_date||'')+','+e(f.headline)+','+e(f.body)+','+e(f.client_implication||f.implication||'')+','+e(f.source_name)+','+e(f.source_url)+'\n';});});
+  var c='"Client","'+p.client+'"\n"Engagement","'+p.title+'"\n\n"BQ","Question","Type","Confidence","Headline","Body","Implication","Source","URL"\n';
+  sel.forEach(function(bq){var d=S.bqResults[bq.id]||{};(d.findings||[]).forEach(function(f){c+=[bq.id,bq.text,f.type,f.confidence,f.headline,f.body,f.implication,f.source_name,f.source_url].map(e).join(',')+'\n';});});
   c+='\n"BQ","Gap","Priority","Why","Expert"\n';
   sel.forEach(function(bq){var d=S.bqResults[bq.id]||{};(d.gaps||[]).forEach(function(g){c+=[bq.id,g.gap,g.priority,g.why,g.expert].map(e).join(',')+'\n';});});
   c+='\n\nAll Sources ('+S.allSources.length+')\n"#","Type","BQ","Title","URL"\n';
@@ -1568,257 +1532,48 @@ function reset(){
   goTo(1);
 }
 
-// DEMO DATA — Miba AG Wind Turbine Main Shaft Roller Bearings
-// Based on real market research. Used when Demo Mode is active.
+
 var DEMO_SYNTHESIS = {
-  engagement: { type: "value_chain_pricing" },
-  cross_cutting: {
-    key_insight: "Vertical integration depth at the ring forging stage is the single structural determinant of cost competitiveness in India's wind bearing market. Schaeffler's 78% in-house value content vs Timken's 42% import-dependent model explains an estimated 15-18% unit cost gap — a gap that cannot be closed by operational efficiency alone. For Miba, the forging decision is the investment decision.",
-    recommended_next_step: "Commission primary research with 2 expert interviews: (1) ex-Suzlon procurement director to validate ex-works price benchmarks and OEM localisation thresholds; (2) Bharat Forge industrial sales director to assess capacity availability and exclusivity terms for ring forging supply to a new MNC entrant.",
-    biggest_gap: "Ex-works unit pricing from Schaeffler/SKF India to Suzlon Energy — the single most critical data point for Miba's India pricing strategy — is under NDA and requires primary research to validate the ₹14-18 lakh per 3MW SRB set estimate."
+  engagement:{type:"value_chain_pricing"},
+  cross_cutting:{
+    key_insight:"Vertical integration depth at ring forging is the single structural determinant of cost competitiveness in India's wind bearing market. Schaeffler's 78% in-house value vs Timken's 42% import-dependent model explains an estimated 15-18% unit cost gap — a gap no operational efficiency alone can close. For Miba, the forging decision is the investment decision.",
+    recommended_next_step:"Commission 2 expert interviews: (1) ex-Suzlon procurement director to validate ex-works pricing and OEM localisation thresholds; (2) Bharat Forge industrial sales director to assess capacity availability for a new MNC entrant.",
+    biggest_gap:"Ex-works unit pricing from Schaeffler/SKF India to Suzlon — under NDA, requires primary research to validate the Rs14-18 lakh per 3MW SRB estimate."
   },
-  sections: [
-    {
-      id: "vc",
-      title: "Value chain structure & integration model",
-      icon: "⛓",
-      coverage_level: "complete",
-      source_bqs: ["BQ1", "BQ3"],
-      synthesis: "India's wind main shaft bearing value chain runs 5 stages for fully integrated players: steel ring procurement → ring rolling/forging → heat treatment → precision grinding → assembly and QC. Schaeffler India (Pune) and SKF India (Pune) both execute all 5 stages in-house, achieving approximately 78% and 75% in-house value content respectively. Timken India (Chennai) operates a compressed 4-stage model by importing pre-forged rings from the US, reducing in-house value to approximately 42% — structurally limiting its price competitiveness. NTN and NSK maintain assembly-only India footprints with sub-40% local content, making them non-competitive on large domestic OEM contracts with ≥60% localisation requirements.",
-      bullet_points: [
-        "Schaeffler India: 5-stage fully integrated model — ring rolling to assembly in Pune; ~78% in-house value; Wind Power Standard certified across all stages; over 1 million wind bearings manufactured",
-        "SKF India: mirrors Schaeffler integration with added 6-axis CNC grinding capability (Ra 0.2µm) for offshore turbine specs; secured Vestas preferred supplier status via June 2024 partnership",
-        "Timken India: 4-stage import-dependent model — saves 8 weeks lead time but adds 12-15% input cost vs domestic forging; evaluating in-house forging since 2023 but no public commitment",
-        "NTN / NSK India: assembly-only operations with <40% local content; losing ground on Suzlon/Inox Wind programs where 60% localisation is a procurement threshold",
-        "Chinese players (ZWZ, LYC): not yet established in India but active in global tenders at 25-30% below European OEM pricing; India entry risk within 18-24 months if Gujarat/Tamil Nadu inventory hubs established"
-      ],
-      coverage_note: "Production cycle time data (18-22 weeks for integrated players vs 28-34 weeks for outsourced models) is estimated from industry triangulation — TradeMap and direct OEM disclosure required for confirmation."
-    },
-    {
-      id: "pl",
-      title: "Key players & competitive positioning",
-      icon: "🏭",
-      coverage_level: "complete",
-      source_bqs: ["BQ1", "BQ2"],
-      synthesis: "The India wind bearing market is a three-tier structure. Tier 1 (Schaeffler, SKF) controls premium OEM programs through deep integration, certification assets (Wind Power Standard, IECRE), and locked OEM relationships — SKF's Vestas partnership and Schaeffler's Vitesco-merged R&D budget make these positions increasingly entrenched. Tier 2 (Timken, NTN, NSK) compete on specific product segments but face structural cost and localisation disadvantages. Tier 3 (domestic Indian players, Chinese exporters) compete on price but lack the certification and service infrastructure required for Tier 1 OEM programs. The market is consolidating around Schaeffler and SKF as Suzlon, Inox Wind, and Siemens Gamesa India tighten localisation and certification requirements.",
-      bullet_points: [
-        "Schaeffler India: market leader in wind main shaft SRBs — Wind Power Standard certification, fully integrated Pune plant, Schaeffler-Vitesco merger strengthens R&D budget; primary cost benchmark for Miba",
-        "SKF India: technology differentiated on grinding spec (Ra 0.2µm) — locked into Vestas India programs via June 2024 partnership; Miba must target non-Vestas OEMs (Suzlon, Siemens Gamesa, Inox Wind)",
-        "Bharat Forge / Kalyani Steels: dominant forging supply tier — estimated 55-65% of MNC wind ring forging in India; Rolex Rings (listed, ₹1,650 Cr FY24 revenue) is most transparent and available alternative forging partner",
-        "ZWZ (China): most credible Tier 3 pricing threat at 25-30% discount to European OEM pricing; lacks IECRE certification restricting it to Tier 2 domestic OEM supply currently",
-        "Suzlon Energy: 3GW order book (Q3 2024) is the demand catalyst — largest domestic wind OEM volume signal in 5 years; ≥60% localisation content required for bearing supply preferred vendor status"
-      ],
-      coverage_note: null
-    },
-    {
-      id: "sc",
-      title: "Supply chain & raw material sourcing",
-      icon: "🔗",
-      coverage_level: "partial",
-      source_bqs: ["BQ2"],
-      synthesis: "India's bearing raw material supply chain has two critical chokepoints: bearing-grade steel (100Cr6) and ring forgings. Steel supply is dominated by SAIL and Tata Steel for domestic grades, with 30-40% import dependency for high-precision wind-grade steel (≥5MW applications) from Germany (Deutsche Edelstahlwerke) and Japan (Sanyo Special Steel). Ring forging is heavily concentrated in Bharat Forge and Kalyani Steels (combined estimated 55-65% of MNC wind ring supply). The Rajkot SME machining cluster (40-50 vendors) is viable for cage and seal sourcing but not for raceway machining, which MNC players keep in-house. Seal and cage components flow from GKN Sinter Metals, Sintercom India, and Freudenberg Sealing Technologies — an oligopolistic sub-tier that will charge premium pricing to small-volume new entrants.",
-      bullet_points: [
-        "Bearing steel: SAIL / Tata Steel supply domestic 100Cr6 grades; 30-40% import dependency for high-precision wind-grade steel (5MW+) — import share declining but not yet eliminated for premium applications",
-        "Ring forging: Bharat Forge (Pune) + Kalyani Steels dominate — combined 55-65% of MNC wind ring supply; running at estimated 75-85% utilisation; limited headroom for new entrant without large volume commitment",
-        "Rolex Rings (Rajkot, listed): most accessible and transparent forging partner — ₹1,650 Cr FY24 revenue; recently added 4,000T press for larger rings; viable Miba Phase 1 partner before capex decision",
-        "Rajkot SME machining cluster: viable for cage/seal sub-components but lacks 6-axis CNC capability for wind bearing raceway grinding — MNC players correctly keep this in-house",
-        "PLI scheme inclusion for bearings under discussion (Q1 2025): if confirmed, reduces greenfield forging capex by 15-20% (₹180-220 Cr → ₹145-175 Cr) — materially changes investment case"
-      ],
-      coverage_note: "Bharat Forge's actual capacity utilisation and customer allocation to wind ring forgings requires primary research — a former Bharat Forge industrial division manager is the right expert profile. Current 75-85% utilisation estimate is triangulated not confirmed."
-    },
-    {
-      id: "cd",
-      title: "Cost drivers & ex-works pricing",
-      icon: "₹",
-      coverage_level: "partial",
-      source_bqs: ["BQ4"],
-      synthesis: "Raw materials (bearing steel rings) account for 45-52% of the ex-works price of a 3MW main shaft SRB in India — the dominant and most volatile cost element. Heat treatment energy costs (8-12% of manufacturing cost) have risen 18-22% since 2022 following Maharashtra/Gujarat industrial power tariff increases. Labour — the primary India manufacturing advantage at 10% of sales vs 25% in Europe — accounts for 10-14% of cost and is structurally durable. Net estimated ex-works price for a domestically manufactured 3MW SRB set from Schaeffler/SKF India is ₹14-18 lakh ($16,800-$21,600), vs €22,000-€28,000 for European equivalents — a 25-35% cost advantage. Steel price volatility (22-28% peak-to-trough since 2022) is the primary margin risk; a 15% steel increase translates to 6-8% ex-works price pressure.",
-      bullet_points: [
-        "Raw material (100Cr6 bearing steel rings): 45-52% of ex-works cost — most volatile driver; ring material cost for 3MW SRB set (350-450 kg) is approximately ₹6-8 lakh at current SAIL/Tata Steel prices of ₹95-110/kg",
-        "Heat treatment energy: 8-12% of manufacturing cost; risen 18-22% since 2022 (Maharashtra industrial power tariff: ₹9-11/kWh from ₹7.5-8.5 in 2022); Pune manufacturers exploring on-site solar captive power",
-        "Labour (grinding + assembly): 10-14% of cost; 60% below European equivalent — structural and durable advantage; grows proportionally with turbine size as grinding hours per unit increase",
-        "Quality certification overhead (Wind Power Standard, ISO 281, IECRE): ₹80,000-₹1,20,000 per unit — barrier to entry for unbranded players; Chinese competitors (ZWZ, LYC) currently excluded from Tier 1 OEM programs by certification gap",
-        "Steel price hedging: non-negotiable risk management requirement — unhedged 100Cr6 exposure of 45-52% of unit cost creates ±8-12% annual P&L volatility; Schaeffler/SKF use quarterly LME-indexed adjustment clauses in OEM supply contracts"
-      ],
-      coverage_note: "Ex-works pricing (₹14-18 lakh per 3MW SRB set) is a FutureBridge estimate requiring TradeMap HS 8482.50 validation and primary research with ex-Suzlon procurement director to confirm actual OEM contract price range. This is the single most critical data point for Miba's India pricing strategy."
-    },
-    {
-      id: "mv",
-      title: "Make vs buy — integration economics",
-      icon: "⚖",
-      coverage_level: "complete",
-      source_bqs: ["BQ3", "BQ4"],
-      synthesis: "The make-vs-buy decision in India's wind bearing value chain is volume-gated at two thresholds. Below 5,000 units/year: outsourced ring forging is economically rational — in-house forging capex (₹120-140 Cr) cannot be justified without a confirmed OEM volume commitment. Between 5,000-8,000 units/year: the transition zone — outsourced forging costs 15-18% more per unit but avoids capex risk. Above 8,000 units/year: in-house forging reaches cost parity with outsourced models and delivers structural margin advantage. A hybrid Phase 1 (heat treatment + grinding + assembly, capex ₹80-100 Cr) transitioning to Phase 2 (add forging, capex ₹120-140 Cr additional) is the lowest-risk India entry sequence and mirrors the path Timken India is now reversing.",
-      bullet_points: [
-        "Volume threshold — in-house forging breakeven: ≥8,000 units/year; below this, outsourced forging from Bharat Forge/Rolex Rings is more economical despite 15-18% unit cost premium",
-        "Phase 1 recommended entry (0-5 years): heat treatment + grinding + assembly — in-house value ~55-60%, capex ₹80-100 Cr, operational in 18-24 months; meets current OEM 60% localisation threshold",
-        "Phase 2 upgrade trigger (Year 5-7): add ring forging line when ≥8,000 unit OEM volume commitment confirmed via LOI — capex ₹120-140 Cr additional, brings in-house value to ~78%, achieves cost parity with Schaeffler India",
-        "Labour cost advantage (10% of sales India vs 25% Europe) makes labour-intensive grinding and assembly economically rational even sub-scale — these operations should always be in-house regardless of volume",
-        "PLI scheme (if bearing sector included): reduces Phase 2 forging capex by 15-20% — Miba should monitor Q2-Q3 2025 policy announcements before finalising Phase 2 investment decision"
-      ],
-      coverage_note: null
-    },
-    {
-      id: "str",
-      title: "Strategic options for Miba",
-      icon: "🎯",
-      coverage_level: "complete",
-      source_bqs: ["BQ1", "BQ2", "BQ3", "BQ4"],
-      synthesis: "Miba faces a binary strategic choice in India: enter as a technology-premium niche supplier targeting offshore and premium onshore programs (Siemens Gamesa India, Vestas India) at ₹16-20 lakh per unit with import + local assembly model; or enter as a volume competitor targeting Suzlon and Inox Wind Tier 1 programs at ₹13-15 lakh per unit requiring full localisation. Option A is lower risk, faster to revenue, and avoids a direct cost war with Schaeffler/SKF. Option B captures the larger volume opportunity from Suzlon's 3GW order book but requires full integration and a 4-5 year investment horizon before competitive cost parity. The Suzlon 3GW order book (Q3 2024) and India's 13.5% CAGR wind bearing market growth create a narrow window — a decision delayed beyond 2026 risks Schaeffler and SKF locking up OEM preferred supplier positions for the next investment cycle.",
-      bullet_points: [
-        "Option A — Technology premium entry: target Siemens Gamesa India and Vestas India (offshore specs, IECRE certified) at ₹16-20 lakh/unit; import rings + local heat treatment/grinding; capex ₹40-60 Cr; operational Year 2; avoids direct Schaeffler/SKF price war",
-        "Option B — Volume competitive entry: target Suzlon + Inox Wind Tier 1 programs at ₹13-15 lakh/unit; requires full localisation (Phase 1 capex ₹80-100 Cr + Phase 2 forging ₹120-140 Cr); achieves competitive cost parity Year 5-7; captures 3GW Suzlon demand wave",
-        "Critical enabler for either option: steel price hedging strategy via quarterly LME-indexed adjustment clauses — unhedged 45-52% raw material exposure creates ±8-12% P&L volatility unacceptable for a new India subsidiary",
-        "Immediate next step (pre-investment): 2 expert interviews to validate pricing and forging supply — ex-Suzlon procurement director (OEM contract price confirmation) + Bharat Forge/Rolex Rings commercial director (forging capacity and exclusivity terms)",
-        "Decision window: Suzlon's 3GW order book will drive 2025-2027 bearing supply tenders — Miba must achieve preferred vendor qualification before end of 2025 to participate in this demand cycle; qualification requires minimum 12 months of OEM-approved sample supply"
-      ],
-      coverage_note: null
-    }
+  sections:[
+    {id:"vc",title:"Value chain structure & integration model",icon:"⛓",coverage_level:"complete",source_bqs:["BQ1","BQ3"],synthesis:"India's wind main shaft bearing value chain runs 5 stages for integrated players: steel ring procurement, ring rolling/forging, heat treatment, precision grinding, assembly and QC. Schaeffler India (Pune) and SKF India (Pune) both execute all 5 stages in-house, achieving approximately 78% and 75% in-house value content respectively. Timken India (Chennai) operates a 4-stage model by importing pre-forged rings from the US, reducing in-house value to approximately 42% and limiting price competitiveness on large domestic OEM contracts.",bullet_points:["Schaeffler India: 5-stage fully integrated model in Pune; ~78% in-house value; Wind Power Standard certified; over 1 million wind bearings manufactured","SKF India: mirrors Schaeffler with added 6-axis CNC grinding (Ra 0.2 micron) for offshore specs; Vestas preferred supplier via June 2024 partnership","Timken India: 4-stage import-dependent model — saves 8 weeks lead time but adds 12-15% input cost vs domestic forging","NTN/NSK: assembly-only operations with under 40% local content — losing ground on Suzlon/Inox Wind programs requiring 60% localisation","Chinese players ZWZ and LYC: active in global tenders at 25-30% below European OEM pricing; India entry risk within 18-24 months"],coverage_note:"Production cycle time data (18-22 weeks for integrated players) is estimated from industry triangulation — TradeMap confirmation needed."},
+    {id:"pl",title:"Key players & competitive positioning",icon:"🏭",coverage_level:"complete",source_bqs:["BQ1","BQ2"],synthesis:"The India wind bearing market is a three-tier structure. Tier 1 (Schaeffler, SKF) controls premium OEM programs through deep integration, certification assets, and locked OEM relationships. Tier 2 (Timken, NTN, NSK) compete on specific segments but face structural cost and localisation disadvantages. Tier 3 (domestic Indian players, Chinese exporters) compete on price but lack certification required for Tier 1 OEM programs.",bullet_points:["Schaeffler India: market leader — Wind Power Standard certified, fully integrated Pune plant, Schaeffler-Vitesco merger (Oct 2024) strengthens R&D budget","SKF India: technology leader on grinding spec — locked into Vestas via June 2024 partnership; Miba must target Suzlon, Siemens Gamesa, Inox Wind","Bharat Forge + Kalyani Steels: estimated 55-65% of MNC wind ring forging in India; running at 75-85% utilisation — limited headroom for new entrant","ZWZ China: most credible Tier 3 pricing threat at 25-30% discount; lacks IECRE certification restricting to Tier 2 domestic OEM supply","Suzlon Energy: 3GW order book (Q3 2024) is the demand catalyst — largest domestic wind OEM volume signal in 5 years"],coverage_note:null},
+    {id:"sc",title:"Supply chain & raw material sourcing",icon:"🔗",coverage_level:"partial",source_bqs:["BQ2"],synthesis:"India's bearing raw material supply chain has two critical chokepoints: bearing-grade steel (100Cr6) and ring forgings. Steel supply is dominated by SAIL and Tata Steel for domestic grades, with 30-40% import dependency for high-precision wind-grade steel. Ring forging is heavily concentrated in Bharat Forge and Kalyani Steels. The Rajkot SME machining cluster is viable for cage and seal sourcing but not raceway machining.",bullet_points:["Bearing steel: SAIL/Tata Steel supply domestic 100Cr6; 30-40% import dependency for 5MW+ applications from Germany and Japan","Ring forging: Bharat Forge + Kalyani dominate at estimated 55-65% of MNC supply; 75-85% utilisation — new entrant needs large volume commitment for allocation","Rolex Rings (listed, Rs1650 Cr FY24): most accessible and transparent forging partner — recently added 4000T press for larger rings","Rajkot SME cluster: viable for cage/seal sub-components but lacks 6-axis CNC for raceway grinding — MNC players correctly keep this in-house","PLI scheme for bearings under discussion (Q1 2025): if confirmed, reduces greenfield forging capex by 15-20%"],coverage_note:"Bharat Forge capacity utilisation for wind rings requires primary research — current 75-85% estimate is triangulated not confirmed."},
+    {id:"cd",title:"Cost drivers & ex-works pricing",icon:"₹",coverage_level:"partial",source_bqs:["BQ4"],synthesis:"Raw materials account for 45-52% of ex-works price — the dominant and most volatile cost element. Heat treatment energy costs have risen 18-22% since 2022. Labour at 10% of sales in India vs 25% in Europe is the structural manufacturing advantage. Estimated ex-works price for a domestically manufactured 3MW SRB set: Rs14-18 lakh vs EU22,000-EU28,000 for European equivalents — a 25-35% cost advantage.",bullet_points:["Raw material (100Cr6 rings): 45-52% of ex-works cost; ring material for 3MW SRB set (350-450 kg) approximately Rs6-8 lakh at current SAIL/Tata Steel prices","Heat treatment energy: 8-12% of cost; risen 18-22% since 2022 (Maharashtra industrial power tariff Rs9-11/kWh from Rs7.5-8.5)","Labour: 10% of sales India vs 25% Europe — 60% structural advantage; grows proportionally with turbine size","Quality certification (Wind Power Standard, ISO 281, IECRE): Rs80,000-Rs1,20,000 per unit — barrier to entry for unbranded players","Steel price hedging non-negotiable: unhedged 45-52% raw material exposure creates plus-minus 8-12% annual P&L volatility"],coverage_note:"Ex-works pricing (Rs14-18 lakh per 3MW SRB) is a FutureBridge estimate — TradeMap HS 8482.50 and primary research with ex-Suzlon procurement director required to confirm."},
+    {id:"mv",title:"Make vs buy — integration economics",icon:"⚖",coverage_level:"complete",source_bqs:["BQ3","BQ4"],synthesis:"The make-vs-buy decision is volume-gated at two thresholds. Below 5,000 units/year: outsourced ring forging is economically rational. Between 5,000-8,000: the transition zone. Above 8,000 units/year: in-house forging reaches cost parity. A hybrid Phase 1 (heat treatment + grinding + assembly) transitioning to Phase 2 (add forging) is the lowest-risk India entry sequence.",bullet_points:["Volume threshold — in-house forging breakeven: 8,000 units/year; below this, outsourced forging is more economical despite 15-18% unit cost premium","Phase 1 entry (0-5 years): heat treatment + grinding + assembly — in-house value ~55-60%, capex Rs80-100 Cr, operational in 18-24 months; meets 60% OEM localisation threshold","Phase 2 upgrade trigger (Year 5-7): add ring forging when 8,000+ unit OEM volume confirmed via LOI — capex Rs120-140 Cr additional","Labour advantage makes grinding and assembly economically rational even sub-scale — these operations should always be in-house","PLI scheme: if bearing sector included, Phase 2 forging capex reduces by 15-20% — monitor Q2-Q3 2025 policy announcements"],coverage_note:null},
+    {id:"str",title:"Strategic options for Miba",icon:"🎯",coverage_level:"complete",source_bqs:["BQ1","BQ2","BQ3","BQ4"],synthesis:"Miba faces a binary strategic choice: enter as a technology-premium niche supplier targeting Siemens Gamesa/Vestas India at Rs16-20 lakh per unit with import + local assembly; or enter as a volume competitor targeting Suzlon/Inox Wind at Rs13-15 lakh requiring full localisation. Option A is lower risk and faster to revenue. Option B captures Suzlon's 3GW order book but requires 4-5 year investment horizon. Decision window is narrow — Suzlon's 2025-2027 bearing tenders will lock in preferred supplier positions.",bullet_points:["Option A: target Siemens Gamesa/Vestas India (offshore specs, IECRE) at Rs16-20 lakh/unit; import rings + local HT/grinding; capex Rs40-60 Cr; Year 2 operational","Option B: target Suzlon + Inox Wind at Rs13-15 lakh/unit; full localisation Phase 1 (Rs80-100 Cr) + Phase 2 forging (Rs120-140 Cr); cost parity Year 5-7","Steel price hedging mandatory in either scenario — quarterly LME-indexed adjustment clauses are non-negotiable for a new India subsidiary","Immediate next step: 2 expert interviews to validate pricing and forging supply before any investment decision","Decision window: Suzlon 3GW order book drives 2025-2027 tenders — Miba must achieve preferred vendor qualification before end of 2025"],coverage_note:null}
   ]
 };
 
-
 var DEMO_RESULTS = {
-  proposal_key: 'miba',
-  engagement_type: 'value_chain_pricing',
-  bqs: {
-    BQ1: {
-      executive_summary: "Schaeffler and SKF dominate India's wind turbine main shaft bearing value chain through fully integrated operations spanning steel procurement, ring forging, heat treatment, precision grinding, and assembly. Both players run 5-stage production cycles averaging 18-22 weeks end-to-end, compared to 28-34 weeks for smaller Indian competitors relying on outsourced forging. Timken operates a leaner 4-stage model by importing pre-forged rings from the US, giving it a lead time advantage of 8 weeks but at 12-15% higher input cost. For Miba: vertical integration depth is the single largest determinant of cost competitiveness in India — players without in-house forging are structurally disadvantaged on both margin and delivery.",
-      engagement_type: "value_chain_pricing",
-      stats: [
-        {value:"18-22 weeks", label:"End-to-end production cycle — Schaeffler/SKF India", confidence:"web-verified", source:"Schaeffler India Annual Report 2024", url:"https://schaeffler.co.in"},
-        {value:"28-34 weeks", label:"Production cycle — smaller Indian competitors (outsourced forging)", confidence:"estimated", source:"Industry interviews & ICRA bearing sector report 2024", url:"#"},
-        {value:"~46%", label:"Market share held by top 3 players (Schaeffler, SKF, NTN) globally", confidence:"web-verified", source:"IntelMarketResearch Wind Power Bearings Market 2024", url:"https://intelmarketresearch.com"},
-        {value:"$5.24 billion", label:"Global wind power bearings market size, 2024", confidence:"web-verified", source:"IntelMarketResearch Wind Power Bearings Market Report 2024", url:"https://intelmarketresearch.com"},
-        {value:"6.4% CAGR", label:"Market growth rate 2024-2032", confidence:"web-verified", source:"IntelMarketResearch Wind Power Bearings Market Report 2024", url:"https://intelmarketresearch.com"}
+  proposal_key:'miba',
+  engagement_type:'value_chain_pricing',
+  bqs:{
+    BQ1:{
+      executive_summary:"Schaeffler and SKF dominate India's wind turbine main shaft bearing value chain through fully integrated operations spanning steel procurement, ring forging, heat treatment, precision grinding, and assembly. Both run 5-stage production cycles averaging 18-22 weeks end-to-end. Timken operates a leaner 4-stage model by importing pre-forged rings from the US, giving it 8 weeks lead time advantage at 12-15% higher input cost. For Miba: vertical integration depth is the single largest determinant of cost competitiveness in India.",
+      engagement_type:"value_chain_pricing",
+      stats:[{value:"18-22 weeks",label:"End-to-end cycle — Schaeffler/SKF India",confidence:"estimated",source:"Schaeffler India Annual Report 2024",url:"https://schaeffler.co.in"},{value:"~46%",label:"Market share — top 3 players globally",confidence:"web-verified",source:"IntelMarketResearch 2024",url:"https://intelmarketresearch.com"},{value:"$5.24 billion",label:"Global wind power bearings market, 2024",confidence:"web-verified",source:"IntelMarketResearch 2024",url:"https://intelmarketresearch.com"},{value:"6.4% CAGR",label:"Market growth 2024-2032",confidence:"web-verified",source:"IntelMarketResearch 2024",url:"https://intelmarketresearch.com"}],
+      findings:[
+        {evidence_id:"E001",evidence_type:"FACT",headline:"Schaeffler India runs 5-stage integrated value chain — ring rolling to final assembly in Pune",body:"Schaeffler India operates an end-to-end bearing manufacturing facility in Pune covering: steel ring procurement, ring rolling/forging, heat treatment, precision grinding and superfinishing, quality inspection and assembly. The facility has produced over 1 million wind bearings under its Wind Power Standard certification programme. So what for Miba AG: Schaeffler's Pune plant sets the integration depth and cost structure benchmark — any Miba India entry must match or exceed this to compete on Tier 1 OEM contracts.",confidence:"high",geo:"India",data_date:"2024",source_name:"Schaeffler Group Press Release",source_url:"https://schaeffler.com"},
+        {evidence_id:"E002",evidence_type:"FACT",headline:"SKF India secured Vestas preferred supplier status via June 2024 partnership — raises entry barrier for competitors",body:"SKF India's Pune manufacturing hub has 6-axis CNC grinding capability achieving Ra 0.2 micron surface finish required for offshore turbine main shaft contracts. SKF signed a strategic partnership with Vestas in June 2024 to supply advanced bearing solutions specifically for this specification. So what for Miba AG: Vestas supply programs are effectively locked to SKF; Miba must target Siemens Gamesa India, Suzlon, or Inox Wind as primary OEM customers.",confidence:"high",geo:"India/Europe",data_date:"2024",source_name:"Technavio Wind Turbine Bearing Market 2024",source_url:"https://technavio.com"},
+        {evidence_id:"E003",evidence_type:"INFERENCE",headline:"Timken India's import-dependent model creates structural 15-18% unit cost premium vs Schaeffler India",body:"Timken's India operation imports pre-forged bearing rings from the US, bypassing domestic forging. Import duties of 7.5% on bearing rings plus freight costs increase input cost by an estimated 12-15% vs domestically forged rings. Production stages compress from 5 to 4 but the cost disadvantage limits Timken's price competitiveness on large-volume domestic OEM contracts. So what for Miba AG: entering India via assembly-only or import-dependent model replicates Timken's structural disadvantage — not a viable position for Tier 1 OEM supply.",confidence:"medium",geo:"India",data_date:"2024",source_name:"ICRA Bearing Sector Report 2024",source_url:"https://icra.in"},
+        {evidence_id:"E004",evidence_type:"HYPOTHESIS",headline:"Chinese entrants ZWZ and LYC approaching India market at 25-30% price discount — may disrupt Tier 2 OEM contracts by 2026",body:"Chinese bearing manufacturers ZWZ and LYC have been active in global wind bearing tenders at 25-30% below European OEM pricing. Their India market entry is unconfirmed but consistent with their broader Asia-Pacific expansion. If they establish local inventory hubs in Gujarat or Tamil Nadu, they could undercut European OEM pricing on Tier 2 OEM volumes within 18-24 months. So what for Miba AG: the window for establishing premium OEM positioning in India is 2025-2026 — delay risks a price-competitive Chinese entrant making the mid-market segment unattainable.",confidence:"medium",geo:"India",data_date:"2025",source_name:"FutureMarketInsights Onshore Wind Turbine Bearing Market",source_url:"https://futuremarketinsights.com"}
       ],
-      findings: [
-        {evidence_id:"E001", evidence_type:"FACT", headline:"Schaeffler India runs 5-stage integrated value chain — ring rolling to final assembly in Pune", body:"Schaeffler India operates an end-to-end bearing manufacturing facility in Pune covering: (1) steel ring procurement from domestic mills, (2) ring rolling/forging, (3) heat treatment, (4) precision grinding and superfinishing, (5) quality inspection and assembly. The facility has produced over 1 million wind bearings under its Wind Power Standard certification programme.", confidence:"high", geo:"India", data_date:"2024", source_name:"Schaeffler Group Press Release — Wind Power Standard", source_url:"https://schaeffler.com"},
-        {evidence_id:"E002", evidence_type:"FACT", headline:"SKF India's Pune plant mirrors Schaeffler's integration depth — 6-axis CNC grinding as key differentiator", body:"SKF India's Pune manufacturing hub replicates the full integration model with an added step: 6-axis CNC grinding for spherical roller bearings used in main shaft applications. This allows SKF to achieve surface roughness of Ra 0.2µm, a specification required by Vestas and Siemens Gamesa for offshore turbine main shaft contracts. SKF signed a strategic partnership with Vestas in June 2024 to supply advanced bearing solutions specifically for this specification.", confidence:"high", geo:"India · Europe", data_date:"2024", source_name:"Technavio Wind Turbine Bearing Market 2024 / Vestas Press Release June 2024", source_url:"https://technavio.com"},
-        {evidence_id:"E003", evidence_type:"INFERENCE", headline:"Timken India operates leaner 4-stage model — imports pre-forged rings, saves 8 weeks lead time at +12-15% input cost", body:"Timken's India operation bypasses domestic forging by importing pre-forged bearing rings from its US facilities. This reduces production stages from 5 to 4 (heat treatment → grinding → assembly → QC) and compresses lead time by approximately 8 weeks. However, import duties of 7.5% on bearing rings plus freight costs increase input cost by an estimated 12-15% vs domestically forged rings, structurally limiting Timken India's price competitiveness on large-volume domestic OEM contracts.", confidence:"medium", geo:"India", data_date:"2024", source_name:"ICRA Bearing Sector Report 2024 / Mathmarkets Schaeffler India Analysis", source_url:"https://mathmarkets.in"},
-        {evidence_id:"E004", evidence_type:"INFERENCE", headline:"NTN and NSK operate sub-scale India operations — primarily assemble imported semi-finished rings, limiting cost competitiveness", body:"NTN and NSK maintain smaller India footprints focused on assembly of semi-finished components imported from Japan. This model constrains their ability to compete on price for large domestic wind OEM contracts. Both players have been losing ground to Schaeffler and SKF on Suzlon and Inox Wind programs since 2022, where localisation content above 60% is a procurement criterion. For Miba: entering India via assembly-only model replicates this structural disadvantage.", confidence:"medium", geo:"India", data_date:"2023-2024", source_name:"IntelMarketResearch Wind Power Bearings 2024", source_url:"https://intelmarketresearch.com"},
-        {evidence_id:"E005", evidence_type:"HYPOTHESIS", headline:"Chinese entrants (ZWZ, LYC) are approaching India market with 25-30% price discount — may disrupt Tier 2 OEM contracts by 2026", body:"Chinese bearing manufacturers ZWZ and Luoyang LYC have been identified as active price competitors in global wind bearing tenders at 25-30% below European OEM pricing. Their India market entry is unconfirmed but consistent with their broader Asia-Pacific expansion pattern. If they establish local inventory hubs in Gujarat or Tamil Nadu (both wind-rich states), they could undercut Schaeffler/SKF on Tier 2 OEM volumes within 18-24 months.", confidence:"medium", geo:"India", data_date:"2025", source_name:"FutureMarketInsights Onshore Wind Turbine Bearing Market / ResearchandMarkets Wind Turbine Bearing Report", source_url:"https://futuremarketinsights.com"}
-      ],
-      disruption_signals: [
-        {signal:"Vestas-SKF strategic bearing partnership signed June 2024 — raises entry barrier for non-approved suppliers on Vestas turbine programs", company:"SKF / Vestas", date:"June 2024", type:"partnership", client_implication:"For Miba: Vestas supply programs increasingly locked to SKF; Miba must target Siemens Gamesa, Suzlon, or Inox Wind programs in India instead"},
-        {signal:"Schaeffler-Vitesco merger completed October 2024 — consolidates Schaeffler's manufacturing capacity and R&D budget for bearing innovation", company:"Schaeffler", date:"October 2024", type:"M&A", client_implication:"For Miba: Schaeffler post-merger has deeper resources for India localisation investment — competitive pressure will intensify in 2025-2026"}
-      ],
-      client_decision_frame: {option_a:"Enter India with full vertical integration (forging + grinding + assembly) — matches Schaeffler/SKF cost structure, 24-30 month build time, ₹180-220 Cr capex", option_b:"Enter India via assembly-only partnership with local forging supplier — faster (12-15 months), lower capex (₹40-60 Cr), but structurally higher unit cost", key_condition:"Decision hinges on whether Suzlon/Inox Wind OEM volumes are large enough to justify Capex A — requires ≥8,000 units/year to break even on full integration"},
-      paid_source_flags: [
-        {source:"TradeMap (ITC)", what_it_unlocks:"HS code 8482.50 (spherical roller bearings) import/export volumes and unit values by country — validates pricing estimates", why_needed:"Ex-works pricing per unit is not publicly disclosed by any manufacturer; trade data provides triangulation", priority:"CRITICAL"},
-        {source:"ICRA / CRISIL Industry Report — Bearings Sector India 2024", what_it_unlocks:"Detailed localisation ratios, OEM contract terms, and margin structure per player", why_needed:"Margin structure by value chain stage is essential for Miba's make-vs-buy analysis", priority:"HIGH"}
-      ],
-      primary_research_gaps: [
-        {gap:"Ex-works price per unit for 3MW+ main shaft SRBs from Schaeffler and SKF India", why_impossible:"Pricing is negotiated under NDA with each OEM customer — never published", expert_profile:"Former procurement head at Suzlon Energy or Inox Wind with Schaeffler/SKF contract exposure", questions:["What is the ex-works price range for a 3MW main shaft SRB set in 2024?","How has pricing moved since 2022 given steel cost inflation?","What volume thresholds unlock price breaks?"], hypothesis:"Ex-works price for 3MW SRB set: €18,000-€24,000 from European manufacturers, ₹14-18 lakh from India-manufactured equivalent", priority:"CRITICAL"},
-        {gap:"Actual in-house vs outsourced forging ratio for Schaeffler India Pune plant", why_impossible:"Manufacturing configuration is competitively sensitive — not disclosed in annual reports", expert_profile:"Ex-Schaeffler India manufacturing engineer or plant operations manager", questions:["What % of ring forging is done in-house at Pune vs sent to approved forging vendors?","Which forging vendors supply Schaeffler India for wind bearing rings?"], hypothesis:"Schaeffler India forges 70-80% of rings in-house; remaining 20-30% sourced from Bharat Forge or Kalyani Steels", priority:"HIGH"}
-      ],
-      creative_angles: [
-        {angle_title:"Aerospace bearing localisation in India — 10 years ahead of wind", parallel_industry:"Indian aerospace bearing supply chain (HAL, DRDO, ISRO programs)", insight:"India's aerospace bearing localisation program, driven by HAL and DRDO since 2012, solved the exact same problem Miba faces: qualifying domestic ring forging for high-spec rotating machinery bearings under import substitution pressure. By 2022, aerospace programs achieved 65% localisation of bearing components — using the same Pune/Nashik manufacturing corridor that wind bearing MNCs are now building in. The certification path differs but the supply chain infrastructure is identical.", why_relevant_to_client:"Miba can compress its India localisation timeline by 2-3 years by mapping onto the qualified aerospace bearing supply chain — Bharat Forge and MIDHANI are already approved for tight-tolerance ring forgings.", search_terms_used:"aerospace bearing India localisation HAL DRDO Bharat Forge"},
-        {angle_title:"Automotive bearing OEM contracts — the pricing playbook wind is copying", parallel_industry:"Automotive bearing supply chain (Maruti Suzuki, Tata Motors OEM contracts)", insight:"In automotive, Schaeffler and SKF India have operated volume-indexed quarterly price adjustment contracts since 2015 — with steel price pass-through clauses, annual productivity improvement targets of 2-3% per year, and dual-source qualification requirements above 50,000 units per year. Wind OEMs like Suzlon and Inox Wind are now copying this exact contract structure for bearing supply.", why_relevant_to_client:"Miba's negotiating team can walk into Suzlon contract discussions already knowing the playbook — quarterly steel index adjustment, 2% annual productivity clause, dual-source above 8,000 units. This is standard practice in auto but not yet public knowledge in wind.", search_terms_used:"Schaeffler SKF India automotive bearing OEM contract terms annual report"}
-      ],
-      profiles: [
-        {name:"Schaeffler India Limited", hq:"Pune, Maharashtra", role:"Market leader — fully integrated bearing manufacturer", geography:"India (primary) · Exports to Europe/Asia", key_product:"FAG spherical roller bearings for wind main shaft; CARB toroidal roller bearings", key_fact:"Over 1 million wind bearings manufactured under Wind Power Standard certification; Pune plant produces full range from ring rolling to assembly", client_relevance:"Primary benchmark for Miba's India entry — sets the integration depth and cost structure baseline"},
-        {name:"SKF India Limited", hq:"Pune, Maharashtra", role:"Tier 1 integrated manufacturer — technology leader on grinding spec", geography:"India · Global export hub", key_product:"Wind turbine main shaft SRBs; yaw and pitch bearings", key_fact:"Strategic partnership with Vestas signed June 2024; 6-axis CNC grinding capability for Ra 0.2µm surface finish required for offshore specs", client_relevance:"Controls premium OEM relationships (Vestas); Miba must target alternative OEM customers"},
-        {name:"Timken India Limited", hq:"Chennai, Tamil Nadu", role:"Tier 1 player — leaner model, import-dependent forging", geography:"India · US supply chain integration", key_product:"Tapered roller bearings (TRB) for wind gearbox; some main shaft SRBs", key_fact:"Imports pre-forged rings from US to save 8 weeks lead time at +12-15% input cost premium vs domestic forging", client_relevance:"Demonstrates risk of import-dependent model — structurally disadvantaged on price for large domestic OEM volumes"},
-        {name:"ZWZ Bearing (China)", hq:"Wafangdian, Liaoning, China", role:"Emerging price competitor — 25-30% discount to European OEM pricing", geography:"China (primary) · Global expansion including Asia-Pacific", key_product:"Large-diameter wind turbine bearings; main shaft and slewing bearings", key_fact:"Identified as active price competitor in global wind bearing tenders; Asia-Pacific expansion ongoing; India entry unconfirmed but consistent with expansion pattern", client_relevance:"Key disruptive threat — if ZWZ enters India with local inventory, it undercuts European OEM pricing on Tier 2 OEM contracts"}
-      ]
+      disruption_signals:[{signal:"Schaeffler-Vitesco merger completed October 2024 — consolidates Schaeffler manufacturing capacity and R&D budget",company:"Schaeffler",date:"October 2024",type:"M&A",client_implication:"For Miba: Schaeffler post-merger has deeper resources for India localisation — competitive pressure intensifies in 2025-2026"},{signal:"Vestas-SKF strategic bearing partnership signed June 2024",company:"SKF/Vestas",date:"June 2024",type:"partnership",client_implication:"For Miba: Vestas supply programs locked to SKF; must target alternative OEM customers"}],
+      client_decision_frame:{option_a:"Enter India with full vertical integration (forging + grinding + assembly) — matches Schaeffler/SKF cost structure, 24-30 month build, Rs180-220 Cr capex",option_b:"Enter India via assembly-only partnership — faster (12-15 months), lower capex (Rs40-60 Cr), but structurally higher unit cost and at risk of failing 60% localisation threshold",key_condition:"Decision hinges on whether Suzlon/Inox Wind volumes are large enough to justify Capex A — requires 8,000+ units/year to break even on full integration"},
+      paid_source_flags:[{source:"TradeMap (ITC)",what_it_unlocks:"HS 8482.50 import/export volumes and unit values — validates pricing estimates",why_needed:"Ex-works pricing is not publicly disclosed; trade data provides the only public triangulation",priority:"CRITICAL"}],
+      primary_research_gaps:[{gap:"Ex-works price per unit for 3MW+ main shaft SRBs from Schaeffler and SKF India",why_impossible:"Pricing negotiated under NDA — never published",expert_profile:"Former procurement head at Suzlon Energy or Inox Wind",questions:["What is the ex-works price range for a 3MW SRB set in 2024?","How has pricing moved since 2022?","What volume thresholds unlock price breaks?"],hypothesis:"Ex-works price: EU18,000-EU24,000 from European manufacturers, Rs14-18 lakh from India-manufactured equivalent",priority:"CRITICAL"}],
+      creative_angles:[{angle_title:"Aerospace bearing localisation in India — 10 years ahead of wind",parallel_industry:"Indian aerospace bearing supply chain (HAL, DRDO, ISRO programs)",insight:"India's aerospace bearing localisation program, driven by HAL and DRDO since 2012, solved the exact same problem Miba faces: qualifying domestic ring forging for high-spec rotating machinery bearings under import substitution pressure. By 2022, aerospace programs achieved 65% localisation of bearing components — using the same Pune/Nashik manufacturing corridor that wind bearing MNCs are now entering. The supply chain infrastructure is identical.",why_relevant_to_client:"Miba can compress its India localisation timeline by 2-3 years by mapping onto the qualified aerospace bearing supply chain — Bharat Forge and MIDHANI are already approved for tight-tolerance ring forgings."},{angle_title:"Automotive bearing OEM contracts — the pricing playbook wind is copying",parallel_industry:"Automotive bearing supply chain (Maruti Suzuki, Tata Motors OEM contracts)",insight:"In automotive, Schaeffler and SKF India have operated volume-indexed quarterly price adjustment contracts since 2015 — with steel price pass-through clauses, annual productivity targets of 2-3% per year, and dual-source qualification above 50,000 units per year. Wind OEMs like Suzlon and Inox Wind are now copying this exact contract structure for bearing supply.",why_relevant_to_client:"Miba's negotiating team can walk into Suzlon contract discussions already knowing the playbook — quarterly steel index adjustment, 2% annual productivity clause, dual-source above 8,000 units."}],
+      profiles:[{name:"Schaeffler India Limited",hq:"Pune, Maharashtra",role:"Market leader — fully integrated",geography:"India",key_product:"FAG spherical roller bearings for wind main shaft",key_fact:"Over 1 million wind bearings manufactured under Wind Power Standard certification",client_relevance:"Primary benchmark for Miba India entry — sets the integration depth and cost structure baseline"},{name:"SKF India Limited",hq:"Pune, Maharashtra",role:"Technology leader on grinding spec",geography:"India",key_product:"Wind turbine main shaft SRBs",key_fact:"Strategic partnership with Vestas signed June 2024; 6-axis CNC grinding capability",client_relevance:"Controls premium OEM relationships; Miba must target alternative OEM customers"}]
     },
-    BQ2: {
-      executive_summary: "India's wind bearing supply chain is anchored by three domestic steel mills (SAIL, Tata Steel, Electrotherm) supplying bearing-grade steel, four approved forging units (Bharat Forge, Kalyani Steels, Ramkrishna Forgings, Rolex Rings), and a fragmented machining sub-tier of approximately 40-50 SME vendors concentrated in Rajkot, Pune, and Coimbatore. Schaeffler and SKF are vertically integrated at the forging stage but source heat treatment chemicals, seals, and cage components from a common Tier 2 supplier base. For Miba: the forging sub-tier is the most concentrated risk point — Bharat Forge and Kalyani together supply an estimated 55-65% of bearing ring forgings to MNC players, creating a single-source dependency that constrains new entrant negotiating power.",
-      engagement_type: "value_chain_pricing",
-      stats: [
-        {value:"40%", label:"India bearing consumption met through imports (largely high-performance industrial bearings)", confidence:"web-verified", source:"ICRA Bearing Sector Report India 2024 / Mathmarkets Analysis", url:"https://mathmarkets.in"},
-        {value:"55-65%", label:"Estimated share of wind bearing ring forgings supplied by Bharat Forge + Kalyani Steels to MNC players in India", confidence:"estimated", source:"Industry triangulation — ICRA + FutureBridge primary research estimate", url:"#"},
-        {value:"₹180-220 Cr", label:"Estimated capex for greenfield integrated bearing plant in India (forging + grinding + assembly)", confidence:"estimated", source:"FutureBridge estimate based on comparable Schaeffler/SKF India investment disclosures", url:"#"},
-        {value:"13.5% CAGR", label:"India onshore wind turbine bearing market growth rate through 2035", confidence:"web-verified", source:"FutureMarketInsights Onshore Wind Turbine Bearing Market 2025", url:"https://futuremarketinsights.com"}
-      ],
-      findings: [
-        {evidence_id:"E001", evidence_type:"FACT", headline:"Bharat Forge and Kalyani Steels are the two dominant bearing ring forging suppliers to MNC bearing manufacturers in India", body:"Bharat Forge (Pune) and Kalyani Steels operate the largest closed-die forging presses in India capable of producing bearing rings in the 400-2000mm diameter range required for wind main shaft applications. Both supply Schaeffler and SKF India under long-term approved vendor agreements. Ramkrishna Forgings (Kolkata) and Rolex Rings (Rajkot) serve as secondary approved suppliers for smaller ring sizes.", confidence:"high", geo:"India", data_date:"2024", source_name:"Mathmarkets Schaeffler India Analysis 2024 / ICRA Bearing Sector Report", source_url:"https://mathmarkets.in"},
-        {evidence_id:"E002", evidence_type:"FACT", headline:"SAIL and Tata Steel are primary domestic sources of 100Cr6 bearing steel — import dependency declining from 40% to ~30% as domestic quality improves", body:"Bearing-grade steel (100Cr6, 52100) for wind bearing applications was historically 40% import-dependent in India per ICRA. Tata Steel's Jamshedpur plant and SAIL's Bhilai/Durgapur mills have been qualifying for higher-grade bearing steel since 2022. SAIL's speciality steel division supplies Electrotherm (Gujarat) which then supplies forging units. Import share is declining but high-precision wind-grade steel for 5MW+ turbine applications still relies on imports from Germany (Deutsche Edelstahlwerke) and Japan (Sanyo Special Steel).", confidence:"high", geo:"India", data_date:"2024", source_name:"ICRA Bearing Sector India Report 2024", source_url:"https://icra.in"},
-        {evidence_id:"E003", evidence_type:"INFERENCE", headline:"Rajkot SME machining cluster — 40-50 vendors — is the primary precision machining sub-tier for Indian bearing manufacturers, but fragmentation creates quality risk", body:"Rajkot (Gujarat) hosts India's largest concentration of precision machining SMEs for bearing components, including cage machining, bore grinding, and raceway finishing. Schaeffler and SKF use approved vendor lists of 8-12 Rajkot-area suppliers for non-critical components. However, the SME tier lacks the capital for 6-axis CNC upgrade required for main shaft bearing raceways — this is the primary reason MNC players keep raceway grinding in-house. For Miba: the Rajkot cluster is viable for cage and seal sourcing but not for raceway machining.", confidence:"medium", geo:"India — Gujarat", data_date:"2024", source_name:"FutureMarketInsights Onshore Wind Turbine Bearing Market 2025 — India section", source_url:"https://futuremarketinsights.com"},
-        {evidence_id:"E004", evidence_type:"INFERENCE", headline:"Seal and cage components sourced from a common Tier 2 supplier base — GKN Sinter Metals and SKF Sealing Solutions (internal) dominate", body:"For cage components, MNC bearing manufacturers in India use sintered metal (GKN Sinter Metals, Sintercom India) and machined brass cages from approved sub-suppliers. Seal rings are largely sourced internally by SKF (via its sealing solutions division) and from Freudenberg Sealing Technologies for Schaeffler India. This creates an oligopolistic seal supply structure where new entrants like Miba would face premium pricing on small volumes.", confidence:"medium", geo:"India", data_date:"2024", source_name:"Industry triangulation — FutureBridge estimate", source_url:"#"},
-        {evidence_id:"E005", evidence_type:"HYPOTHESIS", headline:"Localisation content mandate above 60% in Suzlon and Inox Wind tenders — likely to tighten to 70% by 2026 under Make in India policy", body:"Suzlon Energy and Inox Wind have informally communicated a preference for ≥60% localisation content in bearing supply contracts as a condition of preferred vendor status. Given the Indian government's PLI scheme for advanced manufacturing and the National Wind Mission's localisation targets, this threshold is likely to increase to 70% by 2026. Players without in-house forging in India will be unable to meet the 70% threshold, effectively excluding them from large domestic OEM programs.", confidence:"medium", geo:"India", data_date:"2025-2026", source_name:"FutureMarketInsights India Onshore Wind Bearing Market 2025", source_url:"https://futuremarketinsights.com"}
-      ],
-      disruption_signals: [
-        {signal:"PLI scheme for Advanced Manufacturing — bearing sector inclusion under discussion in Q1 2025 — would subsidise capex for domestic ring forging investment by 15-20%", company:"Government of India", date:"Q1 2025", type:"regulatory", client_implication:"For Miba: if PLI extends to bearings, greenfield forging capex reduces from ₹180-220 Cr to ₹145-175 Cr — materially changes investment case for vertical integration model"}
-      ],
-      client_decision_frame: {option_a:"Partner with Bharat Forge for ring forging supply — fastest path to domestically-forged rings without capex, but Bharat Forge already supplies Schaeffler/SKF so Miba gets residual capacity allocation and weaker SLA", option_b:"Establish dedicated forging partnership with Ramkrishna Forgings or Rolex Rings — smaller players more willing to offer exclusivity, though press capacity for large rings (>1000mm) is limited", key_condition:"Exclusivity in forging supply is critical — if Bharat Forge or Kalyani supply Miba alongside Schaeffler/SKF, Miba's cost structure is effectively the same as competitors with no differentiation"},
-      paid_source_flags: [
-        {source:"TradeMap HS 7224/7228 (bearing steel) and HS 8462 (forging presses)", what_it_unlocks:"Actual import volumes and unit prices for bearing steel into India by origin country — validates the 30-40% import dependency claim and identifies alternative steel origins", why_needed:"Domestic vs import mix directly determines raw material cost structure for any India manufacturing scenario", priority:"HIGH"}
-      ],
-      primary_research_gaps: [
-        {gap:"Bharat Forge's actual allocation of wind bearing ring capacity to current MNC customers vs available headroom for Miba", why_impossible:"Capacity utilisation and customer allocation are commercially sensitive and not disclosed", expert_profile:"Ex-Bharat Forge senior manager in Industrial forgings division, or procurement head at Schaeffler India", questions:["What is Bharat Forge's current utilisation on large wind ring forgings (>800mm)?","Would Bharat Forge consider an exclusivity or preferred supply agreement with a new MNC entrant?","What minimum volume commitment would unlock dedicated press allocation?"], hypothesis:"Bharat Forge is running at 75-85% utilisation on wind ring forgings — limited headroom for Miba without a volume commitment of ≥5,000 rings/year", priority:"CRITICAL"}
-      ],
-      profiles: [
-        {name:"Bharat Forge Limited", hq:"Pune, Maharashtra", role:"Primary ring forging supplier to MNC bearing manufacturers", geography:"India (primary) · 38 global manufacturing plants", key_product:"Closed-die forgings for bearing rings 400-2000mm diameter; wind turbine components", key_fact:"Largest forging company in India; supplies Schaeffler, SKF, Timken under long-term approved vendor agreements; 75-85% estimated utilisation on wind bearing rings", client_relevance:"Most capable ring forging partner for Miba India — but supply availability is constrained; exclusivity requires large volume commitment"},
-        {name:"Kalyani Steels / Kalyani Carpenter Special Steels", hq:"Pune, Maharashtra", role:"Secondary forging + bearing steel supplier", geography:"India", key_product:"Bearing-grade steel and ring forgings; 52100/100Cr6 steel grades", key_fact:"Supplies both steel and forgings to bearing MNCs; joint venture with Carpenter Technology (US) for specialty steels", client_relevance:"Alternative to Bharat Forge — potentially more flexible on exclusivity for niche wind applications; smaller press capacity"},
-        {name:"Rolex Rings Limited", hq:"Rajkot, Gujarat", role:"Mid-tier ring rolling company — listed on BSE/NSE India", geography:"India", key_product:"Rolled rings up to 1200mm for bearings, flanges, and industrial applications", key_fact:"Listed company with disclosed revenue of ₹1,650 Cr FY24; growing wind bearing ring volumes; recently added a 4000T press for larger rings", client_relevance:"Most transparent financials; publicly traded — detailed capacity and customer data available; viable Miba partner for initial ring supply before capex decision"}
-      ]
-    },
-    BQ3: {
-      executive_summary: "Leading wind bearing manufacturers in India operate between 55-80% in-house value, with Schaeffler India at the high end (approx. 78% in-house) and Timken India at the low end (approx. 42% in-house due to imported ring forgings). The optimal make-vs-buy threshold for main shaft bearings in India is ring forging and raceway grinding — both must be in-house above 8,000 units/year to achieve competitive cost parity with Schaeffler. Below this volume, outsourced forging is economically rational but creates a 15-18% cost penalty per unit and dependency on Bharat Forge's capacity allocation. For Miba: a hybrid entry model — outsourced forging in Phase 1 (0-5 years) transitioning to in-house forging in Phase 2 (5-10 years) — mirrors the path Timken India is now reversing, and is the lowest-risk India market entry sequence.",
-      engagement_type: "value_chain_pricing",
-      stats: [
-        {value:"~78%", label:"Estimated in-house value content — Schaeffler India (ring forging through assembly)", confidence:"estimated", source:"FutureBridge estimate based on plant disclosure and ICRA analysis", url:"#"},
-        {value:"~42%", label:"Estimated in-house value content — Timken India (heat treatment, grinding, assembly only; forging imported)", confidence:"estimated", source:"FutureBridge estimate based on Timken India disclosed manufacturing scope", url:"#"},
-        {value:"8,000 units/year", label:"Estimated minimum volume for in-house ring forging to achieve cost parity with Schaeffler India", confidence:"estimated", source:"FutureBridge manufacturing economics estimate", url:"#"},
-        {value:"15-18%", label:"Unit cost premium for outsourced vs in-house forging at volumes below 8,000 units/year", confidence:"estimated", source:"FutureBridge estimate based on Bharat Forge disclosed margin structure and ICRA data", url:"#"},
-        {value:"10%", label:"Employee expenses as % of sales in India vs ~25% in developed countries — primary driver of India cost advantage", confidence:"web-verified", source:"Mathmarkets Schaeffler India Analysis 2024", url:"https://mathmarkets.in"}
-      ],
-      findings: [
-        {evidence_id:"E001", evidence_type:"INFERENCE", headline:"Schaeffler India in-house value estimated at 78% — ring rolling, heat treatment, grinding, assembly all internal; only seal rubber and cage brass outsourced", body:"Based on disclosed plant capabilities (ring rolling line, heat treatment furnaces, CNC grinding centres) and the Wind Power Standard certification scope (which requires in-house quality control at each stage), Schaeffler India's in-house value content for main shaft SRBs is estimated at approximately 78%. Outsourced elements are limited to: seal rubber compounds (Freudenberg), brass cage stock (Hindalco/Nalco), and surface treatment chemicals. This integration depth is the primary source of Schaeffler's margin advantage over sub-scale Indian competitors.", confidence:"medium", geo:"India", data_date:"2024", source_name:"Mathmarkets Schaeffler India Analysis / Schaeffler Wind Power Standard press release", source_url:"https://mathmarkets.in"},
-        {evidence_id:"E002", evidence_type:"INFERENCE", headline:"Timken India's import-dependent model creates 42% in-house value — structurally limits ability to compete on price for large domestic wind OEM contracts", body:"Timken India's Chennai facility performs heat treatment, grinding, and assembly but imports pre-forged bearing rings from the US, accounting for an estimated 45-50% of unit manufacturing cost. Combined with 7.5% import duty, this limits in-house value to approximately 42% and results in a structural 15-18% unit cost premium vs Schaeffler India for comparable main shaft SRBs. Timken has reportedly been evaluating a domestic forging partnership since 2023 but has not publicly committed.", confidence:"medium", geo:"India", data_date:"2024", source_name:"ICRA Bearing Sector Report 2024 / FutureBridge estimate", source_url:"#"},
-        {evidence_id:"E003", evidence_type:"FACT", headline:"Employee cost advantage in India is 60% below European equivalent — primary economic rationale for India manufacturing, even below scale thresholds", body:"Per Mathmarkets analysis of Schaeffler India financials, employee expenses account for approximately 10% of sales in India vs approximately 25% in developed countries. This 60% labour cost advantage makes India manufacturing economically rational even at sub-optimal volumes for labour-intensive operations (grinding, assembly). However, capital-intensive operations (ring forging, heat treatment) are less sensitive to labour cost and more sensitive to volume for amortisation of press and furnace capex.", confidence:"high", geo:"India vs Europe", data_date:"2024", source_name:"Mathmarkets Schaeffler India Analysis 2024", source_url:"https://mathmarkets.in"},
-        {evidence_id:"E004", evidence_type:"INFERENCE", headline:"SKF India outsources approximately 20-25% of sub-components (cages, seals, packaging) but keeps all core metallurgical steps in-house — in-house value ~75%", body:"SKF India's disclosed manufacturing scope at Pune (ring rolling, heat treatment, precision grinding, assembly) combined with its internal sealing solutions division suggests approximately 75% in-house value content. The remaining 25% covers cage components (sintered metal from GKN/Sintercom), lubricants, and outer packaging. SKF's sealing solutions division partially insources this via its Bengaluru facility. Net effect: SKF India's economics are structurally similar to Schaeffler India, with a slight edge on seals due to internal transfer pricing.", confidence:"medium", geo:"India", data_date:"2024", source_name:"FutureBridge estimate based on SKF India Annual Report 2024 and disclosed plant scope", source_url:"#"},
-        {evidence_id:"E005", evidence_type:"HYPOTHESIS", headline:"Hybrid entry model (outsourced forging Phase 1 → in-house forging Phase 2) is economically rational for Miba below 5,000 units/year — mirrors Timken's now-reversed strategy", body:"For Miba entering India at an initial volume of 3,000-5,000 units/year, outsourcing ring forging to Bharat Forge or Rolex Rings and investing only in heat treatment, grinding, and assembly lines (capex ~₹60-80 Cr) is economically rational. The 15-18% unit cost premium from outsourced forging is offset by 40-50% lower entry capex. This mirrors the model Timken India operated from 2008-2020 before evaluating in-house forging. Phase 2 transition to in-house forging becomes rational when volumes reach 8,000+ units/year — approximately Year 5-7 of the India operation.", confidence:"medium", geo:"India", data_date:"2025-2030", source_name:"FutureBridge analysis — India bearing manufacturing economics", source_url:"#"}
-      ],
-      disruption_signals: [
-        {signal:"MNCs accelerating localisation beyond 60% in India — Schaeffler and SKF both investing in further vertical integration as PLI scheme incentives materialise in 2025", company:"Schaeffler / SKF", date:"2025", type:"investment", client_implication:"For Miba: the localisation benchmark is moving — by 2026-2027, 70%+ in-house value will likely be the competitive baseline, not 60%; delayed entry raises the bar Miba must clear"}
-      ],
-      client_decision_frame: {option_a:"Phase 1 assembly + grinding only (in-house value ~40-45%) — lowest capex (₹40-60 Cr), operational in 12-15 months, but structurally sub-competitive on cost and at risk of failing Suzlon/Inox Wind localisation thresholds by 2026", option_b:"Phase 1 heat treatment + grinding + assembly (in-house value ~55-60%) — moderate capex (₹80-100 Cr), operational in 18-24 months, meets current 60% OEM threshold, provides credible Phase 2 upgrade path to forging", key_condition:"Phase 2 forging investment trigger: ≥8,000 contracted unit volume per year confirmed by OEM LOI — without this commitment, in-house forging capex (₹120-140 Cr additional) cannot be justified on India P&L alone"},
-      paid_source_flags: [
-        {source:"Rolex Rings Limited Annual Report FY2024 (BSE listed)", what_it_unlocks:"Detailed revenue breakdown, customer concentration, margin by product line, and capacity utilisation — directly validates forging supply economics for Miba", why_needed:"Rolex Rings is the most transparent forging partner candidate — public financials available, unlike Bharat Forge's bearing-specific data which is consolidated", priority:"HIGH"}
-      ],
-      primary_research_gaps: [
-        {gap:"Actual unit economics of outsourced vs in-house forging for 3MW-5MW SRBs at Indian production volumes", why_impossible:"Forging conversion costs and OEM contract prices are commercially sensitive; published data covers market-level aggregates not unit economics", expert_profile:"VP Manufacturing or CFO of a Tier 2 Indian bearing manufacturer (NRB Bearings, Harsha Engineers) with wind program exposure", questions:["What is the fully loaded cost per ring forging for a 1200mm bearing ring at 3,000 units/year?","At what volume does in-house forging breakeven vs Bharat Forge outsourcing, net of capex?","What are the hidden costs of outsourced forging — lead time premium, quality rejects, allocation risk?"], hypothesis:"Fully loaded outsourced forging cost is ₹2.8-3.5 lakh per ring at 3,000 units/year; in-house forging breaks even at 7,500-9,000 units/year accounting for press capex amortisation over 10 years", priority:"CRITICAL"}
-      ],
-      profiles: []
-    },
-    BQ4: {
-      executive_summary: "Raw materials (bearing steel rings) account for 45-52% of the ex-works price of a 3MW main shaft SRB in India, making steel the dominant and most volatile cost driver. Heat treatment energy costs represent 8-12% of manufacturing cost and have risen 18-22% since 2022 due to industrial power tariff increases in Maharashtra and Gujarat. Labour (grinding and assembly) accounts for 10-14% of cost — the primary India advantage vs European manufacturing. Overhead, depreciation, and quality certification costs (Wind Power Standard, ISO 281) add a further 15-20%. Net ex-works price for a domestically manufactured 3MW SRB set from Schaeffler/SKF India is estimated at ₹14-18 lakh ($16,800-$21,600), compared to €22,000-€28,000 for equivalent European-manufactured units. For Miba: steel cost volatility is the single largest margin risk in an India manufacturing scenario — a 15% steel price increase translates directly to 6-8% ex-works price pressure.",
-      engagement_type: "value_chain_pricing",
-      stats: [
-        {value:"45-52%", label:"Raw material (bearing steel rings) as % of ex-works price — 3MW main shaft SRB, India", confidence:"estimated", source:"FutureBridge estimate based on ICRA bearing sector cost structure data", url:"#"},
-        {value:"₹14-18 lakh", label:"Estimated ex-works price — 3MW main shaft SRB set, domestically manufactured (Schaeffler/SKF India)", confidence:"estimated", source:"FutureBridge triangulation — ICRA + TradeMap + industry interviews (primary research required for confirmation)", url:"#"},
-        {value:"€22,000-€28,000", label:"Ex-works price — 3MW main shaft SRB set, European manufactured equivalent (estimated)", confidence:"estimated", source:"FutureBridge estimate based on market benchmarks", url:"#"},
-        {value:"18-22%", label:"Rise in industrial power tariffs (Maharashtra/Gujarat) since 2022 — drives heat treatment cost increase", confidence:"estimated", source:"Maharashtra Electricity Regulatory Commission tariff orders 2022-2024 / FutureBridge estimate", url:"#"},
-        {value:"7.5%", label:"Import duty on bearing rings (HS 8482.91) into India — applies to Timken India's imported pre-forged rings", confidence:"web-verified", source:"India Customs Tariff Schedule 2024", url:"#"}
-      ],
-      findings: [
-        {evidence_id:"E001", evidence_type:"INFERENCE", headline:"Steel rings (bearing grade 100Cr6) account for 45-52% of ex-works cost — most volatile cost driver; 15% steel price increase → 6-8% ex-works price pressure", body:"Bearing-grade steel (100Cr6 / 52100) rings represent the largest single cost element in main shaft SRB manufacturing. At current domestic steel prices (Tata Steel/SAIL supply at approximately ₹95-110/kg for 100Cr6), the ring material cost for a 3MW SRB set (ring weight approximately 350-450 kg) is approximately ₹6-8 lakh. Steel price volatility since 2022 has been 22-28% peak-to-trough, making this the primary ex-works price driver. Schaeffler and SKF manage this via annual steel price adjustment clauses in OEM supply contracts — typically a quarterly indexed adjustment.", confidence:"medium", geo:"India", data_date:"2024", source_name:"ICRA Bearing Sector Report 2024 / Mathmarkets analysis", source_url:"https://mathmarkets.in"},
-        {evidence_id:"E002", evidence_type:"INFERENCE", headline:"Heat treatment energy cost — 8-12% of manufacturing cost — has risen 18-22% since 2022 following Maharashtra/Gujarat industrial power tariff increases", body:"The heat treatment stage (carburising, hardening, tempering) for wind bearing rings is energy-intensive, consuming approximately 180-220 kWh per ring set. At Maharashtra industrial power tariff of ₹9-11/kWh (increased from ₹7.5-8.5 in 2022), heat treatment energy cost per 3MW SRB set is approximately ₹35,000-₹55,000. This represents 8-12% of total manufacturing cost and has become a more significant cost driver since 2022 vs the 5-7% share pre-tariff increase. Pune-based manufacturers (Schaeffler, SKF) are exploring on-site solar captive power to partially offset this.", confidence:"medium", geo:"India — Maharashtra", data_date:"2024", source_name:"Maharashtra Electricity Regulatory Commission / FutureBridge manufacturing economics estimate", source_url:"#"},
-        {evidence_id:"E003", evidence_type:"FACT", headline:"Labour cost — 10% of sales in India vs 25% in Europe — is the primary and structural India manufacturing cost advantage", body:"Employee expenses account for approximately 10% of sales for Schaeffler India vs approximately 25% in developed country operations. For a 3MW SRB set, labour-intensive grinding (12-18 hours per ring set on CNC grinding centres) and assembly operations account for approximately ₹1.2-1.8 lakh at Indian wage rates vs €4,000-6,000 equivalent at German/Austrian rates. This structural 60% labour cost advantage is durable and grows proportionally with turbine size as grinding hours per unit increase.", confidence:"high", geo:"India vs Europe", data_date:"2024", source_name:"Mathmarkets Schaeffler India Analysis 2024", source_url:"https://mathmarkets.in"},
-        {evidence_id:"E004", evidence_type:"INFERENCE", headline:"Wind Power Standard certification (Schaeffler) and ISO 281 compliance add ₹80,000-₹1,20,000 per unit in quality cost — structural premium for MNC players vs unbranded Indian suppliers", body:"Quality certification overhead (Wind Power Standard testing, ISO 281 fatigue life validation, IECRE certification for offshore) adds an estimated ₹80,000-₹1,20,000 per SRB unit in overhead cost when amortised across annual volumes. This is a premium that branded MNC players (Schaeffler, SKF) absorb as a market access requirement — OEM turbine manufacturers (Vestas, Siemens Gamesa, Suzlon) specify certified bearings in their approved supplier lists. Unbranded Chinese suppliers (ZWZ, LYC) typically lack IECRE certification, which restricts them to Tier 2 domestic OEM supply.", confidence:"medium", geo:"Global / India", data_date:"2024", source_name:"Schaeffler Wind Power Standard press release / FutureBridge quality cost estimate", source_url:"https://schaeffler.com"},
-        {evidence_id:"E005", evidence_type:"INFERENCE", headline:"Net ex-works price — 3MW SRB set from India-manufactured Schaeffler/SKF: ₹14-18 lakh ($16,800-$21,600) vs €22,000-€28,000 European equivalent — 25-35% cost advantage", body:"Triangulating raw material cost (₹6-8 lakh), energy cost (₹50,000-₹80,000), labour cost (₹1.2-1.8 lakh), quality overhead (₹80,000-₹1.2 lakh), and depreciation/overhead (₹2.5-3.5 lakh), the estimated fully loaded ex-works manufacturing cost for a 3MW SRB set in India is ₹11-14 lakh. With a 25-30% margin for MNC branded players, ex-works selling price to OEMs is approximately ₹14-18 lakh. This compares to a €22,000-€28,000 equivalent for European-manufactured units, representing a 25-35% price advantage for India-manufactured bearings before freight equalisation.", confidence:"medium", geo:"India vs Europe", data_date:"2024", source_name:"FutureBridge triangulation — ICRA, Mathmarkets, market benchmarks", source_url:"#"}
-      ],
-      disruption_signals: [
-        {signal:"Suzlon Energy announced 3GW domestic wind turbine order book for FY2025 — single largest domestic wind OEM demand signal in 5 years, will create sustained demand for India-manufactured main shaft bearings at volume", company:"Suzlon Energy", date:"Q3 2024", type:"demand", client_implication:"For Miba: Suzlon's 3GW order book is the demand catalyst that justifies India manufacturing investment — timing of Miba entry should align with Suzlon's 2026-2027 supply ramp"},
-        {signal:"Steel prices (100Cr6 bearing grade) fell 12% in H2 2024 following China demand slowdown — creates short-term margin tailwind but also downward OEM price pressure in 2025 contract renegotiations", company:"Tata Steel / SAIL", date:"H2 2024", type:"commodity", client_implication:"For Miba: 2025 OEM supply contract negotiations will likely include a 5-8% price reduction request from Suzlon/Inox Wind riding on lower steel prices — Miba must model steel price floor and price adjustment mechanisms before committing to India supply agreements"}
-      ],
-      client_decision_frame: {option_a:"Price at ₹13-15 lakh per 3MW SRB set to compete with Schaeffler/SKF India on Suzlon and Inox Wind Tier 1 programs — requires in-house forging and full localisation; achievable by Year 4-5 of India operations", option_b:"Price at ₹16-20 lakh targeting niche offshore and premium onshore programs (Siemens Gamesa India, Vestas India) where specification quality (IECRE, Wind Power Standard) commands a price premium over domestic players — achievable in Year 2-3 with import + local assembly model", key_condition:"Steel price hedging strategy is non-negotiable in either scenario — unhedged 100Cr6 steel exposure of 45-52% of unit cost creates margin volatility of ±8-12% on annual P&L, unacceptable for a new India subsidiary"},
-      paid_source_flags: [
-        {source:"TradeMap HS 8482.50 (spherical roller bearings) — unit import/export values India", what_it_unlocks:"Actual average import prices for wind-grade SRBs into India from Germany, Sweden, Japan — directly validates ex-works price estimates and reveals price gap between European and Chinese suppliers", why_needed:"Without unit-level trade data, all ex-works pricing is estimate; TradeMap provides the only publicly available proxy for actual transaction prices", priority:"CRITICAL"},
-        {source:"Maharashtra Electricity Regulatory Commission — Industrial Tariff Orders 2022-2025", what_it_unlocks:"Exact industrial power tariff trajectory for Pune/Nashik manufacturing zones — validates energy cost modelling for heat treatment operations", why_needed:"Energy cost is the fastest-moving cost element in India bearing manufacturing — accurate tariff data is essential for 5-year manufacturing P&L modelling", priority:"HIGH"}
-      ],
-      primary_research_gaps: [
-        {gap:"Actual OEM contract price and annual price adjustment mechanism for Schaeffler/SKF India supply to Suzlon Energy for 2MW-3MW main shaft SRBs", why_impossible:"OEM supply contract terms are under NDA; neither Schaeffler India nor Suzlon discloses individual component prices", expert_profile:"Former supply chain director at Suzlon Energy with active Schaeffler/SKF bearing contract exposure, or ex-Schaeffler India sales director for wind OEM segment", questions:["What is the OEM contract price range for a 3MW SRB set under Suzlon's current supply agreement with Schaeffler/SKF?","What is the quarterly steel price adjustment formula — indexed to LME or domestic steel indices?","What volume guarantees does Suzlon provide and what happens if volumes fall below the minimum?"], hypothesis:"Suzlon pays ₹15-17 lakh per 3MW SRB set under current Schaeffler contract (2024 pricing); price adjusted quarterly against SAIL HRC index with ±5% cap; minimum guaranteed volumes of 400 sets/quarter", priority:"CRITICAL"},
-        {gap:"Fully loaded manufacturing cost breakdown per unit for a Tier 2 Indian bearing manufacturer (NRB Bearings or Harsha Engineers) as a benchmark for Miba's greenfield cost modelling", why_impossible:"Tier 2 Indian bearing manufacturers do not disclose unit-level cost breakdowns even in listed company filings", expert_profile:"CFO or manufacturing director at NRB Bearings or Harsha Engineers International", questions:["What is your fully loaded manufacturing cost per unit for a large industrial bearing (700-1200mm)?","How has energy cost as a % of total cost changed since 2022?","What depreciation rate do you apply to grinding and heat treatment assets?"], hypothesis:"Tier 2 Indian manufacturer fully loaded cost is 20-25% below Schaeffler India for equivalent bearing dimensions due to lower overhead and depreciation — but quality certification gap limits addressable market to Tier 2 OEMs", priority:"HIGH"}
-      ],
-      profiles: [
-        {name:"Suzlon Energy Limited", hq:"Pune, Maharashtra", role:"Largest domestic wind turbine OEM — primary target customer for Miba India bearing supply", geography:"India (primary) · 17 markets globally", key_product:"2MW-3MW onshore wind turbines; growing 3.5MW platform", key_fact:"3GW order book announced Q3 2024 — single largest domestic demand signal in 5 years; 60%+ localisation content required for bearing supply; active Schaeffler and SKF India customer", client_relevance:"Primary OEM customer target for Miba India Phase 1 — volume and specification requirements must drive Miba's India investment sizing and localisation roadmap"},
-        {name:"Inox Wind Limited", hq:"Noida, Uttar Pradesh", role:"Tier 2 domestic wind OEM — secondary customer target", geography:"India", key_product:"2MW-2.5MW onshore wind turbines; Gujarat and Rajasthan projects", key_fact:"Growing order book; more price-sensitive than Suzlon; supply chain concentrated in Gujarat — geographic fit with Rajkot machining cluster", client_relevance:"Secondary OEM target — more price competitive environment than Suzlon but higher volume potential as Inox scales; useful for Miba's Phase 1 volume build"}
-      ]
-    }
+    BQ2:{executive_summary:"India's wind bearing supply chain is anchored by three domestic steel mills (SAIL, Tata Steel, Electrotherm), four approved forging units (Bharat Forge, Kalyani Steels, Ramkrishna Forgings, Rolex Rings), and a fragmented machining sub-tier of 40-50 SME vendors concentrated in Rajkot, Pune, and Coimbatore. Bharat Forge and Kalyani together supply an estimated 55-65% of bearing ring forgings to MNC players — creating a single-source dependency that constrains new entrant negotiating power.",engagement_type:"value_chain_pricing",stats:[{value:"40%",label:"India bearing consumption met via imports",confidence:"web-verified",source:"ICRA Bearing Sector Report 2024",url:"https://icra.in"},{value:"55-65%",label:"Wind ring forgings from Bharat Forge + Kalyani to MNCs",confidence:"estimated",source:"FutureBridge estimate",url:"#"},{value:"13.5% CAGR",label:"India onshore wind bearing market growth through 2035",confidence:"web-verified",source:"FutureMarketInsights 2025",url:"https://futuremarketinsights.com"}],findings:[{evidence_id:"E001",evidence_type:"FACT",headline:"Bharat Forge and Kalyani Steels dominate bearing ring forging supply to MNC manufacturers in India",body:"Bharat Forge (Pune) and Kalyani Steels operate the largest closed-die forging presses capable of producing bearing rings in the 400-2000mm diameter range required for wind main shaft applications. Both supply Schaeffler and SKF India under long-term approved vendor agreements. Ramkrishna Forgings (Kolkata) and Rolex Rings (Rajkot) serve as secondary approved suppliers. So what for Miba AG: forging supply is the most concentrated risk point in the India value chain — Miba must secure dedicated forging capacity before committing to OEM supply contracts.",confidence:"high",geo:"India",data_date:"2024",source_name:"ICRA Bearing Sector Report 2024",source_url:"https://icra.in"},{evidence_id:"E002",evidence_type:"INFERENCE",headline:"Bharat Forge estimated at 75-85% utilisation on wind bearing rings — limited headroom for new entrant",body:"Bharat Forge supplies Schaeffler and SKF India for wind bearing ring forgings under long-term agreements. Estimated utilisation of 75-85% on wind-grade large ring capacity means limited residual allocation is available for a new MNC entrant. Any supply agreement would likely require a minimum volume commitment of 5,000+ rings per year to justify dedicated press allocation. So what for Miba AG: Bharat Forge is the most capable forging partner but will not offer preferential terms without a volume commitment that may exceed Phase 1 manufacturing capacity.",confidence:"medium",geo:"India",data_date:"2024",source_name:"FutureBridge estimate",source_url:"#"}],disruption_signals:[{signal:"PLI scheme for Advanced Manufacturing — bearing sector inclusion under discussion Q1 2025 — would subsidise capex by 15-20%",company:"Government of India",date:"Q1 2025",type:"regulatory",client_implication:"For Miba: if PLI extends to bearings, greenfield forging capex reduces from Rs180-220 Cr to Rs145-175 Cr"}],client_decision_frame:{option_a:"Partner with Bharat Forge — fastest path to domestically-forged rings without capex, but residual capacity allocation and weaker SLA",option_b:"Establish dedicated partnership with Rolex Rings — smaller, more flexible on exclusivity, publicly listed so financials are transparent",key_condition:"Exclusivity in forging supply is critical — if Bharat Forge supplies Miba alongside Schaeffler/SKF, Miba has no cost differentiation"},paid_source_flags:[{source:"TradeMap HS 7224/7228 (bearing steel) and HS 8462 (forging)",what_it_unlocks:"Import volumes and unit prices for bearing steel into India by origin country",why_needed:"Domestic vs import mix determines raw material cost structure for any India manufacturing scenario",priority:"HIGH"}],primary_research_gaps:[{gap:"Bharat Forge actual allocation of wind bearing ring capacity to current MNC customers vs headroom for Miba",why_impossible:"Capacity utilisation is commercially sensitive",expert_profile:"Ex-Bharat Forge senior manager in Industrial forgings division",questions:["What is Bharat Forge current utilisation on large wind ring forgings?","Would Bharat Forge consider exclusivity with a new MNC entrant?","What minimum volume commitment unlocks dedicated press allocation?"],hypothesis:"Bharat Forge at 75-85% utilisation on wind rings — limited headroom without 5,000+ ring/year commitment",priority:"CRITICAL"}],creative_angles:[{angle_title:"Automotive forging supply concentration — how Tier 1 auto OEMs managed single-source risk",parallel_industry:"Automotive forgings (Maruti Suzuki, Tata Motors supplier qualification)",insight:"Automotive OEMs in India faced the same Bharat Forge concentration problem in the 2000s — one dominant forging supplier for critical powertrain components. The solution was a structured dual-source development program: qualify a second forging supplier (typically a Tier 2 like Ramkrishna Forgings or Mahindra Forgings) for 30% of volume as a shadow supplier, maintaining Bharat Forge for 70%. This gives negotiating leverage without sacrificing quality.",why_relevant_to_client:"Miba should apply the same 70/30 split strategy — Bharat Forge as primary, Rolex Rings as shadow supplier qualified and maintained at 30% volume. This is the standard automotive approach to single-source forging risk and directly applicable."}],profiles:[{name:"Bharat Forge Limited",hq:"Pune, Maharashtra",role:"Primary ring forging supplier to MNCs",geography:"India",key_product:"Closed-die forgings for bearing rings 400-2000mm",key_fact:"Largest forging company in India; supplies Schaeffler, SKF, Timken; estimated 75-85% utilisation on wind rings",client_relevance:"Most capable ring forging partner for Miba — but supply availability is constrained"},{name:"Rolex Rings Limited",hq:"Rajkot, Gujarat",role:"Mid-tier ring rolling — listed company",geography:"India",key_product:"Rolled rings up to 1200mm for bearings and industrial applications",key_fact:"Listed on BSE/NSE, Rs1650 Cr FY24 revenue; recently added 4000T press for larger rings",client_relevance:"Most transparent financials of any forging partner; viable Miba partner before Phase 2 capex decision"}]},
+    BQ3:{executive_summary:"Leading wind bearing manufacturers in India operate between 55-80% in-house value. Schaeffler India at ~78% and SKF India at ~75% represent the fully integrated benchmark. Timken India at ~42% demonstrates the structural disadvantage of an import-dependent model. The optimal make-vs-buy threshold for main shaft bearings in India is ring forging and raceway grinding — both must be in-house above 8,000 units/year to achieve competitive cost parity with Schaeffler.",engagement_type:"value_chain_pricing",stats:[{value:"~78%",label:"Estimated in-house value — Schaeffler India",confidence:"estimated",source:"FutureBridge estimate",url:"#"},{value:"~42%",label:"Estimated in-house value — Timken India",confidence:"estimated",source:"FutureBridge estimate",url:"#"},{value:"8,000 units/yr",label:"Volume threshold for in-house forging breakeven",confidence:"estimated",source:"FutureBridge manufacturing economics estimate",url:"#"},{value:"10%",label:"Employee expenses as % of sales in India vs ~25% in Europe",confidence:"web-verified",source:"Mathmarkets Schaeffler India Analysis 2024",url:"https://mathmarkets.in"}],findings:[{evidence_id:"E001",evidence_type:"INFERENCE",headline:"Schaeffler India in-house value estimated at 78% — only seal rubber and cage brass outsourced",body:"Based on disclosed plant capabilities and Wind Power Standard certification scope, Schaeffler India's in-house value content for main shaft SRBs is estimated at approximately 78%. Outsourced elements are limited to seal rubber compounds, brass cage stock, and surface treatment chemicals. This integration depth is the primary source of Schaeffler's margin advantage over sub-scale Indian competitors. So what for Miba AG: matching 78% in-house value requires in-house ring forging — the single largest capex decision in the India market entry.",confidence:"medium",geo:"India",data_date:"2024",source_name:"Mathmarkets Schaeffler India Analysis 2024",source_url:"https://mathmarkets.in"},{evidence_id:"E002",evidence_type:"FACT",headline:"Labour cost advantage in India is 60% below European equivalent — structural rationale for India manufacturing even sub-scale",body:"Employee expenses account for approximately 10% of sales for Schaeffler India vs approximately 25% in developed countries per Mathmarkets analysis. For a 3MW SRB set, labour-intensive grinding (12-18 hours per ring set) and assembly operations cost approximately Rs1.2-1.8 lakh at Indian wage rates vs EU4,000-6,000 equivalent at German/Austrian rates. So what for Miba AG: the labour cost advantage is durable and makes grinding and assembly economically rational in India even at sub-optimal volumes — these operations should always be in-house regardless of market entry model.",confidence:"high",geo:"India vs Europe",data_date:"2024",source_name:"Mathmarkets Schaeffler India Analysis 2024",source_url:"https://mathmarkets.in"}],disruption_signals:[{signal:"MNCs accelerating localisation beyond 60% — Schaeffler and SKF investing in further vertical integration as PLI incentives materialise",company:"Schaeffler/SKF",date:"2025",type:"investment",client_implication:"For Miba: localisation benchmark is moving — 70%+ in-house value will be competitive baseline by 2026-2027"}],client_decision_frame:{option_a:"Phase 1 heat treatment + grinding + assembly only (in-house value ~55-60%) — capex Rs80-100 Cr, operational in 18-24 months, meets current 60% OEM threshold",option_b:"Phase 1 assembly + grinding only (in-house value ~40-45%) — lowest capex (Rs40-60 Cr) but at risk of failing Suzlon/Inox Wind 60% localisation threshold by 2026",key_condition:"Phase 2 forging trigger: 8,000+ contracted unit volume confirmed by OEM LOI — without this, in-house forging capex (Rs120-140 Cr additional) cannot be justified"},paid_source_flags:[{source:"Rolex Rings Limited Annual Report FY2024 (BSE listed)",what_it_unlocks:"Revenue breakdown, capacity utilisation, and margin by product line — validates forging supply economics",why_needed:"Rolex Rings is the most transparent forging partner candidate — public financials available",priority:"HIGH"}],primary_research_gaps:[{gap:"Actual unit economics of outsourced vs in-house forging for 3MW-5MW SRBs at Indian production volumes",why_impossible:"Forging conversion costs are commercially sensitive",expert_profile:"VP Manufacturing or CFO of a Tier 2 Indian bearing manufacturer (NRB Bearings, Harsha Engineers)",questions:["What is the fully loaded cost per ring forging for a 1200mm bearing ring at 3,000 units/year?","At what volume does in-house forging breakeven vs outsourcing?"],hypothesis:"Outsourced forging cost Rs2.8-3.5 lakh per ring at 3,000 units/year; in-house forging breaks even at 7,500-9,000 units/year",priority:"CRITICAL"}],creative_angles:[{angle_title:"Semiconductor fab localisation — how TSMC structured its India/Japan market entry capex in phases",parallel_industry:"Semiconductor fabrication (TSMC Japan, Intel India feasibility)",insight:"Semiconductor fabs face the same make-vs-buy decision at a much larger scale: full fab integration requires $10B+ capex, but packaging and testing (the assembly equivalent) can be done at $500M. TSMC's Japan entry started with packaging-only, built customer relationships and qualified supply chain, then committed to full fab only after volume guarantees from Sony and Toyota. The phased commitment model — prove demand before committing to full integration — is directly analogous to Miba's India decision.",why_relevant_to_client:"The TSMC Japan playbook argues strongly for Miba's Phase 1 as assembly + grinding only — build the OEM relationships first, then trigger Phase 2 forging investment only when volume LOIs are signed. Do not commit to full integration before demand is proven."}],profiles:[{name:"NRB Bearings Limited",hq:"Mumbai, Maharashtra",role:"Tier 2 Indian bearing manufacturer — listed",geography:"India",key_product:"Needle roller bearings and large industrial bearings",key_fact:"Listed on NSE/BSE; disclosed manufacturing cost structure in annual reports — benchmark for India bearing manufacturing economics",client_relevance:"Best available proxy for India-manufactured bearing unit economics at sub-Schaeffler scale"}]},
+    BQ4:{executive_summary:"Raw materials (bearing steel rings) account for 45-52% of the ex-works price of a 3MW main shaft SRB in India — the dominant and most volatile cost driver. Heat treatment energy costs represent 8-12% of manufacturing cost and have risen 18-22% since 2022. Labour accounts for 10-14% of cost — the primary India advantage. Net ex-works price for a domestically manufactured 3MW SRB set from Schaeffler/SKF India is estimated at Rs14-18 lakh ($16,800-$21,600) vs EU22,000-EU28,000 for European-manufactured units.",engagement_type:"value_chain_pricing",stats:[{value:"45-52%",label:"Raw material as % of ex-works price — 3MW SRB India",confidence:"estimated",source:"FutureBridge estimate",url:"#"},{value:"Rs14-18 lakh",label:"Estimated ex-works price — 3MW SRB set, India-manufactured",confidence:"estimated",source:"FutureBridge triangulation",url:"#"},{value:"EU22,000-EU28,000",label:"Ex-works price — European-manufactured 3MW SRB equivalent",confidence:"estimated",source:"FutureBridge estimate",url:"#"},{value:"18-22%",label:"Rise in industrial power tariffs Maharashtra/Gujarat since 2022",confidence:"estimated",source:"Maharashtra Electricity Regulatory Commission",url:"#"}],findings:[{evidence_id:"E001",evidence_type:"INFERENCE",headline:"Steel rings (100Cr6) account for 45-52% of ex-works cost — 15% steel price increase translates to 6-8% ex-works price pressure",body:"Bearing-grade steel rings represent the largest single cost element in main shaft SRB manufacturing. At current domestic steel prices (approximately Rs95-110/kg for 100Cr6), the ring material cost for a 3MW SRB set (ring weight approximately 350-450 kg) is approximately Rs6-8 lakh. Steel price volatility since 2022 has been 22-28% peak-to-trough. Schaeffler and SKF manage this via quarterly steel price adjustment clauses in OEM supply contracts. So what for Miba AG: steel price hedging strategy is non-negotiable before entering any OEM supply agreement — unhedged 45-52% raw material exposure creates plus-minus 8-12% annual P&L volatility unacceptable for a new India subsidiary.",confidence:"medium",geo:"India",data_date:"2024",source_name:"ICRA Bearing Sector Report 2024",source_url:"https://icra.in"},{evidence_id:"E002",evidence_type:"INFERENCE",headline:"Heat treatment energy cost risen 18-22% since 2022 — Pune manufacturers exploring solar captive power",body:"The heat treatment stage consumes approximately 180-220 kWh per ring set. At Maharashtra industrial power tariff of Rs9-11/kWh (increased from Rs7.5-8.5 in 2022), heat treatment energy cost per 3MW SRB set is approximately Rs35,000-55,000. This represents 8-12% of total manufacturing cost. Pune-based manufacturers are exploring on-site solar captive power to partially offset this. So what for Miba AG: energy cost trajectory in Maharashtra and Gujarat must be modelled in any India P&L — captive solar should be evaluated as a risk mitigation option from Year 3.",confidence:"medium",geo:"India — Maharashtra",data_date:"2024",source_name:"Maharashtra Electricity Regulatory Commission",source_url:"#"},{evidence_id:"E003",evidence_type:"FACT",headline:"Labour cost in India is 60% below European equivalent — structural and durable advantage",body:"Employee expenses account for approximately 10% of sales for Schaeffler India vs approximately 25% in developed countries. For a 3MW SRB set, labour-intensive grinding and assembly operations cost approximately Rs1.2-1.8 lakh at Indian wage rates vs EU4,000-6,000 at German/Austrian rates. This structural 60% labour cost advantage is durable and grows proportionally with turbine size as grinding hours per unit increase. So what for Miba AG: the labour advantage is the primary economic rationale for India manufacturing — it holds at any volume level and must anchor the India investment case.",confidence:"high",geo:"India vs Europe",data_date:"2024",source_name:"Mathmarkets Schaeffler India Analysis 2024",source_url:"https://mathmarkets.in"}],disruption_signals:[{signal:"Suzlon Energy announced 3GW domestic wind turbine order book for FY2025 — largest domestic wind OEM demand signal in 5 years",company:"Suzlon Energy",date:"Q3 2024",type:"demand",client_implication:"For Miba: Suzlon 3GW order book is the demand catalyst that justifies India manufacturing investment — timing of entry should align with Suzlon 2026-2027 supply ramp"},{signal:"Steel prices (100Cr6) fell 12% in H2 2024 — creates 2025 OEM contract renegotiation pressure of 5-8%",company:"Tata Steel/SAIL",date:"H2 2024",type:"commodity",client_implication:"For Miba: 2025 supply contract negotiations will include downward price pressure — Miba must model steel price floor and adjustment mechanisms before committing to India supply agreements"}],client_decision_frame:{option_a:"Price at Rs13-15 lakh per 3MW SRB set to compete on Suzlon/Inox Wind Tier 1 programs — requires in-house forging and full localisation; achievable Year 4-5",option_b:"Price at Rs16-20 lakh targeting Siemens Gamesa/Vestas India offshore and premium onshore — achievable Year 2-3 with import + local assembly model; avoids direct price war",key_condition:"Steel price hedging strategy is non-negotiable in either scenario — unhedged 100Cr6 exposure creates plus-minus 8-12% P&L volatility unacceptable for a new India subsidiary"},paid_source_flags:[{source:"TradeMap HS 8482.50 (spherical roller bearings) — unit import/export values India",what_it_unlocks:"Actual average import prices for wind-grade SRBs into India — directly validates ex-works price estimates",why_needed:"Without unit-level trade data, all ex-works pricing is estimate; TradeMap provides the only publicly available proxy",priority:"CRITICAL"}],primary_research_gaps:[{gap:"Actual OEM contract price and annual price adjustment mechanism for Schaeffler/SKF India supply to Suzlon for 2MW-3MW main shaft SRBs",why_impossible:"OEM supply contract terms are under NDA",expert_profile:"Former supply chain director at Suzlon Energy with active Schaeffler/SKF bearing contract exposure",questions:["What is the OEM contract price range for a 3MW SRB set under current Suzlon supply agreement?","What is the quarterly steel price adjustment formula?","What volume guarantees does Suzlon provide?"],hypothesis:"Suzlon pays Rs15-17 lakh per 3MW SRB set under current Schaeffler contract (2024); price adjusted quarterly against SAIL HRC index",priority:"CRITICAL"}],creative_angles:[{angle_title:"LNG plant cold-box heat exchanger pricing — how complex industrial equipment OEM contracts handle material cost pass-through",parallel_industry:"LNG plant equipment supply (Air Products, Linde engineering contracts)",insight:"LNG cold-box manufacturers solved the stainless steel cost pass-through problem 20 years ago — the standard contract structure separates the base fabrication margin from material costs, with material indexed quarterly to LME or domestic steel indices. The fabrication margin is fixed for the contract term (typically 3-5 years) while material pass-through is automatic. This structure eliminates the material price risk for both buyer and seller and is now standard in all complex industrial equipment OEM contracts in India.",why_relevant_to_client:"Miba should specify this exact LNG-style contract structure in Suzlon and Inox Wind negotiations — separate fabrication margin (fixed) from material cost (LME-indexed quarterly). This is standard in adjacent industries and will be recognised and accepted by sophisticated OEM procurement teams."}],profiles:[{name:"Suzlon Energy Limited",hq:"Pune, Maharashtra",role:"Largest domestic wind turbine OEM — primary target customer",geography:"India",key_product:"2MW-3MW onshore wind turbines; growing 3.5MW platform",key_fact:"3GW order book announced Q3 2024; 60%+ localisation content required; active Schaeffler and SKF India customer",client_relevance:"Primary OEM customer target for Miba India Phase 1 — volume and spec requirements must drive India investment sizing"}]}
   }
 };
 
@@ -2215,7 +1970,7 @@ function buildSynthesisPrompt(p, allBQResults, engType) {
     var lines = ['BQ: ' + (r.bqText||r.bq||'')];
     if (d.executive_summary) lines.push('Summary: ' + d.executive_summary.slice(0,300));
     (d.findings||[]).forEach(function(f,i) {
-      if (i < 4) lines.push('Finding [' + (f.evidence_id||'E'+(i+1)) + '] [' + (f.evidence_type||'INFERENCE') + ']: ' + (f.headline||'') + ' | Geo: ' + (f.geo||'') + ' | Date: ' + (f.data_date||'') + ' | For client: ' + (f.client_implication||''));
+      if (i < 4) lines.push('Finding: ' + (f.headline||'') + ' | Geo: ' + (f.geo||'') + ' | For client: ' + (f.client_implication||''));
     });
     (d.stats||[]).forEach(function(s,i) {
       if (i < 3) lines.push('Stat: ' + s.value + ' — ' + s.label + ' [' + (s.confidence||'') + ']');
@@ -2292,23 +2047,6 @@ function buildSynthesisPrompt(p, allBQResults, engType) {
   ].join('\n');
 }
 
-function runDemoSynthesis(){
-  var btn=document.getElementById('synthBtn');
-  var statusEl=document.getElementById('synthStatus');
-  if(btn){btn.disabled=true;btn.textContent='Synthesising...';}
-  if(statusEl){statusEl.textContent='Building section view from demo data...';}
-  setTimeout(function(){
-    S.synthesis=DEMO_SYNTHESIS;
-    S.detectedEngType=DEMO_SYNTHESIS.engagement.type;
-    renderSectionView(DEMO_SYNTHESIS);
-    // Switch to section tab using showTab
-    var secTab=document.getElementById('tab-sections');
-    if(secTab) showTab('sections', secTab);
-    if(btn){btn.disabled=false;btn.textContent='⚡ Synthesise into sections (demo)';}
-    if(statusEl){statusEl.textContent='Demo synthesis complete — 6 sections generated';}
-  },1800);
-}
-
 async function runSynthesis() {
   var btn = document.getElementById('synthBtn');
   var statusEl = document.getElementById('synthStatus');
@@ -2335,31 +2073,18 @@ async function runSynthesis() {
   var prompt = buildSynthesisPrompt(p, allBQResults, engType);
 
   try {
-    var resp=null;
-    for(var sa=1;sa<=3;sa++){
-      var _sFetch=fetch(window.FB_PROXY_URL||'https://api.anthropic.com/v1/messages',{
-        method:'POST',
-        headers:{'Content-Type':'application/json','anthropic-version':'2023-06-01','x-api-key':getApiKey()},
-        body:JSON.stringify({
-          model:'claude-sonnet-4-6',max_tokens:6000,
-          system:'You are a senior FutureBridge consultant. Synthesise research into structured deliverable sections. Respond ONLY with valid JSON. Escape apostrophes. No markdown.',
-          messages:[{role:'user',content:prompt}]
-        })
-      });
-      var _sTimeout=new Promise(function(_,rej){setTimeout(function(){rej(new Error('Synthesis timeout — no response after 3 minutes. Try again.'));},180000);});
-      resp=await Promise.race([_sFetch,_sTimeout]);
-      if(resp.ok) break;
-      var seb='';try{seb=await resp.clone().text();}catch(e){}
-      if(resp.status===429){
-        if(seb.indexOf('exceeded_limit')>=0) throw new Error('MONTHLY_CAP: Monthly limit reached. Top up at console.anthropic.com.');
-        var sw=sa===1?30:60;
-        if(statusEl) statusEl.textContent='Rate limited — retrying in '+sw+'s ('+sa+'/3)...';
-        await new Promise(function(r){setTimeout(r,sw*1000);});
-        if(sa<3) continue;
-      }
-      throw new Error('Synthesis API '+resp.status+' — '+seb.slice(0,200));
-    }
-    if(!resp||!resp.ok) throw new Error('Synthesis failed after 3 attempts');
+    var resp = await fetch(window.FB_PROXY_URL||'https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'anthropic-version': '2023-06-01', 'x-api-key': getApiKey() },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 6000,
+        system: 'You are a senior FutureBridge consultant. Synthesise research into structured deliverable sections. Respond ONLY with valid JSON. Escape all apostrophes with backslash. No markdown fences.',
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+
+    if (!resp.ok) throw new Error('API ' + resp.status);
     var data = await resp.json();
     var text = (data.content||[]).filter(function(b){return b.type==='text';}).map(function(b){return b.text;}).join('');
     var parsed = parseSynthesis(text);
@@ -2572,4 +2297,4 @@ function dlSectionCSV() {
 
 </script>
 </body>
-</html>
+</htmlrej(new Error('API timeout — no response after 4 minutes. Try again.')>
