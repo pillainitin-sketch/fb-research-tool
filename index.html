@@ -837,7 +837,7 @@ function extractFields(text){
 function extractSources(contentBlocks, bqId){
   var sources=[];
   contentBlocks.forEach(function(block){
-    if(block.type==='tool_use'&&block.name==='web_search'){
+    if((block.type==='tool_use'||block.type==='server_tool_use')&&block.name==='web_search'){
       var query=(block.input&&block.input.query)||'search';
       sources.push({type:'searched',bq:bqId,title:'Search: '+query,url:'https://www.google.com/search?q='+encodeURIComponent(query),query:query});
     }
@@ -933,13 +933,13 @@ async function researchBQ(bq, p, onLog){
     // Extract searches and pages from content blocks
     var searchCount=0, pageCount=0;
     blocks.forEach(function(block){
-      if(block.type==='tool_use'&&block.name==='web_search'){
+      if((block.type==='tool_use'||block.type==='server_tool_use')&&block.name==='web_search'){
         searchCount++;
         var q=(block.input&&block.input.query)||'search';
         onLog('search','Searched: "'+q.slice(0,65)+'"');
         sources.push({type:'searched',bq:bq.id,title:'Search: '+q,url:'https://www.google.com/search?q='+encodeURIComponent(q),query:q});
       }
-      if(block.type==='tool_result'||block.type==='web_search_tool_result'){
+      if(block.type==='tool_result'||block.type==='web_search_tool_result'||block.type==='server_tool_result'){
         var cnt=block.content;
         var urls=[];
         if(typeof cnt==='string') urls=(cnt.match(/https?:\/\/[^\s"'<>]{15,}/g)||[]).slice(0,5);
@@ -2145,6 +2145,29 @@ function parseSynthesis(text) {
   var m = clean.match(/\{[\s\S]*\}/);
   if (!m) return null;
   var raw = m[0];
+
+  // Strategy 0: aggressive pre-clean (literal newlines, control chars, bad escapes)
+  function aggressiveClean(s) {
+    var out = '';
+    var inStr = false;
+    var esc = false;
+    for (var i = 0; i < s.length; i++) {
+      var c = s[i];
+      if (esc) { out += c; esc = false; continue; }
+      if (c === '\\') { out += c; esc = true; continue; }
+      if (c === '"') { inStr = !inStr; out += c; continue; }
+      if (inStr) {
+        if (c === '\n' || c === '\r') { out += ' '; continue; }
+        if (c === '\t') { out += ' '; continue; }
+        if (c.charCodeAt(0) < 32) { continue; }
+        if (c === "'") { out += "\\'"; continue; }
+      }
+      out += c;
+    }
+    return out;
+  }
+  try { return JSON.parse(aggressiveClean(raw)); } catch(e0) {}
+
   // Strategy 1: direct
   try { return JSON.parse(raw); } catch(e) {}
   // Strategy 2: apostrophe sanitise
