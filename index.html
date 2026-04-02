@@ -2171,9 +2171,10 @@ function parseSynthesis(text) {
   var raw = m[0];
 
   // Pre-fix: replace \' with ' — model outputs invalid JSON escape
-  raw = raw.replace(/\\'/g, "'");
-
   // Strategy 0: aggressive pre-clean (literal newlines, control chars, bad escapes)
+  // Fix invalid JSON escape: \' is not valid JSON, replace with '
+  raw = raw.split("\\'").join("'");
+
   function aggressiveClean(s) {
     var out = '';
     var inStr = false;
@@ -2187,7 +2188,6 @@ function parseSynthesis(text) {
         if (c === '\n' || c === '\r') { out += ' '; continue; }
         if (c === '\t') { out += ' '; continue; }
         if (c.charCodeAt(0) < 32) { continue; }
-        if (c === "'") { out += "\\'"; continue; }
       }
       out += c;
     }
