@@ -800,7 +800,31 @@ function parseResearch(text){
     return rescued;
   }
 
+  // Final fallback: extract executive_summary directly via regex even if JSON fails
+  var fallback = {executive_summary:'',stats:[],findings:[],paid_source_flags:[],primary_research_gaps:[],profiles:[],creative_angles:[]};
+  var sumRx = raw.match(/"executive_summary"\s*:\s*"([\s\S]{10,2000}?)(?=",\s*"(?:engagement|stats|findings)|"\s*})/);
+  if(sumRx) fallback.executive_summary = sumRx[1].replace(/\n/g,' ').replace(/\"/g,'"').replace(/\'/g,"'").trim();
+  
+  // Try to get stats array
+  var statsRx = raw.match(/"stats"\s*:\s*(\[[\s\S]{0,3000}?\])\s*[,}]/);
+  if(statsRx){try{fallback.stats=JSON.parse(statsRx[1]);}catch(e){}}
+  
+  // Strategy 6: truncate at last complete top-level comma-separated field
+  var lastClose = raw.lastIndexOf('"},');
+  if(lastClose > 100){
+    var truncated = raw.slice(0, lastClose+2) + ',"findings":[],"stats":[],"paid_source_flags":[],"primary_research_gaps":[],"profiles":[],"creative_angles":[]}';
+    try{
+      var tp = JSON.parse(truncated);
+      console.log('parseResearch: truncation strategy succeeded');
+      if(tp.executive_summary) return tp;
+    }catch(e){}
+  }
+  
   console.error('parseResearch: all strategies failed. Raw length:',raw.length,'First 300:',raw.slice(0,300));
+  if(fallback.executive_summary){
+    console.log('parseResearch: returning fallback with executive_summary only');
+    return fallback;
+  }
   return null;
 }
 
@@ -2146,6 +2170,9 @@ function parseSynthesis(text) {
   if (!m) return null;
   var raw = m[0];
 
+  // Pre-fix: replace \' with ' — model outputs invalid JSON escape
+  raw = raw.replace(/\\'/g, "'");
+
   // Strategy 0: aggressive pre-clean (literal newlines, control chars, bad escapes)
   function aggressiveClean(s) {
     var out = '';
@@ -2170,6 +2197,28 @@ function parseSynthesis(text) {
 
   // Strategy 1: direct
   try { return JSON.parse(raw); } catch(e) {}
+  
+  // Strategy 1.5: truncate at last complete finding object
+  function truncateAtLastComplete(s){
+    var lastBrace = s.lastIndexOf('}');
+    while(lastBrace > 0){
+      var candidate = s.slice(0, lastBrace+1);
+      // Find the parent array/object close
+      var testStr = candidate;
+      // Try adding closing brackets
+      for(var closes of [']}', ']}]}', ']}]}]}', ']}]}]}]}']){
+        try{
+          var tp = JSON.parse(testStr + closes);
+          return tp;
+        }catch(e){}
+      }
+      lastBrace = s.lastIndexOf('}', lastBrace-1);
+      if(lastBrace < s.length * 0.5) break; // Don't truncate more than half
+    }
+    return null;
+  }
+  var t15 = truncateAtLastComplete(raw);
+  if(t15 && t15.executive_summary){ console.log('parseResearch: truncation strategy 1.5 succeeded'); return t15; }
   // Strategy 2: apostrophe sanitise
   function san(s) {
     var out=''; var inStr=false; var esc=false;
