@@ -19,8 +19,8 @@ body{font-family:var(--fb);background:var(--bg);color:var(--dark);min-height:100
 .step{font-size:10px;padding:4px 10px;color:rgba(255,255,255,.3);border-bottom:2px solid transparent;transition:all .2s}
 .step.done{color:var(--teal);border-bottom-color:var(--teal)}.step.active{color:#fff;border-bottom-color:var(--red)}
 /* STAGES */
-.stage{display:none}.stage.on{display:block;animation:fi .22s ease}
-@keyframes fi{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
+.stage{display:none}.stage.on{display:block;opacity:1}
+
 @keyframes spin{to{transform:rotate(360deg)}}.spin{animation:spin .7s linear infinite;display:inline-block}
 /* UPLOAD */
 .upload-wrap{display:flex;align-items:center;justify-content:center;min-height:calc(100vh - 52px);padding:40px 20px}
@@ -365,11 +365,15 @@ var S={key:null,proposal:null,selBQs:[],bqResults:{},allSources:[],profiles:[],s
 function goTo(n){
   S.stage=n;
   for(var i=1;i<=5;i++){
-    document.getElementById('s'+i).className='stage'+(i===n?' on':'');
+    var el=document.getElementById('s'+i);
+    if(el) el.className='stage'+(i===n?' on':'');
     var st=document.getElementById('st'+i);
-    st.className='step'+(i<n?' done':i===n?' active':'');
+    if(st) st.className='step'+(i<n?' done':i===n?' active':'');
   }
-  document.getElementById('backBtn').className='back-btn'+(n===3||n===5?' show':'');
+  var bb=document.getElementById('backBtn');
+  if(bb) bb.className='back-btn'+(n===3||n===5?' show':'');
+  window.scrollTo(0,0);
+  console.log('goTo('+n+'): stage '+n+' is now',document.getElementById('s'+n)?document.getElementById('s'+n).className:'NULL');
 }
 function goBack(){if(S.stage===3)goTo(1);else if(S.stage===5)goTo(3);}
 function sl(ms){return new Promise(function(r){setTimeout(r,ms);})}
@@ -397,9 +401,16 @@ function routeFile(name){
 }
 
 function handleFile(f){
+  if(!f){console.error('handleFile: no file');return;}
+  console.log('handleFile: file=',f.name,'size=',f.size);
   S.key=routeFile(f.name);
   S.proposal=PROPOSALS[S.key];
-  var label=f.name.replace(/_/g,' ').replace(/\.(pptx|pdf|docx)$/i,'').slice(0,50);
+  console.log('handleFile: routed to key=',S.key,'proposal=',S.proposal?S.proposal.client:'NULL');
+  if(!S.proposal){
+    alert('Could not identify this proposal. Please check the filename matches one of the 10 loaded engagements.');
+    return;
+  }
+  var label=f.name.replace(/_/g,' ').replace(/\.(pptx|pdf|docx|txt)$/i,'').slice(0,50);
   document.getElementById('parseTitle').textContent='Reading: "'+label+'"';
   document.getElementById('parseSub').textContent=S.proposal.client+' · '+S.proposal.practice;
   goTo(2);
@@ -408,20 +419,25 @@ function handleFile(f){
 
 // ═══ PARSE ANIMATION ═════════════════════════════
 async function doParse(){
+  console.log('doParse: starting');
   var d=[0,1100,2100,3000];
   for(var i=0;i<4;i++){
     await sl(d[i]);
     var ps=document.getElementById('ps'+(i+1)),pi=document.getElementById('pi'+(i+1));
+    if(!ps||!pi){console.error('doParse: missing ps'+(i+1)+' or pi'+(i+1));continue;}
     ps.className='ps run'; pi.innerHTML='<span class="spin">◌</span>';
     await sl(900);
     ps.className='ps done'; pi.textContent='✓';
   }
   S.selBQs=S.proposal.bqs.map(function(_,i){return i;});
+  console.log('doParse: complete, selBQs=',S.selBQs,'going to stage 3');
   await sl(300); goTo(3); renderReview();
+  console.log('doParse: renderReview done');
 }
 
 // ═══ REVIEW ══════════════════════════════════════
 function renderReview(){
+  console.log('renderReview: starting, proposal=',S.proposal?S.proposal.client:'NULL');
   var p=S.proposal;
   document.getElementById('rwTitle').textContent=p.client+' · '+p.title;
   document.getElementById('rwMeta').textContent=p.practice+' · '+p.geography+' · '+p.period;
