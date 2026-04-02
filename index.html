@@ -8,7 +8,7 @@
 /* System fonts only — no external dependency */
 :root{--red:#F94F5E;--dark:#4B4B55;--teal:#22AE8A;--gray:#DBDBDD;--mgray:#6F6F77;--lgray:#F5F5F5;--amber:#FBAE40;--white:#fff;--bg:#F7F6F3;--fh:Georgia,serif;--fb:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif}
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:var(--fb);background:var(--bg);color:var(--dark);min-height:100vh}
+body{font-family:var(--fb);background:var(--bg);color:var(--dark);min-height:100vh;width:100%;max-width:100%}
 /* HEADER */
 .hdr{background:var(--dark);height:52px;padding:0 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:200}
 .logo{font-family:var(--fh);font-size:17px;color:#fff}.logo em{color:var(--red);font-style:italic}
@@ -19,7 +19,7 @@ body{font-family:var(--fb);background:var(--bg);color:var(--dark);min-height:100
 .step{font-size:10px;padding:4px 10px;color:rgba(255,255,255,.3);border-bottom:2px solid transparent;transition:all .2s}
 .step.done{color:var(--teal);border-bottom-color:var(--teal)}.step.active{color:#fff;border-bottom-color:var(--red)}
 /* STAGES */
-.stage{display:none}.stage.on{display:block;opacity:1}
+.stage{display:none!important}.stage.on{display:block!important;opacity:1!important;width:100%!important;min-height:calc(100vh - 52px);position:relative}
 
 @keyframes spin{to{transform:rotate(360deg)}}.spin{animation:spin .7s linear infinite;display:inline-block}
 /* UPLOAD */
@@ -366,7 +366,17 @@ function goTo(n){
   S.stage=n;
   for(var i=1;i<=5;i++){
     var el=document.getElementById('s'+i);
-    if(el) el.className='stage'+(i===n?' on':'');
+    if(el){
+      el.className='stage'+(i===n?' on':'');
+      if(i===n){
+        el.style.display='block';
+        el.style.width='100%';
+        el.style.minHeight='200px';
+        el.style.opacity='1';
+      } else {
+        el.style.display='none';
+      }
+    }
     var st=document.getElementById('st'+i);
     if(st) st.className='step'+(i<n?' done':i===n?' active':'');
   }
