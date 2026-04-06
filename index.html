@@ -313,7 +313,7 @@ input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;h
 <div class="upload-wrap"><div class="upload-box">
   <div class="eyebrow">Research Intelligence System</div>
   <div class="big-title">Upload your proposal.<br><em>Get everything out.</em></div>
-  <div class="upload-sub">Upload any FutureBridge proposal (PPTX or PDF). The system extracts every business question automatically, then runs 4-pass deep research per BQ — Planning, Searching, Following leads, Synthesising — returning structured findings with FIH tags, key statistics, paid source flags, primary research gaps with expert interview guides, parallel industry signals, and competitor profiles.</div>
+  <div class="upload-sub">Upload any FutureBridge proposal (PPTX or PDF). The system extracts every business question automatically, then runs 4-pass deep research per BQ — Planning, Searching, Following leads, Synthesising — returning structured findings with FIH tags, key statistics, paid source flags, primary research gaps with expert interview guides, adjacent intelligence signals, and competitor profiles.</div>
   <div class="drop-zone" id="dropZone">
     <input type="file" id="fileIn" accept=".pptx,.pdf,.docx,.txt" onchange="handleFile(this.files[0])">
     <div class="dz-icon">⬆</div>
@@ -793,8 +793,8 @@ function buildSynthesisResearchPrompt(bq, p, plan, allResearch, client){
     ' Business Question: '+bq.text+'.'+
     ' Research collected: '+allResearch.slice(0,8000)+
     ' Hypothesis to test: '+(plan&&plan.hypothesis?plan.hypothesis:'unknown')+
-    ' Parallel industry: '+(plan&&plan.parallel_industry?plan.parallel_industry:'none identified')+
-    ' Return ONLY valid JSON with these exact keys: executive_summary (string), engagement_type (string), stats (array of {value,label,confidence,source,url}), findings (array of {evidence_id,evidence_type,headline,body,client_implication,confidence,geo,data_date,source_name,source_url}), disruption_signals (array of {signal,company,date,type,client_implication}), client_decision_frame ({option_a,option_b,key_condition}), paid_source_flags (array of {source,what_it_unlocks,why_needed,priority}), primary_research_gaps (array of {gap,why_impossible,expert_profile,questions,hypothesis,priority}), profiles (array of {name,hq,role,geography,key_product,key_fact,client_relevance}), creative_angles (array of {angle_title,parallel_industry,insight,why_relevant_to_client}).'+
+    ' Adjacent intelligence: '+(plan&&plan.parallel_industry?plan.parallel_industry:'none identified')+
+    ' Return ONLY valid JSON with these exact keys: executive_summary (string), engagement_type (string), stats (array of {value,label,confidence,source,url}), findings (array of {evidence_id,evidence_type,headline,body,client_implication,confidence,geo,data_date,source_name,source_url}), disruption_signals (array of {signal,company,date,type,client_implication}), client_decision_frame ({option_a,option_b,key_condition}), paid_source_flags (array of {source,what_it_unlocks,why_needed,priority}), primary_research_gaps (array of {gap,why_impossible,expert_profile,questions,hypothesis,priority}), creative_angles (REQUIRED — array of 1-3 objects {angle_title,parallel_industry,insight,why_relevant_to_client} — identify which OTHER industry solved the same problem first; this is mandatory, never return an empty array), profiles (array of {name,hq,role,geography,key_product,key_fact,client_relevance}).'+
     ' RULES: evidence_type must be FACT (directly cited) or INFERENCE (logical conclusion) or HYPOTHESIS (unverified). 4-5 findings minimum. Every finding body must end with: So what for '+client+': [one sentence actionable implication]. No markdown, no text before or after the JSON. Double quotes only. Escape apostrophes as \'.';
 }
 
@@ -838,6 +838,11 @@ function buildResearchPrompt(bq, p, plan) {
     '5. CLIENT-FRAMED — end with "For ' + client + ': [specific threat/opportunity/decision]"',
     '6. SOURCED — name the publication or site, never "industry sources"',
     '',
+    '── ADJACENT INTELLIGENCE (MANDATORY) ───────────────────',
+    'Identify which other industry solved the same problem first. Search for that analog.',
+    'Examples: wind bearing localisation → aerospace bearing programs India. Kefir scale-up → pharma probiotic fermentation. Salon ergonomics → dental chair clinical data.',
+    'Output as creative_angles array — 1-2 entries minimum. This is MANDATORY.',
+    '',
     '── DISRUPTION SIGNALS ──────────────────────────────────',
     'Search specifically for: company bankruptcies, acquisitions, new entrants, regulatory changes, supply disruptions in this market (last 24 months). Include even if only 1-2 found.',
     '',
@@ -855,6 +860,7 @@ function buildResearchPrompt(bq, p, plan) {
     '  client_decision_frame: object {option_a, option_b, key_condition}',
     '  paid_source_flags: array of {source, what_it_unlocks, why_needed, priority}',
     '  primary_research_gaps: array of {gap, why_impossible, expert_profile, questions, hypothesis, priority}',
+    '  creative_angles: array of 1-3 objects {angle_title, parallel_industry, insight, why_relevant_to_client} — MANDATORY. Identify which other industry solved the exact same problem first. Example: wind bearing localisation → aerospace bearing India (10 years ahead). Never return empty array.',
     '  profiles: array of {name, hq, role, geography, key_product, key_fact, client_relevance, source, url}',
     '',
     'RULES:',
@@ -1307,6 +1313,26 @@ function showApiError(bqId, msg){
 
 
 // ═══ RENDER RESULTS ═══════════════════════════════
+function formatParas(text){
+  if(!text) return '';
+  // Split at sentence boundaries that look like paragraph breaks
+  // Pattern: ". For [ClientName]:" or ". [Capital letter starting new thought]" after 80+ chars
+  var paras = text.split(/(?<=\. )(?=For |The |In |Key |Based |Overall |This |These |Given |With |At |By |Under )/g);
+  if(paras.length <= 1){
+    // Try splitting at ". " where next sentence starts a new angle
+    paras = text.match(/[^.!?]+[.!?]+/g) || [text];
+    // Group into paragraphs of 2-3 sentences
+    var grouped = [];
+    for(var i=0; i<paras.length; i+=2){
+      grouped.push(paras.slice(i, i+2).join(' '));
+    }
+    paras = grouped;
+  }
+  return paras.filter(function(p){return p.trim().length>0;})
+    .map(function(p){return '<p style="margin:0 0 8px;last-child:margin-bottom:0">'+escH(p.trim())+'</p>';})
+    .join('');
+}
+
 function renderResults(){
   var p=S.proposal;
   var bqIds=S.selBQs.map(function(i){return p.bqs[i].id;});
@@ -1369,7 +1395,7 @@ function renderResults(){
     // ── EXEC SUMMARY ──────────────────────────────────────────
     if(d.executive_summary){
       html+='<div class="bq-exec"><div class="exec-lbl">Executive summary</div>'+
-        '<div class="exec-body">'+escH(d.executive_summary)+'</div></div>';
+        '<div class="exec-body">'+formatParas(d.executive_summary)+'</div></div>';
     }
 
     // ── KEY STATISTICS ─────────────────────────────────────────
@@ -1424,32 +1450,37 @@ function renderResults(){
     }
 
     // ── HYPOTHESIS section ─────────────────────────────────────
-    if(hyps.length){
-      html+='<div class="bq-hypothesis"><div class="hypothesis-lbl">Hypotheses — requiring validation</div>'+
-        hyps.map(function(f){
-          return '<div class="hypothesis-card">'+
-            '<div class="hypothesis-q">'+escH(f.headline||'')+'</div>'+
-            (f.body?'<div style="font-size:11px;color:var(--dark);line-height:1.55;margin-bottom:6px">'+escH(f.body)+'</div>':'')+
-            '<div class="hypothesis-wwtbt">What would need to be true: '+escH(f.client_implication||f.body||'Requires primary research to validate')+'</div>'+
-          '</div>';
-        }).join('')+'</div>';
+    html+='<div class="bq-hypothesis"><div class="hypothesis-lbl">Hypotheses</div>';
+    if(!hyps.length){
+      html+='<div style="font-size:11px;color:var(--mgray);padding:8px 0;font-style:italic">No hypotheses identified for this BQ.</div>';
+    } else {
+      html+=hyps.map(function(f){
+        return '<div class="hypothesis-card">'+
+          '<div class="hypothesis-q">'+escH(f.headline||'')+'</div>'+
+          (f.body?'<div style="font-size:11px;color:var(--dark);line-height:1.55;margin-bottom:6px">'+escH(f.body)+'</div>':'')+
+          '<div class="hypothesis-wwtbt">What would need to be true: '+escH(f.client_implication||f.body||'Requires primary research to validate')+'</div>'+
+        '</div>';
+      }).join('');
     }
+    html+='</div>';
 
     // ── INSIGHTS REQUIRING VALIDATION ─────────────────────────
-    if(inferences.length){
-      html+='<div class="bq-validation"><div class="validation-lbl">Insights requiring validation</div>'+
-        inferences.map(function(f){
-          return '<div class="validation-item">'+
-            '<div class="validation-headline">'+escH(f.headline||'')+'</div>'+
-            '<div class="validation-path">Validation path: '+escH(f.client_implication||'Expert interview or paid source required')+'</div>'+
-          '</div>';
-        }).join('')+'</div>';
+    html+='<div class="bq-validation"><div class="validation-lbl">Insights requiring validation</div>';
+    if(!inferences.length){
+      html+='<div style="font-size:11px;color:var(--mgray);padding:8px 0;font-style:italic">No inference-level insights for this BQ.</div>';
+    } else {
+      html+=inferences.map(function(f){
+        return '<div class="validation-item">'+
+          '<div class="validation-headline">'+escH(f.headline||'')+'</div>'+
+          '<div class="validation-path">Validation path: '+escH(f.client_implication||'Expert interview or paid source required')+'</div>'+
+        '</div>';
+      }).join('');
     }
-
+    html+='</div>';
     // ── PARALLEL INDUSTRY ─────────────────────────────────────
     var ca=d.creative_angles||[];
-    if(ca.length){
-      html+='<div class="bq-parallel"><div class="parallel-lbl">Parallel industry intelligence</div>'+
+    if(true){ // Always show adjacent intelligence section
+      html+='<div class="bq-parallel"><div class="parallel-lbl">Adjacent Intelligence</div>'+
         ca.map(function(c){
           return '<div class="parallel-item">'+
             '<div class="parallel-title">'+escH(c.angle_title||'')+'</div>'+
@@ -1785,32 +1816,237 @@ function saveBaseline(){
 
 
 function dlReport(){
-  var p=S.proposal,sel=S.selBQs.map(function(i){return p.bqs[i];});
-  var h='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>'+p.client+'</title><style>body{font-family:Arial,sans-serif;max-width:900px;margin:40px auto;color:#4B4B55;font-size:13px;line-height:1.6}h1{font-size:22px;border-bottom:3px solid #F94F5E;padding-bottom:8px}h2{font-size:10px;color:#F94F5E;letter-spacing:1.5px;text-transform:uppercase;margin:22px 0 6px}.sum{background:#F9F8F6;border-left:4px solid #F94F5E;padding:11px 15px;margin:9px 0}.stat{display:inline-block;background:#F2FBF7;border-top:2px solid #22AE8A;padding:8px 12px;margin:3px 4px 3px 0;vertical-align:top}.stat-v{font-size:20px;color:#22AE8A;font-weight:bold}.finding{border-left:3px solid #F94F5E;padding:7px 11px;margin:7px 0;background:#FAFAFA}.finding h4{margin:0 0 3px}.impl{font-size:11px;color:#633806;background:#FEF5E4;padding:4px 8px;border-left:2px solid #FBAE40}.gap{background:#FFFBF3;border:1px solid #FBAE40;border-radius:5px;padding:10px;margin:7px 0}.gap h4{color:#633806;margin:0 0 4px}.gap ol{margin:5px 0 5px 18px;font-size:11px}.hyp{font-size:11px;color:#633806;background:#FEF5E4;padding:4px 8px;border-left:2px solid #FBAE40;margin-top:5px}hr{border:none;border-top:1px solid #DBDBDD;margin:18px 0}.footer{font-size:10px;color:#A4A3A4;text-align:center;margin-top:40px;border-top:1px solid #DBDBDD;padding-top:10px}</style></head><body>';
-  h+='<h1>'+p.client+' — '+p.title+'</h1><p style="font-size:11px;color:#6F6F77">'+p.practice+' · '+p.geography+' · '+p.period+' · Generated '+new Date().toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'})+'</p>';
-  h+='<h2>Executive Summary</h2><div class="sum">'+S.summary+'</div><hr>';
+  var p=S.proposal, sel=S.selBQs.map(function(i){return p.bqs[i];});
+  var css='body{font-family:Arial,sans-serif;max-width:960px;margin:40px auto;color:#1A2B4A;font-size:13px;line-height:1.6}'+
+    'h1{font-size:22px;border-bottom:3px solid #E85520;padding-bottom:8px;margin-bottom:6px}'+
+    'h2{font-size:10px;color:#E85520;letter-spacing:1.5px;text-transform:uppercase;margin:22px 0 6px}'+
+    'h3{font-size:13px;font-weight:600;color:#1A2B4A;margin:12px 0 5px}'+
+    '.sum{background:#F4F6F9;border-left:4px solid #E85520;padding:14px 16px;margin:9px 0;font-size:13px;line-height:1.75}'+
+    '.sum p{margin:0 0 8px}.sum p:last-child{margin:0}'+
+    '.stat{display:inline-block;background:#F0FBF8;border-top:3px solid #00A693;padding:10px 14px;margin:4px 6px 4px 0;vertical-align:top;min-width:140px;border-radius:0 0 4px 4px}'+
+    '.stat-v{font-size:22px;color:#00A693;font-weight:bold;margin-bottom:3px}'+
+    '.stat-l{font-size:11px;color:#1A2B4A;font-weight:500;margin-bottom:2px}'+
+    '.stat-conf{font-size:9px;color:#6B7280;margin-bottom:2px}'+
+    '.stat-src{font-size:9px;color:#9CA3AF}'+
+    '.finding{border:1px solid #E5E9F0;border-radius:6px;padding:12px 14px;margin:8px 0;background:#fff}'+
+    '.fih{font-size:8px;font-weight:700;padding:2px 6px;border-radius:3px;display:inline-block;margin-bottom:5px;letter-spacing:.5px}'+
+    '.fih-FACT{background:#DCFCE7;color:#15803D}'+
+    '.fih-INFERENCE{background:#FEF9C3;color:#854D0E}'+
+    '.fih-HYPOTHESIS{background:#EDE9FE;color:#5B21B6}'+
+    '.finding-hl{font-size:13px;font-weight:600;color:#1A2B4A;margin:0 0 6px}'+
+    '.finding-geo{font-size:10px;color:#6B7280;background:#F2F4F7;padding:1px 7px;border-radius:3px;margin-bottom:6px;display:inline-block}'+
+    '.finding-body{font-size:12px;color:#374151;line-height:1.65;margin-bottom:6px}'+
+    '.impl{font-size:11.5px;color:#166534;background:#F0FDF4;padding:6px 10px;border-left:3px solid #22C55E;margin-bottom:5px;border-radius:0 4px 4px 0}'+
+    '.finding-src{font-size:10px;color:#9CA3AF}'+
+    '.finding-src a{color:#00A693}'+
+    '.paid-banner{background:#FFF2F0;border:1px solid #FCA5A5;border-radius:6px;padding:12px 14px;margin:8px 0}'+
+    '.paid-lbl{font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#B91C1C;margin-bottom:6px}'+
+    '.paid-item{font-size:12px;color:#B91C1C;margin-bottom:3px}'+
+    '.paid-pri{font-size:8px;font-weight:700;background:#B91C1C;color:#fff;padding:1px 5px;border-radius:2px;margin-right:4px}'+
+    '.gap{background:#FFFBEB;border:1px solid #FCD34D;border-radius:6px;padding:12px 14px;margin:8px 0}'+
+    '.gap-title{font-size:13px;font-weight:600;color:#1A2B4A;margin-bottom:4px}'+
+    '.gap-why{font-size:11px;color:#92400E;margin-bottom:6px}'+
+    '.gap-expert{font-size:11.5px;font-weight:500;color:#1A2B4A;margin-bottom:4px}'+
+    '.gap-qs{font-size:11px;color:#1A2B4A;background:#FEF9C3;padding:8px 10px;border-radius:4px;margin-bottom:5px}'+
+    '.gap-hyp{font-size:11px;color:#5B21B6;font-style:italic;background:#EDE9FE;padding:4px 8px;border-radius:4px}'+
+    '.hyp-card{background:#F5F3FF;border:1px solid #C4B5FD;border-radius:6px;padding:10px 14px;margin:8px 0}'+
+    '.hyp-q{font-size:13px;font-weight:500;color:#2E1065;margin-bottom:5px}'+
+    '.hyp-wwtbt{font-size:11px;color:#5B21B6;font-style:italic;background:#EDE9FE;padding:5px 8px;border-radius:4px}'+
+    '.adj{background:#F5F3FF;border:1px solid #C4B5FD;border-radius:6px;padding:10px 14px;margin:8px 0}'+
+    '.adj-title{font-size:13px;font-weight:600;color:#2E1065;margin-bottom:3px}'+
+    '.adj-ind{font-size:10px;font-weight:600;color:#5B21B6;background:#EDE9FE;padding:2px 7px;border-radius:3px;display:inline-block;margin-bottom:5px}'+
+    '.adj-body{font-size:12px;color:#374151;line-height:1.6;margin-bottom:5px}'+
+    '.adj-rel{font-size:11px;color:#1E40AF;background:#EFF6FF;padding:4px 8px;border-radius:4px}'+
+    '.profile{border:1px solid #E5E9F0;border-radius:6px;padding:12px 14px;margin:8px 0;background:#fff}'+
+    '.profile-name{font-size:14px;font-weight:700;color:#1A2B4A;margin-bottom:2px}'+
+    '.profile-hq{font-size:10px;color:#9CA3AF;margin-bottom:3px}'+
+    '.profile-role{font-size:11px;font-weight:600;color:#00A693;margin-bottom:5px}'+
+    '.profile-fact{font-size:12px;color:#374151;line-height:1.55;margin-bottom:4px}'+
+    '.profile-rel{font-size:11px;color:#166534;background:#F0FDF4;padding:3px 8px;border-radius:4px;display:inline-block}'+
+    'hr{border:none;border-top:1px solid #E5E9F0;margin:24px 0}'+
+    '.section-label{font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#6B7280;margin:18px 0 6px}'+
+    '.footer{font-size:10px;color:#9CA3AF;text-align:center;margin-top:40px;border-top:1px solid #E5E9F0;padding-top:10px}';
+
+  function paraBreak(text){
+    if(!text) return '';
+    var sents = text.match(/[^.!?]+[.!?]+/g)||[text];
+    var paras=[];
+    for(var i=0;i<sents.length;i+=2) paras.push(sents.slice(i,i+2).join(' ').trim());
+    return paras.filter(function(p){return p.length>0;})
+      .map(function(p){return '<p style="margin:0 0 8px">'+p+'</p>';}).join('');
+  }
+
+  var h='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>'+p.client+'</title><style>'+css+'</style></head><body>';
+  h+='<h1>'+p.client+' \u2014 '+p.title+'</h1>';
+  h+='<p style="font-size:11px;color:#6B7280">'+p.practice+' \xb7 '+p.geography+' \xb7 '+p.period+' \xb7 Generated '+new Date().toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'})+'</p>';
+
+  // Cross-engagement executive summary
+  if(S.summary){
+    h+='<h2>Executive Summary</h2><div class="sum">'+paraBreak(S.summary)+'</div><hr>';
+  }
+
   sel.forEach(function(bq){
     var d=S.bqResults[bq.id]||{};
-    h+='<h2>'+bq.id+'</h2><p style="font-size:14px;font-weight:bold;font-style:italic;margin:0 0 6px">'+bq.text+'</p>';
-    if(d.summary)h+='<div class="sum">'+d.summary+'</div>';
-    if(d.stats&&d.stats.length)h+='<div>'+d.stats.map(function(s){return'<div class="stat"><div class="stat-v">'+s.value+'</div><div style="font-size:11px">'+s.label+'</div><div style="font-size:9px;color:#A4A3A4">'+s.source+'</div></div>';}).join('')+'</div>';
-    if(d.findings&&d.findings.length){h+='<p style="font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:#6F6F77;margin:12px 0 5px">Key findings</p>';d.findings.forEach(function(f){h+='<div class="finding"><h4>'+f.headline+'</h4><p style="font-size:12px;color:#6F6F77;margin:0 0 4px">'+f.body+'</p><div class="impl">→ For '+p.client+': '+f.implication+'</div><div style="font-size:10px;color:#6F6F77;margin-top:3px">Source: <a href="'+f.source_url+'">'+f.source_name+'</a></div></div>';});}
-    if(d.gaps&&d.gaps.length){h+='<p style="font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:#633806;margin:12px 0 5px">Gaps</p>';d.gaps.forEach(function(g){h+='<div class="gap"><h4>'+g.gap+' <span style="font-size:9px;background:#FBAE40;color:#633806;padding:1px 6px;border-radius:3px">'+g.priority+'</span></h4><p style="font-size:11px;color:#6F6F77;margin:4px 0">'+g.why+'</p><b style="font-size:11px;color:#22AE8A">Expert: '+g.expert+'</b><ol>'+g.questions.map(function(q){return'<li>'+q+'</li>';}).join('')+'</ol><div class="hyp">Hypothesis: '+g.hypothesis+'</div></div>';});}
+    h+='<h2>'+bq.id+'</h2>';
+    h+='<p style="font-size:14px;font-weight:bold;font-style:italic;margin:0 0 10px">'+bq.text+'</p>';
+
+    // BQ Exec Summary
+    if(d.executive_summary){
+      h+='<div class="sum">'+paraBreak(d.executive_summary)+'</div>';
+    }
+
+    // Stats
+    if(d.stats&&d.stats.length){
+      h+='<div style="margin:12px 0">';
+      d.stats.forEach(function(s){
+        h+='<div class="stat"><div class="stat-v">'+s.value+'</div>'+
+          '<div class="stat-l">'+s.label+'</div>'+
+          '<div class="stat-conf">'+(s.confidence||'')+'</div>'+
+          '<div class="stat-src">'+(s.source_name||s.source||'')+'</div></div>';
+      });
+      h+='</div>';
+    }
+
+    // Paid source flags — red banner
+    var paid=d.paid_source_flags||[];
+    if(paid.length){
+      h+='<div class="paid-banner"><div class="paid-lbl">&#128274; Paid sources required</div>';
+      paid.forEach(function(pf){
+        h+='<div class="paid-item"><span class="paid-pri">'+(pf.priority||'HIGH')+'</span>'+
+          '<strong>'+pf.source+'</strong> \u2014 '+(pf.what_it_unlocks||pf.why_needed||'')+'</div>';
+      });
+      h+='</div>';
+    }
+
+    // Key findings (FACT + INFERENCE)
+    var findings=d.findings||[];
+    var factInf=findings.filter(function(f){return f.evidence_type!=='HYPOTHESIS';});
+    var hyps=findings.filter(function(f){return f.evidence_type==='HYPOTHESIS';});
+    var inferences=findings.filter(function(f){return f.evidence_type==='INFERENCE';});
+
+    if(factInf.length){
+      h+='<div class="section-label">Key findings</div>';
+      factInf.forEach(function(f){
+        var et=(f.evidence_type||'INFERENCE').toUpperCase();
+        h+='<div class="finding">'+
+          '<span class="fih fih-'+et+'">'+et+'</span>'+
+          (f.geo||f.data_date?'<span class="finding-geo">'+(f.geo||'')+(f.data_date?' \xb7 '+f.data_date:'')+'</span>':'');
+        h+='<div class="finding-hl">'+f.headline+'</div>';
+        if(f.body) h+='<div class="finding-body">'+f.body+'</div>';
+        if(f.client_implication) h+='<div class="impl">\u2192 '+f.client_implication+'</div>';
+        if(f.source_name||f.source_url){
+          h+='<div class="finding-src">Source: '+
+            (f.source_url&&f.source_url!=='#'?'<a href="'+f.source_url+'">'+f.source_name+'</a>':f.source_name||'')+
+          '</div>';
+        }
+        h+='</div>';
+      });
+    }
+
+    // Hypotheses
+    if(hyps.length){
+      h+='<div class="section-label">Hypotheses</div>';
+      hyps.forEach(function(f){
+        h+='<div class="hyp-card"><div class="hyp-q">'+f.headline+'</div>'+
+          (f.body?'<div class="finding-body">'+f.body+'</div>':'')+
+          '<div class="hyp-wwtbt">What would need to be true: '+(f.client_implication||f.body||'Requires validation')+'</div></div>';
+      });
+    }
+
+    // Insights requiring validation
+    if(inferences.length){
+      h+='<div class="section-label">Insights requiring validation</div>';
+      inferences.forEach(function(f){
+        h+='<div class="finding" style="background:#FFFBEB;border-color:#FCD34D">'+
+          '<div class="finding-hl">'+f.headline+'</div>'+
+          '<div class="finding-body" style="color:#92400E">Validation path: '+(f.client_implication||'Expert interview or paid source required')+'</div></div>';
+      });
+    }
+
+    // Adjacent intelligence
+    var ca=d.creative_angles||[];
+    if(ca.length){
+      h+='<div class="section-label">Adjacent Intelligence \u2014 cross-sector signals</div>';
+      ca.forEach(function(c){
+        h+='<div class="adj">'+
+          '<div class="adj-title">'+c.angle_title+'</div>'+
+          (c.parallel_industry?'<span class="adj-ind">'+c.parallel_industry+'</span>':'')+
+          (c.insight?'<div class="adj-body">'+c.insight+'</div>':'')+
+          (c.why_relevant_to_client?'<div class="adj-rel">Relevance: '+c.why_relevant_to_client+'</div>':'')+
+        '</div>';
+      });
+    }
+
+    // Disruption signals
+    var dis=d.disruption_signals||[];
+    if(dis.length){
+      h+='<div class="section-label">Disruption signals</div>';
+      dis.forEach(function(s){
+        h+='<div style="border-left:3px solid #B91C1C;padding:6px 12px;margin:6px 0;background:#FFF5F5">'+
+          '<strong>'+s.signal+'</strong>'+
+          (s.company||s.date?'<div style="font-size:10px;color:#9CA3AF">'+(s.company||'')+(s.date?' \xb7 '+s.date:'')+'</div>':'')+
+          (s.client_implication?'<div style="font-size:11px;color:#B91C1C;margin-top:3px">'+s.client_implication+'</div>':'')+
+        '</div>';
+      });
+    }
+
+    // Decision frame
+    var df=d.client_decision_frame;
+    if(df&&(df.option_a||df.option_b)){
+      h+='<div class="section-label">Client decision frame</div>';
+      h+='<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:8px">'+
+        '<div style="flex:1;min-width:200px;border:1px solid #E5E9F0;border-radius:6px;padding:10px 12px">'+
+          '<div style="font-size:9px;font-weight:700;color:#9CA3AF;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Option A</div>'+
+          '<div style="font-size:12px;color:#1A2B4A">'+df.option_a+'</div></div>'+
+        '<div style="flex:1;min-width:200px;border:1px solid #E5E9F0;border-radius:6px;padding:10px 12px">'+
+          '<div style="font-size:9px;font-weight:700;color:#9CA3AF;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Option B</div>'+
+          '<div style="font-size:12px;color:#1A2B4A">'+df.option_b+'</div></div></div>';
+      if(df.key_condition) h+='<div style="background:#F2F4F7;border-radius:6px;padding:8px 12px;font-size:12px"><strong>Key condition:</strong> '+df.key_condition+'</div>';
+    }
+
+    // Primary research gaps
+    var gaps=d.primary_research_gaps||[];
+    if(gaps.length){
+      h+='<div class="section-label">Primary research gaps</div>';
+      gaps.forEach(function(g){
+        h+='<div class="gap">'+
+          '<div class="gap-title">'+g.gap+'</div>'+
+          (g.why_impossible?'<div class="gap-why">Why web research cannot answer this: '+g.why_impossible+'</div>':'')+
+          (g.expert_profile?'<div class="gap-expert">Expert needed: '+g.expert_profile+'</div>':'')+
+          (g.questions&&g.questions.length?'<div class="gap-qs">Questions to ask:<br>'+g.questions.map(function(q,i){return (i+1)+'. '+q;}).join('<br>')+'</div>':'')+
+          (g.hypothesis?'<div class="gap-hyp">Hypothesis to test: '+g.hypothesis+'</div>':'')+
+        '</div>';
+      });
+    }
+
+    // Competitor profiles
+    var profs=d.profiles||[];
+    if(profs.length){
+      h+='<div class="section-label">Competitor profiles</div>';
+      profs.forEach(function(pr){
+        h+='<div class="profile">'+
+          '<div class="profile-name">'+pr.name+'</div>'+
+          '<div class="profile-hq">'+(pr.hq||'')+(pr.geography?' \xb7 '+pr.geography:'')+'</div>'+
+          (pr.role?'<div class="profile-role">'+pr.role+'</div>':'')+
+          (pr.key_fact?'<div class="profile-fact">'+pr.key_fact+'</div>':'')+
+          (pr.key_product?'<div class="profile-fact" style="color:#6B7280">'+pr.key_product+'</div>':'')+
+          (pr.client_relevance?'<div class="profile-rel">'+pr.client_relevance+'</div>':'')+
+        '</div>';
+      });
+    }
+
     h+='<hr>';
   });
-  h+='<div class="footer">FutureBridge · Strictly Confidential · '+p.client+' · '+new Date().getFullYear()+'</div></body></html>';
-  try{
-    var blob=new Blob([h],{type:'text/html;charset=utf-8'});
-    var url=URL.createObjectURL(blob);
-    var a=document.createElement('a');a.href=url;a.download=p.client.replace(/\s+/g,'_')+'_Research_Brief.html';
-    document.body.appendChild(a);a.click();document.body.removeChild(a);
-    setTimeout(function(){URL.revokeObjectURL(url);},2000);
-  }catch(e){
-    // Final fallback: open in new tab
-    var w=window.open('','_blank');
-    if(w){w.document.write(h);w.document.close();}
-    else{alert('Please allow popups to view the report, or right-click Save As.');}
-  }
+
+  h+='<div class="footer">FutureBridge Research Intelligence Platform \xb7 '+p.client+' \xb7 '+new Date().getFullYear()+'</div>';
+  h+='</body></html>';
+
+  var b=new Blob([h],{type:'text/html'});
+  var a=document.createElement('a');
+  a.href=URL.createObjectURL(b);
+  a.download=(p.client||'Report').replace(/\s+/g,'_')+'_Research_Brief.html';
+  a.click();
+  setTimeout(function(){URL.revokeObjectURL(a.href);},2000);
 }
 function dlData(){
   var p=S.proposal,sel=S.selBQs.map(function(i){return p.bqs[i];});
@@ -2340,7 +2576,16 @@ function buildSynthesisPrompt(p, allBQResults, engType) {
     '    "key_insight": "The single most important finding across all research for ' + client + '",',
     '    "biggest_gap": "The most critical data point still missing",',
     '    "recommended_next_step": "Specific action ' + client + ' should take based on this research"',
-    '  }',
+    '  },',
+    '  "strategic_analogies": [',
+    '    {',
+    '      "title": "One-line title for the strategic analogy",',
+    '      "source_industry": "The adjacent industry (e.g. aerospace bearings India)",',
+    '      "source_bqs": ["BQ1", "BQ2"],',
+    '      "the_analogy": "2-3 sentence explanation of how the adjacent industry solved the exact same structural problem. Specific, named, with numbers where possible.",',
+    '      "what_client_can_learn": "2-3 sentence strategic implication for ' + client + '. What specific decision, capability, or partnership does this analogy suggest?"',
+    '    }',
+    '  ]',
     '}',
     '',
     'RULES:',
@@ -2349,6 +2594,7 @@ function buildSynthesisPrompt(p, allBQResults, engType) {
     '- coverage_level "gap" = data not available from web research at all',
     '- coverage_level "partial" = some data found but country-level or primary data missing',
     '- Never invent data — if a section has no research, say so in coverage_note',
+    '- strategic_analogies: 2-4 entries drawn from creative_angles across all BQs. De-duplicate. Pick only the most powerful cross-engagement analogies. Write the_analogy and what_client_can_learn as prose paragraphs, not bullet points. This is the most differentiated section in the deliverable.',
     '- APOSTROPHES: escape every apostrophe with backslash in string values',
     '- Respond ONLY with valid JSON. No markdown. No text before or after.',
   ].join('\n');
@@ -2396,7 +2642,10 @@ async function runSynthesis() {
     var text = (data.content||[]).filter(function(b){return b.type==='text';}).map(function(b){return b.text;}).join('');
     var parsed = parseSynthesis(text);
 
-    if (!parsed) throw new Error('Could not parse synthesis response');
+    if (!parsed) {
+      console.error('parseSynthesis failed. text length:', text.length, 'first 300:', text.slice(0,300));
+      throw new Error('Could not parse synthesis response');
+    }
 
     S.synthesis = parsed;
     S.detectedEngType = parsed.engagement && parsed.engagement.type ? parsed.engagement.type : engType;
@@ -2426,6 +2675,7 @@ function parseSynthesis(text) {
   if (!m) return null;
   var raw = m[0];
   raw = raw.split("\\'").join("'");
+
   function cleanLit(s){
     var out='',inStr=false,esc=false;
     for(var i=0;i<s.length;i++){
@@ -2438,18 +2688,28 @@ function parseSynthesis(text) {
     }
     return out;
   }
-  try { return JSON.parse(cleanLit(raw)); } catch(e) {}
-  var lastB=raw.lastIndexOf('"}');
-  var suffs=[']}',']}]}',']}]}]}',']}]}]}]}'];
-  while(lastB>raw.length*0.2){
-    var cand=cleanLit(raw.slice(0,lastB+2));
-    for(var si=0;si<suffs.length;si++){
-      try{var p=JSON.parse(cand+suffs[si]);if(p&&(p.sections||p.cross_cutting))return p;}catch(e){}
+
+  try {
+    var p1 = JSON.parse(cleanLit(raw));
+    if(p1 && (p1.sections || p1.cross_cutting)) return p1;
+  } catch(e) {}
+
+  var lastB = raw.lastIndexOf('"}');
+  var suffs = [']}',']}]}',']}]}]}',']}]}]}]}'];
+  while(lastB > raw.length * 0.2){
+    var cand = cleanLit(raw.slice(0, lastB+2));
+    for(var si=0; si<suffs.length; si++){
+      try{
+        var p2 = JSON.parse(cand + suffs[si]);
+        if(p2 && (p2.sections || p2.cross_cutting)) return p2;
+      }catch(e){}
     }
-    lastB=raw.lastIndexOf('"}',lastB-1);
+    lastB = raw.lastIndexOf('"}', lastB-1);
   }
+
   return null;
 }
+
 
 function renderSectionView(parsed) {
   var container = document.getElementById('sectionsContainer');
@@ -2459,6 +2719,55 @@ function renderSectionView(parsed) {
   var sections = parsed.sections || [];
   var cc = parsed.cross_cutting || {};
   var p = S.proposal;
+
+  // ── STRATEGIC ANALOGIES — top of section view ───────────────
+  var sa = parsed.strategic_analogies || [];
+  if (sa.length) {
+    var saWrap = document.createElement('div');
+    saWrap.style.cssText = 'margin-bottom:20px';
+
+    var saHd = document.createElement('div');
+    saHd.style.cssText = 'background:#2E1065;border-radius:12px 12px 0 0;padding:14px 20px;display:flex;align-items:center;gap:10px';
+    saHd.innerHTML = '<span style="font-size:20px">🔭</span>' +
+      '<div><div style="font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#C4B5FD;margin-bottom:2px">Strategic Intelligence</div>' +
+      '<div style="font-size:16px;font-weight:700;color:#fff">Strategic Analogies</div>' +
+      '<div style="font-size:11px;color:#A78BFA;margin-top:2px">What another industry already solved — and what ' + (S.proposal&&S.proposal.client||'the client') + ' can learn from it</div></div>';
+    saWrap.appendChild(saHd);
+
+    sa.forEach(function(a, i) {
+      var card = document.createElement('div');
+      card.style.cssText = 'background:#fff;border:1px solid #C4B5FD;border-top:none;padding:18px 20px;' +
+        (i === sa.length - 1 ? 'border-radius:0 0 12px 12px' : '');
+
+      var sourceBQs = (a.source_bqs||[]).map(function(bq){
+        return '<span style="font-size:9px;font-weight:600;background:#EDE9FE;color:#5B21B6;padding:1px 7px;border-radius:10px;margin-right:4px">'+bq+'</span>';
+      }).join('');
+
+      card.innerHTML =
+        '<div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:10px">' +
+          '<div style="font-size:14px;font-weight:700;color:#2E1065">' + escH(a.title||'') + '</div>' +
+          '<div>' + sourceBQs + '</div>' +
+        '</div>' +
+        (a.source_industry ? '<div style="display:inline-block;font-size:10px;font-weight:600;color:#5B21B6;background:#EDE9FE;padding:3px 10px;border-radius:4px;margin-bottom:12px">Adjacent industry: ' + escH(a.source_industry) + '</div>' : '') +
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">' +
+          '<div>' +
+            '<div style="font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#9CA3AF;margin-bottom:6px">The analogy</div>' +
+            '<div style="font-size:12.5px;color:#374151;line-height:1.7">' + escH(a.the_analogy||'') + '</div>' +
+          '</div>' +
+          '<div style="background:#F5F3FF;border-radius:8px;padding:12px 14px">' +
+            '<div style="font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#5B21B6;margin-bottom:6px">What ' + escH(S.proposal&&S.proposal.client||'the client') + ' can learn</div>' +
+            '<div style="font-size:12.5px;color:#2E1065;line-height:1.7;font-weight:500">' + escH(a.what_client_can_learn||'') + '</div>' +
+          '</div>' +
+        '</div>';
+
+      if (i < sa.length - 1) {
+        card.style.borderBottom = '.5px solid #E5E9F0';
+      }
+      saWrap.appendChild(card);
+    });
+
+    container.appendChild(saWrap);
+  }
 
   // Cross-cutting insight banner
   if (cc.key_insight || cc.recommended_next_step) {
