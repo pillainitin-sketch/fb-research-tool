@@ -102,13 +102,13 @@ input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;h
 .prog-bar{height:4px;background:#E5E9F0;border-radius:2px;margin-bottom:24px;overflow:hidden}
 .prog-fill{height:100%;background:linear-gradient(90deg,#E85520,#F0A060);border-radius:2px;transition:width .5s ease}
 .agents-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px}
-.agent-card{background:#fff;border:1px solid #E5E9F0;border-radius:10px;overflow:hidden;transition:border-color .2s}
+.agent-card{background:#fff;border:1px solid #E5E9F0;border-radius:10px;overflow:hidden;transition:border-color .2s;display:flex;flex-direction:column}
 .agent-card.done{border-color:#22C589}
 .ac-top{display:flex;align-items:flex-start;gap:10px;padding:12px 14px;border-bottom:.5px solid #F2F4F7}
 .ac-id{width:24px;height:24px;border-radius:50%;background:#FFF5F2;color:#E85520;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .agent-card.done .ac-id{background:#E8F7F0;color:#16A34A}
 .ac-title{font-size:11px;font-weight:500;color:#1A2B4A;line-height:1.4}
-.ac-log{padding:10px 14px;min-height:60px;max-height:140px;overflow-y:auto;font-size:10px}
+.ac-log{padding:8px 14px;height:120px;max-height:120px;overflow-y:auto;font-size:10px;flex:1}
 .log-line{display:flex;align-items:flex-start;gap:6px;padding:2px 0;color:#6B7280;line-height:1.4}
 .log-icon{flex-shrink:0;width:14px}
 .thinking-line{color:#E85520}
@@ -147,7 +147,7 @@ input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;h
 /* EXEC SUMMARY */
 .bq-exec{padding:14px 18px;border-bottom:1px solid #F2F4F7}
 .exec-lbl{font-size:9px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:#00A693;margin-bottom:6px}
-.exec-body{font-size:12.5px;color:#1A2B4A;line-height:1.7}
+.exec-body{font-size:12.5px;color:#1A2B4A;line-height:1.7;word-break:break-word}
 
 /* STATS */
 .bq-stats{padding:14px 18px;background:#F0FBF8;border-bottom:1px solid #D1FAE5}
@@ -313,7 +313,7 @@ input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;h
 <div class="upload-wrap"><div class="upload-box">
   <div class="eyebrow">Research Intelligence System</div>
   <div class="big-title">Upload your proposal.<br><em>Get everything out.</em></div>
-  <div class="upload-sub">The system reads your engagement proposal, extracts every business question, then runs live web research across 25–30 sources per BQ — 10 proposals loaded — returning structured findings, key statistics, sourced insights, gap analysis with expert discussion guides, and competitor profiles.</div>
+  <div class="upload-sub">Upload any FutureBridge proposal (PPTX or PDF). The system extracts every business question automatically, then runs 4-pass deep research per BQ — Planning, Searching, Following leads, Synthesising — returning structured findings with FIH tags, key statistics, paid source flags, primary research gaps with expert interview guides, parallel industry signals, and competitor profiles.</div>
   <div class="drop-zone" id="dropZone">
     <input type="file" id="fileIn" accept=".pptx,.pdf,.docx,.txt" onchange="handleFile(this.files[0])">
     <div class="dz-icon">⬆</div>
@@ -363,7 +363,7 @@ input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;h
 <!-- S4 RUNNING -->
 <div class="stage" id="s4">
 <div class="run-wrap">
-  <div class="run-title">Live web research running</div>
+  <div class="run-title">Deep research running</div>
   <div class="run-sub" id="runSub">Searching news, articles, company pages, reports — scanning 25–30 sources per BQ</div>
   <div class="live-badge"><span class="live-dot"></span>Live web search active</div>
   <div class="prog-wrap"><div class="prog-fill" id="progFill" style="width:0%"></div></div>
@@ -1140,7 +1140,7 @@ async function runResearch(){
   if(!S.selBQs.length){alert('Select at least one BQ');return;}
   goTo(4);
   var p=S.proposal, sel=S.selBQs.map(function(i){return p.bqs[i];});
-  document.getElementById('runSub').textContent='Running '+sel.length+' research agent'+(sel.length>1?'s':'')+' sequentially — scanning 25–30 sources per BQ';
+  document.getElementById('runSub').textContent='Running '+sel.length+' BQ'+(sel.length>1?'s':'')+' — 4-pass deep research (Plan → Search → Follow → Synthesise)';
 
   // Build agent cards (all visible, sequential)
   var grid=document.getElementById('agentsGrid'); grid.innerHTML='';
@@ -1193,8 +1193,8 @@ async function runResearch(){
         if(type==='search'){sc++;scEl.textContent=sc;}
         if(type==='pass'){
           var passEl=document.createElement('div');
-          passEl.style.cssText='font-size:10px;font-weight:500;color:var(--teal);padding:3px 0;border-top:.5px solid var(--lgray);margin-top:3px';
-          passEl.textContent='► '+msg;
+          passEl.style.cssText='font-size:9px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:#E85520;padding:4px 0 3px;border-top:.5px solid #F2F4F7;margin-top:3px';
+          passEl.textContent='▶ '+msg;
           logEl.appendChild(passEl);
           logEl.scrollTop=logEl.scrollHeight;
           return;
@@ -1507,6 +1507,7 @@ function renderResults(){
 
     // ── COMPETITOR PROFILES ────────────────────────────────────
     var profiles=d.profiles||[];
+    console.log('Profiles for '+bqId+':',profiles.length,'items',JSON.stringify(profiles).slice(0,200));
     if(profiles.length){
       html+='<div class="bq-profiles"><div class="profiles-lbl">Competitor profiles</div>'+
         profiles.map(function(pr){
