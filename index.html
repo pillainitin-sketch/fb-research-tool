@@ -164,6 +164,15 @@ input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;h
 .bq-findings{padding:14px 18px;border-bottom:1px solid #F2F4F7}
 .findings-lbl{font-size:9px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:#1A2B4A;margin-bottom:12px}
 .finding{border:1px solid #E5E9F0;border-radius:8px;padding:13px 15px;margin-bottom:8px;background:#fff}
+.trl-badge{display:inline-flex;align-items:center;gap:5px;font-size:9px;font-weight:700;padding:3px 10px;border-radius:10px;letter-spacing:.5px}
+.trl-track{background:#EDE9FE;color:#5B21B6}
+.trl-prepare{background:#FEF9C3;color:#854D0E}
+.trl-act{background:#DCFCE7;color:#166534}
+.assessment-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:8px}
+.assess-box{background:#F8FAFC;border:.5px solid #E5E9F0;border-radius:6px;padding:6px 8px;text-align:center}
+.assess-score{font-size:16px;font-weight:700;color:#1A2B4A;line-height:1}
+.assess-lbl{font-size:8px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:#9CA3AF;margin-top:2px}
+.assess-why{font-size:9px;color:#6B7280;margin-top:3px;line-height:1.4;text-align:left}
 .finding:last-child{margin-bottom:0}
 .finding-hd{display:flex;align-items:flex-start;gap:8px;margin-bottom:6px}
 .fih-badge{font-size:8px;font-weight:700;padding:2px 7px;border-radius:3px;flex-shrink:0;margin-top:2px;letter-spacing:.5px}
@@ -546,7 +555,7 @@ async function extractBQsFromFile(file,extracted){
   } else {
     var text=(extracted.text||'').slice(0,8000);
     if(!text||text.length<50) return null;
-    prompt='This is text extracted from a FutureBridge consulting proposal. Extract: client name, engagement title, practice area, geography, period, competitors, all business questions (explicit and implied). Return ONLY valid JSON: {"client":"","title":"","practice":"","geography":"","period":"","competitors":[],"bqs":[{"id":"BQ1","text":"","kw":[],"gap":false}]}.\n\n'+text;
+    prompt='This is text from a FutureBridge proposal. Extract: client, title, practice, geography, period, competitors, all BQs with scope_nouns (3-5 must-cover technical terms per BQ from the proposal text). Return ONLY valid JSON: {"client":"","title":"","practice":"","geography":"","period":"","competitors":[],"bqs":[{"id":"BQ1","text":"","kw":[],"scope_nouns":[],"gap":false}]}.\n\n'+text;
   }
 
   try{
@@ -793,9 +802,9 @@ function buildSynthesisResearchPrompt(bq, p, plan, allResearch, client){
     ' Client: '+client+'. Engagement: '+(p.title||'')+'. Geography: '+(p.geography||'Global')+'.'+
     ' Business Question: '+bq.text+'.'+
     ' Research collected: '+allResearch.slice(0,8000)+
-    ' Hypothesis to test: '+(plan&&plan.hypothesis?plan.hypothesis:'unknown')+
+    ' Hypotheses to test: '+(plan&&plan.hypotheses&&plan.hypotheses.length?JSON.stringify(plan.hypotheses):plan&&plan.hypothesis?'[{"statement":"'+plan.hypothesis+'"}]':'none identified')+
     ' Adjacent intelligence: '+(plan&&plan.parallel_industry?plan.parallel_industry:'none identified')+
-    ' Return ONLY valid JSON. START with creative_angles key (required, never empty). Keys: creative_angles (array of 1-3 {angle_title,parallel_industry,insight,why_relevant_to_client} — identify adjacent industries that solved the same structural problem first), executive_summary (string), engagement_type (string), stats (array of {value,label,confidence,source,url}), findings (array of {evidence_id,evidence_type,headline,body,client_implication,confidence,geo,data_date,source_name,source_url}), disruption_signals (array of {signal,company,date,type,client_implication}), client_decision_frame ({option_a,option_b,key_condition}), paid_source_flags (array of {source,what_it_unlocks,why_needed,priority}), primary_research_gaps (array of {gap,why_impossible,expert_profile,questions,hypothesis,priority}), profiles (array of {name,hq,role,geography,key_product,key_fact,client_relevance}).'+
+    ' Return ONLY valid JSON. Generate keys IN THIS ORDER — order matters for quality. 1. creative_angles (REQUIRED never empty — array of 1-3 {angle_title,parallel_industry,insight,why_relevant_to_client} — which other industry solved this problem first). 2. hypotheses (REQUIRED never empty — array of 2-3 {statement,what_would_need_to_be_true,confidence_level:low/medium/high} — what you BELIEVE is true about this BQ before findings; these frame the research and must be specific and testable). 3. executive_summary (string — 3-4 sentences with named companies and numbers). 4. engagement_type (string). 5. stats (array of {value,label,confidence,source_name,source_url}). 6. findings (array of {evidence_id,evidence_type,headline,body,client_implication,confidence,geo,data_date,source_name,source_url,trl_level,trl_label,assessment} — evidence_type FACT/INFERENCE/HYPOTHESIS; findings should test the hypotheses above). 7. disruption_signals (array of {signal,company,date,type,client_implication}). 8. client_decision_frame ({option_a,option_b,key_condition}). 9. paid_source_flags (array of {source,what_it_unlocks,why_needed,priority}). 10. profiles (array of {name,hq,founded,type,role,geography,key_product,key_fact,client_relevance,source_url} — type: competitor, startup, or supplier; include all three types; 3-6 total). 11. primary_research_gaps (array of {gap,why_impossible,expert_profile,questions,hypothesis,priority}).'+
     ' RULES: evidence_type must be FACT (directly cited) or INFERENCE (logical conclusion) or HYPOTHESIS (unverified). 4-5 findings minimum. Every finding body must end with: So what for '+client+': [one sentence actionable implication]. No markdown, no text before or after the JSON. Double quotes only. Escape apostrophes as \'.';
 }
 
@@ -821,11 +830,16 @@ function buildResearchPrompt(bq, p, plan) {
     'BUSINESS QUESTION: ' + (bq.text||''),
     '',
     '── PLANNED SEARCH ANGLES (use these first) ─────────────',plan?'1. '+( plan.search_angle_1||''):'',plan?'2. '+(plan.search_angle_2||''):'',plan?'3. '+(plan.search_angle_3||''):'',
-    '── SEARCH STRATEGY ──────────────────────────────────────',
+    '── SCOPE LOCK — MUST COVER ──────────────────────────────',
+    (bq.scope_nouns&&bq.scope_nouns.length?'These specific terms from the proposal MUST appear in your findings: '+(bq.scope_nouns||[]).join(', ')+'. Run dedicated searches for any not covered by the main strategy. If still not found, create a primary_research_gap entry.':'No scope nouns defined — cover BQ broadly.'),
+    '',
+    '── SEARCH STRATEGY (6 searches — run all in order) ──────',
     '1. LANDSCAPE: "' + ((bq.kw||[])[0]||p.title||'') + ' ' + (geos[0]||'global') + ' players market 2024 2025"',
     '2. COMPETITORS: Search each of these by name + topic: ' + (p.competitors||[]).slice(0,3).join(', '),
     geos.length > 1 ? '3. PER GEOGRAPHY: One dedicated search per geography: ' + geos.slice(0,4).join(' / ') : '3. MARKET DATA: Trade data, market size, import/export for this category',
     '4. DISRUPTION: "' + ((bq.kw||[])[0]||'') + ' bankruptcy acquisition merger supply disruption 2023 2024 2025"',
+    '5. STARTUPS: "' + ((bq.kw||[])[0]||'') + ' startup funding seed series A venture 2022 2023 2024 2025" — find emerging players, spin-offs, accelerator graduates.',
+    '6. SUPPLIERS: "' + ((bq.kw||[])[0]||'') + ' supplier manufacturer raw material component OEM tier" — map key suppliers in this space.',
     '5. CLIENT LENS: "' + client + ' ' + ((bq.kw||[])[0]||'strategy') + ' strategy"',
     '',
     '── WHAT TO RESEARCH AND INCLUDE ────────────────────────',
@@ -856,13 +870,21 @@ function buildResearchPrompt(bq, p, plan) {
     '  executive_summary: string (3-4 sentences, named+numbered+client-framed)',
     '  engagement_type: string',
     '  stats: array of {value, label, confidence, source, url}',
-    '  findings: array of {headline, body, client_implication, confidence, geo, source_name, source_url}',
+    '  findings: array of {headline, body, client_implication, confidence, geo, source_name, source_url, trl_level, trl_label, assessment}',
+    '    trl_level: integer 1-9 (Technology Readiness Level). Only for innovation/technology findings; null for market/competitor findings.',
+    '    trl_label: one of Track (TRL 1-3), Prepare (TRL 4-6), Act now (TRL 7-9), or null.',
+    '    assessment: {relevance, availability, benefit, risk} each scored 1-5. Only for innovation findings; null otherwise.',
     '  disruption_signals: array of {signal, company, date, type, client_implication} — empty array [] if none found',
     '  client_decision_frame: object {option_a, option_b, key_condition}',
     '  paid_source_flags: array of {source, what_it_unlocks, why_needed, priority}',
     '  primary_research_gaps: array of {gap, why_impossible, expert_profile, questions, hypothesis, priority}',
     '  creative_angles: array of 1-3 objects {angle_title, parallel_industry, insight, why_relevant_to_client} — MANDATORY. Identify which other industry solved the exact same problem first. Example: wind bearing localisation → aerospace bearing India (10 years ahead). Never return empty array.',
-    '  profiles: array of {name, hq, role, geography, key_product, key_fact, client_relevance, source, url}',
+    '  profiles: 3-6 entries covering competitors, startups, AND suppliers. {name, hq, founded, type, role, geography, key_product, key_fact, client_relevance, source_name, source_url}',
+    '    type must be one of: competitor, startup, supplier',
+    '    For startups: find spin-offs, funded ventures, accelerator graduates, university spin-outs active in this space',
+    '    For suppliers: identify key raw material or component suppliers relevant to this BQ',
+    '    type: "competitor" | "startup" | "supplier" — include ALL THREE types. Startups: search Crunchbase-style for emerging players, spin-offs, accelerator graduates in this space. Suppliers: identify key raw material or component suppliers relevant to this BQ.',
+    '    3-6 total profiles across all three types.',
     '',
     'RULES:',
     '  - findings: 3-5 entries, each must meet ALL 6 quality standards above',
@@ -938,7 +960,12 @@ function parseResearch(text){
     for(var j=0;j<block.length;j++){
       if(block[j]==='{'){if(d===0)start=j;d++;}
       else if(block[j]==='}'){d--;if(d===0&&start>=0){
-        try{findings.push(JSON.parse(cleanLiterals(block.slice(start,j+1))));}catch(e){}
+        try{
+            var fo=JSON.parse(cleanLiterals(block.slice(start,j+1)));
+            // Sanitise nested assessment — if malformed, null it
+            if(fo.assessment&&typeof fo.assessment!=='object') fo.assessment=null;
+            findings.push(fo);
+          }catch(e){}
         start=-1;
       }}
     }
@@ -951,6 +978,8 @@ function parseResearch(text){
   }
 
   var rescued={
+    creative_angles:extractArr(raw,'creative_angles'),
+    hypotheses:extractArr(raw,'hypotheses'),
     executive_summary:extractStr(raw,'executive_summary'),
     engagement_type:extractStr(raw,'engagement_type'),
     stats:extractArr(raw,'stats'),
@@ -958,9 +987,8 @@ function parseResearch(text){
     disruption_signals:extractArr(raw,'disruption_signals'),
     client_decision_frame:extractDF(raw),
     paid_source_flags:extractArr(raw,'paid_source_flags'),
-    primary_research_gaps:extractArr(raw,'primary_research_gaps'),
     profiles:extractArr(raw,'profiles'),
-    creative_angles:extractArr(raw,'creative_angles')
+    primary_research_gaps:extractArr(raw,'primary_research_gaps')
   };
 
   if(rescued.executive_summary||rescued.findings.length>0) return rescued;
@@ -1055,7 +1083,7 @@ async function researchBQ(bq, p, onLog){
     var planData=await callAPI({
       model:'claude-sonnet-4-6',
       max_tokens:800,
-      messages:[{role:'user',content:'You are a senior FutureBridge research analyst. Plan the research strategy. Client: '+client+'. BQ: '+bq.text+'. Competitors: '+(p.competitors||[]).join(', ')+'. Return ONLY valid JSON: {"search_angle_1":"","search_angle_2":"","search_angle_3":"","hypothesis":"","parallel_industry":""}'}]});
+      messages:[{role:'user',content:'You are a senior FutureBridge research analyst. Plan the research strategy. Client: '+client+'. BQ: '+bq.text+'. Competitors: '+(p.competitors||[]).join(', ')+'. Return ONLY valid JSON: {"search_angle_1":"","search_angle_2":"","search_angle_3":"","hypothesis":"[specific testable belief — name a company or number]","parallel_industry":"[specific adjacent industry that solved this problem]","hypotheses":[{"statement":"","what_would_need_to_be_true":"","confidence_level":"low/medium/high"},{"statement":"","what_would_need_to_be_true":"","confidence_level":"low/medium/high"}]}'}]});
 
     stopTicker();
 
@@ -1383,7 +1411,7 @@ function renderResults(){
     var paid=d.paid_source_flags||[];
     if(paid.length){
       html+='<div class="paid-banner"><span class="paid-icon">🔒</span><div style="flex:1">'+
-        '<div class="paid-lbl">Paid sources required — cannot complete this BQ without</div>'+
+        '<div class="paid-lbl">&#128274; STOP — Stats below require paid sources. Do not present market size or pricing figures to client without these.</div>'+
         '<div class="paid-items">'+paid.map(function(s){
           var pri=s.priority||'HIGH';
           var priColor=pri==='CRITICAL'?'#A32D2D':'#633806';
@@ -1397,6 +1425,24 @@ function renderResults(){
     if(d.executive_summary){
       html+='<div class="bq-exec"><div class="exec-lbl">Executive summary</div>'+
         '<div class="exec-body">'+formatParas(d.executive_summary)+'</div></div>';
+    }
+
+    // ── SCOPE COVERAGE CONFIRMATION ───────────────────────────
+    var scopeNouns=bq.scope_nouns||[];
+    if(scopeNouns.length){
+      var allText=((d.findings||[]).map(function(f){return (f.headline||'')+' '+(f.body||'');}).join(' ')+(d.executive_summary||'')).toLowerCase();
+      var cov=scopeNouns.map(function(n){return {noun:n,found:allText.indexOf(n.toLowerCase())>=0};});
+      var nFound=cov.filter(function(c){return c.found;}).length;
+      var allOk=nFound===cov.length;
+      html+='<div style="background:'+(allOk?'#F0FDF4':'#FFFBEB')+';border:.5px solid '+(allOk?'#86EFAC':'#FCD34D')+';border-radius:8px;padding:10px 14px;margin-bottom:0">'+
+        '<div style="font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:'+(allOk?'#166534':'#92400E')+';margin-bottom:6px">Scope coverage — '+nFound+'/'+cov.length+' terms confirmed</div>'+
+        '<div style="display:flex;flex-wrap:wrap;gap:5px">'+
+        cov.map(function(c){
+          return '<span style="font-size:10px;padding:2px 8px;border-radius:10px;background:'+(c.found?'#DCFCE7':'#FEE2E2')+';color:'+(c.found?'#166534':'#B91C1C')+';font-weight:500">'+(c.found?'✓ ':'✗ ')+escH(c.noun)+'</span>';
+        }).join('')+
+        '</div>'+
+        (!allOk?'<div style="font-size:10px;color:#92400E;margin-top:5px">Missing terms will appear in primary research gaps below.</div>':'')+
+      '</div>';
     }
 
     // ── KEY STATISTICS ─────────────────────────────────────────
@@ -1423,14 +1469,29 @@ function renderResults(){
     // ── FINDINGS with FIH badges ───────────────────────────────
     var findings=d.findings||[];
     var factInf=findings.filter(function(f){return f.evidence_type!=='HYPOTHESIS';});
-    var hyps=findings.filter(function(f){return f.evidence_type==='HYPOTHESIS';});
+    // Use standalone hypotheses array if present, fall back to finding-level HYPOTHESIS tags
+    var hyps=[];
+    if(d.hypotheses&&d.hypotheses.length){
+      hyps=d.hypotheses.map(function(h){
+        return {
+          headline: h.statement||h.headline||'',
+          body: h.what_would_need_to_be_true||h.body||'',
+          client_implication: h.what_would_need_to_be_true||'',
+          confidence_level: h.confidence_level||'medium'
+        };
+      });
+    } else {
+      hyps=findings.filter(function(f){return f.evidence_type==='HYPOTHESIS';});
+    }
     var inferences=findings.filter(function(f){return f.evidence_type==='INFERENCE';});
 
     if(factInf.length){
       html+='<div class="bq-findings"><div class="findings-lbl">Key findings</div>'+
         factInf.map(function(f){
           var et=(f.evidence_type||'INFERENCE').toUpperCase();
-          return '<div class="finding">'+
+          var dnpBanner=et==='HYPOTHESIS'?'<div style="background:#FEE2E2;border:.5px solid #FCA5A5;border-radius:4px;padding:3px 10px;font-size:9px;font-weight:700;color:#B91C1C;letter-spacing:.3px;margin-bottom:7px">⚠ DO NOT PRESENT — hypothesis unvalidated</div>':'';
+          var infBanner=(et==='INFERENCE'&&(!f.source_url||f.source_url==='#'))?'<div style="background:#FEF9C3;border:.5px solid #FDE68A;border-radius:4px;padding:3px 10px;font-size:9px;font-weight:600;color:#92400E;letter-spacing:.3px;margin-bottom:7px">ℹ INFERENCE — verify source before client use</div>':'';
+          return '<div class="finding">'+dnpBanner+infBanner+
             '<div class="finding-hd">'+
               '<span class="fih-badge fih-'+et+'">'+et+'</span>'+
               '<div class="finding-headline">'+escH(f.headline||'')+'</div>'+
@@ -1446,6 +1507,27 @@ function renderResults(){
                 '<a href="'+escH(f.source_url)+'" target="_blank">'+escH(f.source_name||f.source_url)+'</a>':
                 escH(f.source_name||''))+
             '</div>':'')+
+            (f.trl_level?(function(){try{
+              var lvl=parseInt(f.trl_level)||0;
+              var cls=lvl<=3?'track':lvl<=6?'prepare':'act';
+              return '<div style="margin-top:8px;display:flex;align-items:center;gap:8px">'+
+                '<span class="trl-badge trl-'+cls+'">TRL '+lvl+' · '+escH(f.trl_label||'')+'</span>'+
+              '</div>';
+            }catch(e){return '';}}()):'')+ 
+            (f.assessment?(function(){try{
+              return '<div class="assessment-grid">'+
+                ['relevance','availability','benefit','risk'].map(function(k){
+                  var a=(f.assessment&&f.assessment[k])||{};
+                  var score=typeof a==='object'?(a.score||a.value||'-'):a;
+                  var why=typeof a==='object'?(a.rationale||a.why||''):'';
+                  return '<div class="assess-box">'+
+                    '<div class="assess-score">'+escH(String(score))+'<span style="font-size:10px;color:#9CA3AF">/5</span></div>'+
+                    '<div class="assess-lbl">'+k+'</div>'+
+                    (why?'<div class="assess-why">'+escH(String(why).slice(0,60))+'</div>':'')+
+                  '</div>';
+                }).join('')+
+              '</div>';
+            }catch(e){return '';}}()):'')+ 
           '</div>';
         }).join('')+'</div>';
     }
@@ -1460,6 +1542,7 @@ function renderResults(){
           '<div class="hypothesis-q">'+escH(f.headline||'')+'</div>'+
           (f.body?'<div style="font-size:11px;color:var(--dark);line-height:1.55;margin-bottom:6px">'+escH(f.body)+'</div>':'')+
           '<div class="hypothesis-wwtbt">What would need to be true: '+escH(f.client_implication||f.body||'Requires primary research to validate')+'</div>'+
+          (f.confidence_level?'<div style="font-size:9px;font-weight:600;margin-top:5px;color:'+(f.confidence_level==='high'?'#166534':f.confidence_level==='low'?'#B91C1C':'#854D0E')+'">Confidence: '+escH(f.confidence_level.toUpperCase())+'</div>':'')+
         '</div>';
       }).join('');
     }
@@ -1480,17 +1563,20 @@ function renderResults(){
     html+='</div>';
     // ── PARALLEL INDUSTRY ─────────────────────────────────────
     var ca=d.creative_angles||[];
-    if(true){ // Always show adjacent intelligence section
-      html+='<div class="bq-parallel"><div class="parallel-lbl">Adjacent Intelligence</div>'+
-        ca.map(function(c){
-          return '<div class="parallel-item">'+
-            '<div class="parallel-title">'+escH(c.angle_title||'')+'</div>'+
-            (c.parallel_industry?'<div class="parallel-industry">Parallel: '+escH(c.parallel_industry)+'</div>':'')+
-            (c.insight?'<div class="parallel-insight">'+escH(c.insight)+'</div>':'')+
-            (c.why_relevant_to_client?'<div class="parallel-relevance">Relevance: '+escH(c.why_relevant_to_client)+'</div>':'')+
-          '</div>';
-        }).join('')+'</div>';
+    html+='<div class="bq-parallel"><div class="parallel-lbl">Adjacent Intelligence</div>';
+    if(!ca.length){
+      html+='<div style="font-size:11px;color:var(--mgray);padding:8px 0;font-style:italic">No adjacent industry signals identified for this BQ. The model will surface these when a relevant cross-sector analog exists.</div>';
+    } else {
+      html+=ca.map(function(c){
+        return '<div class="parallel-item">'+
+          '<div class="parallel-title">'+escH(c.angle_title||'')+'</div>'+
+          (c.parallel_industry?'<div class="parallel-industry">Adjacent: '+escH(c.parallel_industry)+'</div>':'')+
+          (c.insight?'<div class="parallel-insight">'+escH(c.insight)+'</div>':'')+
+          (c.why_relevant_to_client?'<div class="parallel-relevance">Relevance: '+escH(c.why_relevant_to_client)+'</div>':'')+
+        '</div>';
+      }).join('');
     }
+    html+='</div>';
 
     // ── DISRUPTION SIGNALS ─────────────────────────────────────
     var dis=d.disruption_signals||[];
@@ -1545,8 +1631,11 @@ function renderResults(){
         profiles.map(function(pr){
           return '<div class="profile-card">'+
             '<div style="flex:1">'+
-              '<div class="profile-name">'+escH(pr.name||'')+'</div>'+
-              '<div class="profile-hq">'+escH(pr.hq||'')+(pr.geography?' · '+escH(pr.geography):'')+'</div>'+
+              '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">'+
+                '<div class="profile-name">'+escH(pr.name||'')+'</div>'+
+                (pr.type?'<span style="font-size:8px;font-weight:700;padding:1px 7px;border-radius:10px;letter-spacing:.5px;background:'+(pr.type==='startup'?'#EDE9FE':pr.type==='supplier'?'#FEF9C3':'#E0F5F2')+';color:'+(pr.type==='startup'?'#5B21B6':pr.type==='supplier'?'#854D0E':'#085041')+'">'+escH(pr.type.toUpperCase())+'</span>':'')+
+              '</div>'+
+              '<div class="profile-hq">'+escH(pr.hq||'')+(pr.founded?' · Est. '+escH(String(pr.founded)):'')+' '+(pr.geography?' · '+escH(pr.geography):'')+'</div>'+
               (pr.role?'<div class="profile-role">'+escH(pr.role)+'</div>':'')+
               (pr.key_fact?'<div class="profile-fact">'+escH(pr.key_fact)+'</div>':'')+
               (pr.key_product?'<div class="profile-fact" style="color:var(--mgray)">'+escH(pr.key_product)+'</div>':'')+
@@ -2201,11 +2290,11 @@ const PROPOSALS={
   siemens:{client:"Siemens Energy",title:"Innovation Scanning & Competitor Intelligence — Large Gas Turbines",practice:"Energy & Industrials",geography:"Global",period:"Current (2025)",competitors:["GE Vernova","Mitsubishi Power","Ansaldo Energia","Baker Hughes","Rolls-Royce Power","MAN Energy Solutions"],
   modules:[{id:"M1",name:"Module 1 — Innovation Scanning: Large Gas Turbine Engine Integration"},{id:"M2",name:"Module 2 — Competitor Intelligence"}],
   bqs:[
-    {id:"BQ1",module:"M1",text:"What innovations in clearance control, blade materials, coatings, and manufacturing are emerging across adjacent industries (aviation, automotive, nuclear) applicable to large gas turbine engine integration?",kw:["clearance control","materials","innovations","TRL","adjacent industries","coatings"],gap:false},
-    {id:"BQ2",module:"M1",text:"What is the TRL maturity and commercial readiness of identified innovations — which should be tracked (TRL 1–3), prepared for (TRL 4–6), or acted on now (TRL 7–9)?",kw:["TRL","maturity","readiness","act","prepare","track","stage-gate"],gap:false},
+    {id:"BQ1",module:"M1",text:"What innovations in clearance control, blade materials, coatings, and manufacturing are emerging across adjacent industries (aviation, automotive, nuclear) applicable to large gas turbine engine integration?",kw:["clearance control","materials","innovations","TRL","adjacent industries","coatings"],scope_nouns:["active clearance control","static sealings","ceramic matrix composites","thermal barrier coatings","abradable coatings"],gap:false},
+    {id:"BQ2",module:"M1",text:"What is the TRL maturity and commercial readiness of identified innovations — which should be tracked (TRL 1–3), prepared for (TRL 4–6), or acted on now (TRL 7–9)?",kw:["TRL","maturity","readiness","act","prepare","track","stage-gate"],scope_nouns:["TRL 1-3","TRL 4-6","TRL 7-9","commercial readiness","stage-gate assessment"],gap:false},
     {id:"BQ3",module:"M1",text:"Who are the key patent assignees and what is the R&D activity level for priority innovation areas — clearance control, abradable coatings, non-contact sensors, ceramic components?",kw:["patents","R&D","assignees","innovation","IP","patent trend"],gap:false},
     {id:"BQ4",module:"M2",text:"What is the competitive intelligence on major large gas turbine manufacturers — GE Vernova, Mitsubishi Power, Ansaldo — covering strategy, capacity expansion, new product launches, and OEM partnerships?",kw:["competitor","GE Vernova","Mitsubishi","strategy","capacity","new products"],gap:false},
-    {id:"BQ5",module:"M2",text:"What are the manufacturing and materials innovation strategies of key competitors for large gas turbines above 150MW, including ceramic roller adoption and advanced alloy use?",kw:["manufacturing","150MW","materials","strategy","competitors","superalloys","ceramics"],gap:true},
+    {id:"BQ5",module:"M2",text:"What are the manufacturing and materials innovation strategies of key competitors for large gas turbines above 150MW, including ceramic roller adoption and advanced alloy use?",kw:["manufacturing","150MW","materials","strategy","competitors","superalloys","ceramics"],scope_nouns:["ceramic matrix composites","superalloys","additive manufacturing","static sealings","150MW turbines"],gap:true},
   ]},
   jj:{client:"Johnson & Johnson",title:"Future of Supply Chain: Life Science & Healthcare — IEM Program",practice:"Life Sciences & Healthcare",geography:"Global",period:"2024–2030 horizon",competitors:["IBM Watson","Microsoft Azure","SAP","Oracle","Palantir","Blue Yonder","Kinaxis","Veeva Systems"],
   modules:[{id:"M1",name:"Module I — Identify: Emerging Trends & Technologies"},{id:"M2",name:"Module II — Evaluate: Deep-dive Assessment"},{id:"M3",name:"Module III — Monitor: Annual Update"}],
