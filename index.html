@@ -788,13 +788,14 @@ function getTypeSpecificInstructions(engType, bqFocus, client) {
 function buildSynthesisResearchPrompt(bq, p, plan, allResearch, client){
   var engType=detectEngagementType(p, bq);
   client=client||p.client||'the client';
-  return 'You are a senior FutureBridge research analyst. Synthesise the following research into a structured JSON output for this business question.'+
+  return 'CRITICAL: Before writing findings, identify 1-3 adjacent industries that solved the same problem. Output creative_angles FIRST in the JSON. '+
+    'You are a senior FutureBridge research analyst. Synthesise the following research into a structured JSON output for this business question.'+
     ' Client: '+client+'. Engagement: '+(p.title||'')+'. Geography: '+(p.geography||'Global')+'.'+
     ' Business Question: '+bq.text+'.'+
     ' Research collected: '+allResearch.slice(0,8000)+
     ' Hypothesis to test: '+(plan&&plan.hypothesis?plan.hypothesis:'unknown')+
     ' Adjacent intelligence: '+(plan&&plan.parallel_industry?plan.parallel_industry:'none identified')+
-    ' Return ONLY valid JSON with these exact keys: executive_summary (string), engagement_type (string), stats (array of {value,label,confidence,source,url}), findings (array of {evidence_id,evidence_type,headline,body,client_implication,confidence,geo,data_date,source_name,source_url}), disruption_signals (array of {signal,company,date,type,client_implication}), client_decision_frame ({option_a,option_b,key_condition}), paid_source_flags (array of {source,what_it_unlocks,why_needed,priority}), primary_research_gaps (array of {gap,why_impossible,expert_profile,questions,hypothesis,priority}), creative_angles (REQUIRED — array of 1-3 objects {angle_title,parallel_industry,insight,why_relevant_to_client} — identify which OTHER industry solved the same problem first; this is mandatory, never return an empty array), profiles (array of {name,hq,role,geography,key_product,key_fact,client_relevance}).'+
+    ' Return ONLY valid JSON. START with creative_angles key (required, never empty). Keys: creative_angles (array of 1-3 {angle_title,parallel_industry,insight,why_relevant_to_client} — identify adjacent industries that solved the same structural problem first), executive_summary (string), engagement_type (string), stats (array of {value,label,confidence,source,url}), findings (array of {evidence_id,evidence_type,headline,body,client_implication,confidence,geo,data_date,source_name,source_url}), disruption_signals (array of {signal,company,date,type,client_implication}), client_decision_frame ({option_a,option_b,key_condition}), paid_source_flags (array of {source,what_it_unlocks,why_needed,priority}), primary_research_gaps (array of {gap,why_impossible,expert_profile,questions,hypothesis,priority}), profiles (array of {name,hq,role,geography,key_product,key_fact,client_relevance}).'+
     ' RULES: evidence_type must be FACT (directly cited) or INFERENCE (logical conclusion) or HYPOTHESIS (unverified). 4-5 findings minimum. Every finding body must end with: So what for '+client+': [one sentence actionable implication]. No markdown, no text before or after the JSON. Double quotes only. Escape apostrophes as \'.';
 }
 
