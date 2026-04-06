@@ -5,10 +5,10 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>FB Research Data Collection — Version 1</title>
 <style>
-/* System fonts only — no external dependency */
-:root{--red:#F94F5E;--dark:#4B4B55;--teal:#22AE8A;--gray:#DBDBDD;--mgray:#6F6F77;--lgray:#F5F5F5;--amber:#FBAE40;--white:#fff;--bg:#F7F6F3;--fh:Georgia,serif;--fb:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif}
+/* system fonts only */;
+:root{--red:#F94F5E;--dark:#4B4B55;--teal:#22AE8A;--gray:#DBDBDD;--mgray:#6F6F77;--lgray:#F5F5F5;--amber:#FBAE40;--white:#fff;--bg:#F7F6F3;--fh:'Playfair Display',Georgia,serif;--fb:'DM Sans',system-ui,sans-serif}
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:var(--fb);background:var(--bg);color:var(--dark);min-height:100vh;width:100%;max-width:100%}
+body{font-family:var(--fb);background:var(--bg);color:var(--dark);min-height:100vh}
 /* HEADER */
 .hdr{background:var(--dark);height:52px;padding:0 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:200}
 .logo{font-family:var(--fh);font-size:17px;color:#fff}.logo em{color:var(--red);font-style:italic}
@@ -19,7 +19,7 @@ body{font-family:var(--fb);background:var(--bg);color:var(--dark);min-height:100
 .step{font-size:10px;padding:4px 10px;color:rgba(255,255,255,.3);border-bottom:2px solid transparent;transition:all .2s}
 .step.done{color:var(--teal);border-bottom-color:var(--teal)}.step.active{color:#fff;border-bottom-color:var(--red)}
 /* STAGES */
-.stage{display:none!important}.stage.on{display:block!important;opacity:1!important;width:100%!important;min-height:calc(100vh - 52px);position:relative}
+.stage{display:none!important}.stage.on{display:block!important;opacity:1!important;width:100%!important}
 
 @keyframes spin{to{transform:rotate(360deg)}}.spin{animation:spin .7s linear infinite;display:inline-block}
 /* UPLOAD */
@@ -107,6 +107,131 @@ body{font-family:var(--fb);background:var(--bg);color:var(--dark);min-height:100
 .tab{font-size:12px;font-weight:500;padding:8px 15px;cursor:pointer;border-bottom:2px solid transparent;color:var(--mgray);transition:all .15s}
 .tab.active{color:var(--red);border-bottom-color:var(--red)}
 .tab-panel{display:none}.tab-panel.active{display:block}
+/* ── PASS INDICATOR ─────────────────────────── */
+.pass-bar{display:flex;gap:6px;margin:8px 0 4px;flex-wrap:wrap}
+.pass-dot{font-size:10px;padding:2px 10px;border-radius:10px;border:.5px solid var(--gray);color:var(--mgray)}
+.pass-dot.active{background:var(--teal);color:#fff;border-color:var(--teal)}
+.pass-dot.done{background:#e0f5ee;color:#085041;border-color:#22AE8A55}
+
+/* ── BQ RESULT CARD ──────────────────────────── */
+.bq-card{border:.5px solid var(--gray);border-radius:12px;margin-bottom:18px;overflow:hidden;background:var(--white)}
+.bq-card-hd{padding:12px 18px;background:var(--lgray);border-bottom:.5px solid var(--gray);display:flex;align-items:center;gap:10px;cursor:pointer}
+.bq-card-id{font-size:9px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--red);flex-shrink:0}
+.bq-card-q{font-size:12px;font-weight:500;color:var(--dark);flex:1}
+.bq-card-toggle{font-size:16px;color:var(--mgray);flex-shrink:0;transition:transform .2s}
+.bq-card-body{padding:0}
+
+/* PAID SOURCE FLAG — red banner, cannot miss */
+.paid-banner{background:#fdecea;border-bottom:.5px solid #F94F5E44;padding:10px 18px;display:flex;align-items:flex-start;gap:10px}
+.paid-icon{font-size:16px;flex-shrink:0}
+.paid-lbl{font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#A32D2D;margin-bottom:4px}
+.paid-items{display:flex;flex-direction:column;gap:4px}
+.paid-item{font-size:11px;color:#A32D2D;line-height:1.5}
+.paid-priority{font-size:8px;font-weight:700;padding:1px 5px;border-radius:2px;background:#A32D2D;color:#fff;margin-right:5px}
+
+/* EXEC SUMMARY */
+.bq-exec{padding:14px 18px;border-bottom:.5px solid var(--gray)}
+.exec-lbl{font-size:9px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--teal);margin-bottom:6px}
+.exec-body{font-size:12px;color:var(--dark);line-height:1.7}
+
+/* STATS */
+.bq-stats{padding:14px 18px;background:#F2FBF7;border-bottom:.5px solid var(--gray)}
+.stats-lbl{font-size:9px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--teal);margin-bottom:10px}
+.stats-grid{display:flex;flex-wrap:wrap;gap:0}
+.stat-card{padding:8px 18px 8px 0;min-width:140px;border-right:.5px solid var(--gray);margin-right:18px;margin-bottom:8px}
+.stat-card:last-child{border-right:none}
+.stat-v{font-family:var(--fh);font-size:22px;color:var(--teal);margin-bottom:2px;line-height:1}
+.stat-l{font-size:11px;color:var(--dark);font-weight:500;margin-bottom:3px;line-height:1.3}
+.stat-conf{font-size:9px;padding:1px 6px;border-radius:3px;display:inline-block;margin-bottom:3px}
+.stat-src{font-size:9px;color:var(--mgray)}
+
+/* FINDINGS */
+.bq-findings{padding:14px 18px;border-bottom:.5px solid var(--gray)}
+.findings-lbl{font-size:9px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--dark);margin-bottom:10px}
+.finding{border:.5px solid var(--gray);border-radius:8px;padding:12px 14px;margin-bottom:8px}
+.finding:last-child{margin-bottom:0}
+.finding-hd{display:flex;align-items:flex-start;gap:8px;margin-bottom:6px}
+.fih-badge{font-size:8px;font-weight:700;padding:2px 6px;border-radius:3px;flex-shrink:0;margin-top:2px}
+.fih-FACT{background:#e0f5ee;color:#085041}
+.fih-INFERENCE{background:#FEF5E4;color:#633806}
+.fih-HYPOTHESIS{background:#EEEDFE;color:#534AB7}
+.finding-headline{font-size:12px;font-weight:500;color:var(--dark);line-height:1.4;flex:1}
+.finding-meta{display:flex;gap:8px;margin-bottom:6px;flex-wrap:wrap}
+.finding-geo{font-size:9px;color:var(--mgray);padding:1px 6px;border:.5px solid var(--gray);border-radius:3px}
+.finding-date{font-size:9px;color:var(--mgray)}
+.finding-body{font-size:11px;color:var(--dark);line-height:1.65;margin-bottom:6px}
+.finding-implication{font-size:11px;color:#085041;background:#e0f5ee;padding:5px 8px;border-radius:4px;margin-bottom:6px;line-height:1.5}
+.finding-source{font-size:9px;color:var(--mgray)}
+.finding-source a{color:var(--teal)}
+
+/* HYPOTHESIS */
+.bq-hypothesis{padding:14px 18px;background:#F8F7FF;border-bottom:.5px solid #AFA9EC55}
+.hypothesis-lbl{font-size:9px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:#534AB7;margin-bottom:10px}
+.hypothesis-card{border:.5px solid #AFA9EC;border-radius:8px;padding:11px 14px;margin-bottom:8px;background:#fff}
+.hypothesis-card:last-child{margin-bottom:0}
+.hypothesis-q{font-size:11px;font-weight:500;color:#26215C;margin-bottom:5px;line-height:1.5}
+.hypothesis-wwtbt{font-size:10px;color:#534AB7;font-style:italic;padding:5px 8px;background:#EEEDFE;border-radius:4px;line-height:1.5}
+
+/* INSIGHTS VALIDATION */
+.bq-validation{padding:14px 18px;border-bottom:.5px solid var(--gray)}
+.validation-lbl{font-size:9px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:#633806;margin-bottom:10px}
+.validation-item{border:.5px solid #F5E6C8;border-radius:8px;padding:10px 12px;margin-bottom:6px;background:#FFFDF5}
+.validation-headline{font-size:11px;font-weight:500;color:var(--dark);margin-bottom:4px}
+.validation-path{font-size:10px;color:#633806;line-height:1.5}
+
+/* PARALLEL INDUSTRY */
+.bq-parallel{padding:14px 18px;background:#F8F7FF;border-bottom:.5px solid #AFA9EC55}
+.parallel-lbl{font-size:9px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:#534AB7;margin-bottom:10px}
+.parallel-item{border:.5px solid #AFA9EC;border-radius:8px;padding:11px 14px;margin-bottom:8px}
+.parallel-title{font-size:11px;font-weight:500;color:#26215C;margin-bottom:3px}
+.parallel-industry{font-size:10px;font-weight:500;color:#534AB7;margin-bottom:5px}
+.parallel-insight{font-size:11px;color:var(--dark);line-height:1.55;margin-bottom:5px}
+.parallel-relevance{font-size:10px;color:#26215C;padding:4px 8px;background:#EEEDFE;border-radius:4px}
+
+/* DISRUPTION */
+.bq-disruption{padding:14px 18px;border-bottom:.5px solid var(--gray)}
+.disruption-lbl{font-size:9px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--red);margin-bottom:10px}
+.disruption-item{border:.5px solid #F94F5E44;border-radius:8px;padding:10px 12px;margin-bottom:6px;background:#FFF9F9}
+.disruption-signal{font-size:11px;font-weight:500;color:var(--dark);margin-bottom:4px}
+.disruption-co{font-size:9px;color:var(--mgray)}
+.disruption-impl{font-size:10px;color:var(--red);margin-top:4px;line-height:1.5}
+
+/* DECISION FRAME */
+.bq-decision{padding:14px 18px;border-bottom:.5px solid var(--gray)}
+.decision-lbl{font-size:9px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--dark);margin-bottom:10px}
+.decision-grid{display:flex;gap:10px;flex-wrap:wrap}
+.decision-opt{flex:1;min-width:200px;border:.5px solid var(--gray);border-radius:8px;padding:10px 12px}
+.decision-opt-lbl{font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--mgray);margin-bottom:5px}
+.decision-opt-body{font-size:11px;color:var(--dark);line-height:1.55}
+.decision-condition{margin-top:8px;padding:8px 12px;background:var(--lgray);border-radius:6px;font-size:10px;color:var(--dark);line-height:1.5}
+.decision-cond-lbl{font-size:8px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--mgray);margin-bottom:3px}
+
+/* PRIMARY RESEARCH GAPS — amber action brief */
+.bq-gaps{padding:14px 18px;background:#FFFBF2;border-bottom:.5px solid #FBAE4055}
+.gaps-lbl{font-size:9px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:#633806;margin-bottom:10px}
+.gap-card{border:.5px solid #FBAE40;border-radius:8px;padding:12px 14px;margin-bottom:8px;background:#fff}
+.gap-card:last-child{margin-bottom:0}
+.gap-title{font-size:11px;font-weight:500;color:var(--dark);margin-bottom:4px}
+.gap-why{font-size:10px;color:#633806;margin-bottom:8px;line-height:1.5}
+.gap-expert{font-size:10px;font-weight:500;color:var(--dark);margin-bottom:4px}
+.gap-qs{font-size:10px;color:var(--dark);padding:6px 10px;background:var(--lgray);border-radius:5px;margin-bottom:6px;line-height:1.6}
+.gap-hyp{font-size:10px;color:#534AB7;font-style:italic;padding:4px 8px;background:#EEEDFE;border-radius:4px;line-height:1.5}
+.gap-priority{font-size:8px;font-weight:700;padding:2px 6px;border-radius:3px;margin-right:6px}
+
+/* PROFILES */
+.bq-profiles{padding:14px 18px}
+.profiles-lbl{font-size:9px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--dark);margin-bottom:10px}
+.profile-card{border:.5px solid var(--gray);border-radius:8px;padding:11px 14px;margin-bottom:8px;display:flex;gap:12px;align-items:flex-start}
+.profile-card:last-child{margin-bottom:0}
+.profile-name{font-size:12px;font-weight:500;color:var(--dark);margin-bottom:2px}
+.profile-hq{font-size:10px;color:var(--mgray);margin-bottom:4px}
+.profile-role{font-size:10px;font-weight:500;color:var(--teal);margin-bottom:4px}
+.profile-fact{font-size:11px;color:var(--dark);line-height:1.5;margin-bottom:4px}
+.profile-rel{font-size:10px;color:#085041;padding:3px 7px;background:#e0f5ee;border-radius:4px;line-height:1.4;display:inline-block}
+.profile-deep{font-size:10px;color:var(--red);cursor:pointer;text-decoration:underline;margin-top:4px;display:block}
+
+/* BQ CARD */
+
 /* BQ CARDS */
 .bq-acc{display:flex;flex-direction:column;gap:12px}
 .bq-res{background:var(--white);border:.5px solid var(--gray);border-radius:10px;overflow:hidden}
@@ -217,7 +342,77 @@ body{font-family:var(--fb);background:var(--bg);color:var(--dark);min-height:100
 .modal-save{background:var(--red);color:#fff;border:none;border-radius:6px;padding:8px 18px;font-family:var(--fb);font-size:12px;font-weight:500;cursor:pointer}
 .modal-cancel{background:var(--lgray);color:var(--dark);border:none;border-radius:6px;padding:8px 18px;font-family:var(--fb);font-size:12px;cursor:pointer}
 @media(max-width:680px){.results-wrap,.review-wrap,.run-wrap{padding:14px 12px}}
+
+/* ── BQ RESULT CARDS ─────────────────────────────────── */
+.bq-card{background:var(--white);border:.5px solid var(--gray);border-radius:12px;margin-bottom:12px;overflow:hidden}
+.bq-card-hd{display:flex;align-items:center;gap:10px;padding:13px 16px;cursor:pointer;border-bottom:.5px solid var(--lgray)}
+.bq-card-hd:hover{background:var(--lgray)}
+.bq-card-id{font-size:9px;font-weight:600;color:var(--red);letter-spacing:1px;flex-shrink:0}
+.bq-card-title{font-size:12px;font-weight:500;flex:1;color:var(--dark);line-height:1.4}
+.bq-card-chevron{font-size:11px;color:var(--mgray);transition:transform .2s}
+.bq-card-chevron.open{transform:rotate(180deg)}
+.bq-card-body{display:none;padding:0}
+.bq-card-body.open{display:block}
+.paid-banner{background:#fff5f5;border-left:3px solid var(--red);padding:10px 14px;border-bottom:.5px solid #ffd4d4}
+.paid-banner-lbl{font-size:9px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--red);margin-bottom:4px}
+.paid-priority{font-size:8px;font-weight:600;padding:1px 5px;border-radius:2px;flex-shrink:0;margin-top:2px}
+.bq-zone{padding:12px 16px;border-bottom:.5px solid var(--lgray)}
+.bq-zone:last-child{border:none}
+.zone-lbl{font-size:9px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px}
+.stats-grid{display:flex;flex-wrap:wrap;gap:12px}
+.stat-card{background:var(--lgray);border-radius:8px;padding:10px 14px;min-width:140px;flex:1}
+.stat-val{font-size:20px;font-weight:500;color:var(--teal);line-height:1;margin-bottom:3px}
+.stat-lbl{font-size:10px;color:var(--dark);font-weight:500;margin-bottom:4px;line-height:1.3}
+.stat-conf{font-size:8px;padding:1px 5px;border-radius:2px;margin-bottom:3px;display:inline-block}
+.stat-src{font-size:9px;color:var(--mgray)}
+.finding{border:.5px solid var(--gray);border-radius:8px;padding:11px 13px;margin-bottom:8px}
+.finding-hd{display:flex;align-items:flex-start;gap:8px;margin-bottom:6px}
+.fih-badge{font-size:8px;font-weight:600;padding:2px 6px;border-radius:3px;flex-shrink:0;margin-top:2px}
+.finding-headline{font-size:12px;font-weight:500;color:var(--dark);line-height:1.4;flex:1}
+.finding-meta{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:6px}
+.finding-meta span{font-size:9px;color:var(--mgray)}
+.finding-body{font-size:11px;color:var(--dark);line-height:1.65}
+.finding-implication{font-size:11px;color:#1a4a3a;background:#f0faf5;border-left:2px solid var(--teal);padding:5px 8px;margin-top:6px;border-radius:0 4px 4px 0}
+.hypothesis-card{background:#fff8e1;border:.5px solid #f0c040;border-radius:8px;padding:10px 13px;margin-bottom:8px}
+.hyp-lbl{font-size:9px;font-weight:600;color:#7a5200;margin-bottom:4px;letter-spacing:1px;text-transform:uppercase}
+.hyp-text{font-size:11px;color:#5a3c00;line-height:1.6}
+.hyp-validate{font-size:10px;color:#7a5200;margin-top:5px;padding:4px 8px;background:#fff3c0;border-radius:4px}
+.gap-card{background:#fffbf0;border:.5px solid var(--amber);border-radius:8px;padding:11px 13px;margin-bottom:8px}
+.gap-lbl{font-size:9px;font-weight:600;color:#7a4500;letter-spacing:1px;text-transform:uppercase;margin-bottom:4px}
+.gap-expert{font-size:10px;color:#7a4500;background:#fff3d0;padding:4px 8px;border-radius:4px;margin-bottom:5px}
+.gap-questions{font-size:10px;color:var(--dark);list-style:none;padding:0}
+.gap-questions li{padding:2px 0;display:flex;gap:6px}
+.gap-questions li::before{content:"Q:";color:var(--amber);font-weight:600;flex-shrink:0}
+.gap-hypothesis{font-size:10px;color:#5a3c00;margin-top:5px;padding:4px 8px;background:#ffeaa0;border-radius:4px;font-style:italic}
+.parallel-card{background:#EEEDFE22;border:.5px solid #AFA9EC;border-radius:8px;padding:10px 13px;margin-bottom:8px}
+.parallel-lbl{font-size:9px;font-weight:600;color:#534AB7;letter-spacing:1px;text-transform:uppercase;margin-bottom:4px}
+.parallel-title{font-size:12px;font-weight:500;color:#26215C;margin-bottom:3px}
+.parallel-industry{font-size:10px;color:#534AB7;margin-bottom:5px}
+.parallel-insight{font-size:11px;color:var(--dark);line-height:1.6;margin-bottom:5px}
+.parallel-relevance{font-size:10px;color:#3C3489;background:#EEEDFE;padding:4px 8px;border-radius:4px}
+.disruption-item{display:flex;gap:8px;padding:6px 0;border-bottom:.5px solid var(--lgray)}
+.disruption-item:last-child{border:none}
+.dis-signal{font-size:11px;font-weight:500;color:var(--dark);margin-bottom:2px}
+.dis-impl{font-size:10px;color:var(--mgray)}
+.decision-frame{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.decision-option{background:var(--lgray);border-radius:8px;padding:10px 12px}
+.decision-opt-lbl{font-size:9px;font-weight:600;letter-spacing:1px;text-transform:uppercase;margin-bottom:4px}
+.decision-opt-text{font-size:11px;color:var(--dark);line-height:1.5}
+.decision-condition{grid-column:1/-1;background:#f0faf5;border:.5px solid var(--teal);border-radius:8px;padding:8px 12px}
+.profile-card{border:.5px solid var(--gray);border-radius:8px;padding:10px 13px;margin-bottom:8px;display:flex;gap:12px}
+.profile-info{flex:1}
+.profile-name{font-size:12px;font-weight:500;color:var(--dark);margin-bottom:1px}
+.profile-role{font-size:10px;color:var(--mgray);margin-bottom:5px}
+.profile-fact{font-size:11px;color:var(--dark);line-height:1.5;margin-bottom:4px}
+.profile-relevance{font-size:10px;color:#1a4a3a;background:#f0faf5;padding:4px 8px;border-radius:4px}
+.pass-row{display:flex;gap:6px;align-items:center;padding:4px 0;font-size:10px;color:var(--mgray)}
+.pass-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.pass-dot.active{background:var(--red)}
+.pass-dot.done{background:var(--teal)}
+.pass-dot.pending{background:var(--gray)}
 </style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
 </head>
 <body>
 <div class="hdr">
@@ -246,11 +441,11 @@ body{font-family:var(--fb);background:var(--bg);color:var(--dark);min-height:100
     <div class="dz-tags"><span class="dz-tag">PPTX</span><span class="dz-tag">PDF</span><span class="dz-tag">Life Sciences</span><span class="dz-tag">Food & Nutrition</span><span class="dz-tag">Mobility & Industrial</span><span class="dz-tag">Home & Personal Care</span><span class="dz-tag">Energy</span><span class="dz-tag">Supply Chain</span></div>
   </div>
   <div style="margin-top:16px;padding-top:16px;border-top:.5px solid var(--gray)">
-    <div style="font-size:11px;font-weight:500;color:var(--dark);margin-bottom:6px">Anthropic API key <span style="font-size:10px;font-weight:400;color:var(--mgray)">(not needed — proxy handles authentication)</span></div>
-    <input type="password" id="apiKeyInput" placeholder="Your Anthropic API key..." autocomplete="off"
+    <div style="font-size:11px;font-weight:500;color:var(--dark);margin-bottom:6px">Anthropic API key <span style="font-size:10px;font-weight:400;color:var(--mgray)">(stored locally — proxy handles auth)</span></div>
+    <input type="password" id="apiKeyInput" placeholder="sk-ant-..." autocomplete="off"
       style="width:100%;padding:8px 12px;border-radius:7px;border:.5px solid var(--gray);background:var(--white);font-size:12px;color:var(--dark);outline:none"
       oninput="localStorage.setItem('fb_api_key',this.value)">
-    <div style="font-size:10px;color:var(--mgray);margin-top:5px">Get your key at <a href="https://console.anthropic.com" target="_blank" style="color:var(--red)">console.anthropic.com</a></div>
+    <div style="font-size:10px;color:var(--mgray);margin-top:4px">Get your key at <a href="https://console.anthropic.com" target="_blank" style="color:var(--red)">console.anthropic.com</a></div>
   </div>
 </div></div>
 </div>
@@ -276,7 +471,7 @@ body{font-family:var(--fb);background:var(--bg);color:var(--dark);min-height:100
       <button class="btn btn-out btn-sm" onclick="selAll(1)">Select all</button>
       <button class="btn btn-out btn-sm" onclick="selAll(0)">Deselect all</button>
       <button class="btn btn-red" onclick="runResearch()">Run live research →</button>
-      <button class="btn btn-out" onclick="runDemo()" style="background:#534AB7;color:#fff;border-color:#534AB7">⚡ Run demo (no API)</button>
+      <button class="btn btn-out" onclick="runDemo()" style="background:#534AB7;color:#fff;border-color:#534AB7">⚡ Demo mode</button>
     </div>
   </div>
   <div class="scope-bar" id="scopeBar"></div>
@@ -297,11 +492,11 @@ body{font-family:var(--fb);background:var(--bg);color:var(--dark);min-height:100
 
 <!-- S5 RESULTS -->
 <div class="stage" id="s5">
-<div class="results-wrap">
+<div class="results-wrap"><div id="findingsContainer"></div>
   <div class="res-top">
     <div><div class="res-title" id="resTitle"></div><div class="res-meta" id="resMeta"></div></div>
     <div class="out-btns">
-      <button class="out-btn" style="background:#534AB7;border-color:#534AB7;color:#fff;font-weight:500" id="synthBtn" onclick="runSynthesis()">⚡ Synthesise into sections</button>
+      <button class="out-btn" style="background:#534AB7;border-color:#534AB7;color:#fff;font-weight:500" id="synthBtn" onclick="runSynthesis()">⚡ Synthesise into sections</button> <button class="btn btn-out btn-sm" onclick="exportBaseline()" title="Export research baseline for Monitoring Agent">↓ Save baseline</button>
       <span id="synthStatus" style="font-size:11px;color:var(--mgray);align-self:center"></span>
       <button class="out-btn red" onclick="dlReport()">⬇ BQ report</button>
       <button class="out-btn" onclick="dlData()">⬇ BQ data (CSV)</button>
@@ -354,13 +549,18 @@ body{font-family:var(--fb);background:var(--bg);color:var(--dark);min-height:100
 
 <script>
 // ═══ STATE ═══════════════════════════════════════
-window.FB_PROXY_URL = 'https://fb-proxy-swart.vercel.app/api/proxy';
+// ── PROXY & API KEY ──────────────────────────────────────────
+window.FB_PROXY_URL='https://fb-proxy-swart.vercel.app/api/proxy';
 var FB_API_KEY='';
 try{FB_API_KEY=localStorage.getItem('fb_api_key')||'';}catch(e){}
-window.addEventListener('load',function(){var inp=document.getElementById('apiKeyInput');if(inp&&FB_API_KEY){inp.value=FB_API_KEY;}});
-function getApiKey(){try{var v=(localStorage.getItem('fb_api_key')||'').trim();FB_API_KEY=v;return v;}catch(e){return (FB_API_KEY||'').trim();}}
+function getApiKey(){try{return(localStorage.getItem('fb_api_key')||'').trim();}catch(e){return FB_API_KEY.trim();}}
 function escH(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
-var S={key:null,proposal:null,selBQs:[],bqResults:{},allSources:[],profiles:[],summary:'',editCtx:null,stage:1,synthesis:null,detectedEngType:'general'};
+window.addEventListener('load',function(){
+  var inp=document.getElementById('apiKeyInput');
+  if(inp&&FB_API_KEY)inp.value=FB_API_KEY;
+});
+
+var S={key:null,proposal:null,selBQs:[],bqResults:{},allSources:[],profiles:[],summary:'',editCtx:null,stage:1,synthesis:null,detectedEngType:'general',baseline:null};
 
 // ═══ NAV ═════════════════════════════════════════
 function goTo(n){
@@ -369,14 +569,8 @@ function goTo(n){
     var el=document.getElementById('s'+i);
     if(el){
       el.className='stage'+(i===n?' on':'');
-      if(i===n){
-        el.style.display='block';
-        el.style.width='100%';
-        el.style.minHeight='200px';
-        el.style.opacity='1';
-      } else {
-        el.style.display='none';
-      }
+      el.style.display=i===n?'block':'none';
+      if(i===n){el.style.width='100%';el.style.opacity='1';}
     }
     var st=document.getElementById('st'+i);
     if(st) st.className='step'+(i<n?' done':i===n?' active':'');
@@ -384,7 +578,6 @@ function goTo(n){
   var bb=document.getElementById('backBtn');
   if(bb) bb.className='back-btn'+(n===3||n===5?' show':'');
   window.scrollTo(0,0);
-  console.log('goTo('+n+'): stage '+n+' is now',document.getElementById('s'+n)?document.getElementById('s'+n).className:'NULL');
 }
 function goBack(){if(S.stage===3)goTo(1);else if(S.stage===5)goTo(3);}
 function sl(ms){return new Promise(function(r){setTimeout(r,ms);})}
@@ -411,44 +604,163 @@ function routeFile(name){
   return'baxter';
 }
 
-function handleFile(f){
-  if(!f){console.error('handleFile: no file');return;}
-  console.log('handleFile: file=',f.name,'size=',f.size);
-  S.key=routeFile(f.name);
-  S.proposal=PROPOSALS[S.key];
-  console.log('handleFile: routed to key=',S.key,'proposal=',S.proposal?S.proposal.client:'NULL');
-  if(!S.proposal){
-    alert('Could not identify this proposal. Please check the filename matches one of the 10 loaded engagements.');
-    return;
+async function extractFileText(file){
+  var ext=(file.name.split('.').pop()||'').toLowerCase();
+
+  if(ext==='pdf'){
+    // For PDF: read as base64 and send to Claude for extraction
+    return new Promise(function(resolve){
+      var reader=new FileReader();
+      reader.onload=function(e){resolve({type:'pdf',data:e.target.result.split(',')[1]});};
+      reader.readAsDataURL(file);
+    });
   }
+
+  if(ext==='pptx'){
+    // Read PPTX as zip, extract text from slide XMLs
+    return new Promise(function(resolve){
+      var reader=new FileReader();
+      reader.onload=async function(e){
+        try{
+          var zip=await JSZip.loadAsync(e.target.result);
+          var slides=Object.keys(zip.files).filter(function(k){
+            return k.match(/^ppt\/slides\/slide\d+\.xml$/);
+          }).sort();
+          var texts=[];
+          for(var i=0;i<Math.min(slides.length,20);i++){
+            var xml=await zip.files[slides[i]].async('string');
+            // Extract text runs from XML
+            var textRuns=xml.match(/<a:t[^>]*>([^<]+)<\/a:t>/g)||[];
+            var slideText=textRuns.map(function(t){
+              return t.replace(/<[^>]+>/g,'').trim();
+            }).filter(function(t){return t.length>2;}).join(' ');
+            if(slideText.trim()) texts.push(slideText);
+          }
+          resolve({type:'pptx',text:texts.join('\n\n')});
+        }catch(err){
+          console.error('PPTX extraction failed:',err);
+          resolve({type:'pptx',text:''});
+        }
+      };
+      reader.readAsArrayBuffer(file);
+    });
+  }
+
+  if(ext==='txt'||ext==='md'){
+    return new Promise(function(resolve){
+      var reader=new FileReader();
+      reader.onload=function(e){resolve({type:'txt',text:e.target.result});};
+      reader.readAsText(file);
+    });
+  }
+
+  return {type:'unknown',text:''};
+}
+
+async function extractBQsFromFile(file,extracted){
+  // Use Claude to extract BQs from the proposal text
+  var prompt='';
+  if(extracted.type==='pdf'){
+    prompt='This is a FutureBridge consulting proposal. Extract: (1) client name, (2) engagement title, (3) practice area, (4) geography, (5) time period, (6) list of competitors mentioned, (7) all business questions (BQs) - both explicit and implied. Return ONLY valid JSON: {"client":"","title":"","practice":"","geography":"","period":"","competitors":[],"bqs":[{"id":"BQ1","text":"","kw":[],"gap":false}]}';
+  } else {
+    var text=(extracted.text||'').slice(0,8000);
+    if(!text||text.length<50) return null;
+    prompt='This is text extracted from a FutureBridge consulting proposal. Extract: client name, engagement title, practice area, geography, period, competitors, all business questions (explicit and implied). Return ONLY valid JSON: {"client":"","title":"","practice":"","geography":"","period":"","competitors":[],"bqs":[{"id":"BQ1","text":"","kw":[],"gap":false}]}.\n\n'+text;
+  }
+
+  try{
+    var messages=[{role:'user',content:extracted.type==='pdf'?[
+      {type:'document',source:{type:'base64',media_type:'application/pdf',data:extracted.data}},
+      {type:'text',text:prompt}
+    ]:prompt}];
+
+    var resp=await fetch(window.FB_PROXY_URL||'https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','anthropic-version':'2023-06-01','x-api-key':getApiKey()},
+      body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:2000,messages:messages})
+    });
+    if(!resp.ok) return null;
+    var _jt=new Promise(function(_,rej){setTimeout(function(){rej(new Error('JSON parse timeout'));},60000);}); var data=await Promise.race([resp.json(),_jt]);
+    var text2=(data.content||[]).filter(function(b){return b.type==='text';}).map(function(b){return b.text;}).join('');
+    var m=text2.match(/\{[\s\S]*\}/);
+    if(!m) return null;
+    var parsed=JSON.parse(m[0]);
+    if(!parsed.client||!parsed.bqs||!parsed.bqs.length) return null;
+    // Add module info since extraction may not include it
+    parsed.modules=[{id:'M1',name:'Research Scope'}];
+    parsed.bqs=parsed.bqs.map(function(bq){return Object.assign({module:'M1'},bq);});
+    return parsed;
+  }catch(e){
+    console.error('BQ extraction failed:',e);
+    return null;
+  }
+}
+
+async function handleFile(f){
+  if(!f){console.error('handleFile: no file');return;}
+  console.log('handleFile:',f.name,f.size);
+  S.key=routeFile(f.name);
+  S.proposal=PROPOSALS[S.key]||null;
   var label=f.name.replace(/_/g,' ').replace(/\.(pptx|pdf|docx|txt)$/i,'').slice(0,50);
   document.getElementById('parseTitle').textContent='Reading: "'+label+'"';
-  document.getElementById('parseSub').textContent=S.proposal.client+' · '+S.proposal.practice;
-  goTo(2);
-  doParse();
+
+  if(S.proposal){
+    // Known proposal — use hardcoded data instantly
+    document.getElementById('parseSub').textContent=S.proposal.client+' · '+S.proposal.practice;
+    goTo(2);
+    doParse();
+  } else {
+    // Unknown proposal — extract BQs from file contents
+    document.getElementById('parseSub').textContent='Extracting business questions from proposal...';
+    goTo(2);
+    // Animate parse steps while extracting
+    document.getElementById('ps1').className='ps run';
+    document.getElementById('pi1').innerHTML='<span class="spin">◌</span>';
+    var extracted=await extractFileText(f);
+    document.getElementById('ps1').className='ps done';
+    document.getElementById('pi1').textContent='✓';
+    document.getElementById('ps2').className='ps run';
+    document.getElementById('pi2').innerHTML='<span class="spin">◌</span>';
+    var extracted_proposal=await extractBQsFromFile(f,extracted);
+    document.getElementById('ps2').className='ps done';
+    document.getElementById('pi2').textContent='✓';
+    if(extracted_proposal){
+      S.proposal=extracted_proposal;
+      S.key='extracted';
+      document.getElementById('parseSub').textContent=extracted_proposal.client+' · '+(extracted_proposal.practice||'FutureBridge');
+      // Animate remaining steps
+      await sl(600);
+      document.getElementById('ps3').className='ps run';document.getElementById('pi3').innerHTML='<span class="spin">◌</span>';
+      await sl(800);document.getElementById('ps3').className='ps done';document.getElementById('pi3').textContent='✓';
+      await sl(400);
+      document.getElementById('ps4').className='ps run';document.getElementById('pi4').innerHTML='<span class="spin">◌</span>';
+      await sl(600);document.getElementById('ps4').className='ps done';document.getElementById('pi4').textContent='✓';
+      S.selBQs=S.proposal.bqs.map(function(_,i){return i;});
+      await sl(300);goTo(3);renderReview();
+    } else {
+      document.getElementById('parseSub').textContent='Could not extract BQs. Rename file to match a known proposal or try a different format.';
+      document.getElementById('ps2').className='ps done';
+      document.getElementById('pi2').textContent='✗';
+    }
+  }
 }
 
 // ═══ PARSE ANIMATION ═════════════════════════════
 async function doParse(){
-  console.log('doParse: starting');
   var d=[0,1100,2100,3000];
   for(var i=0;i<4;i++){
     await sl(d[i]);
     var ps=document.getElementById('ps'+(i+1)),pi=document.getElementById('pi'+(i+1));
-    if(!ps||!pi){console.error('doParse: missing ps'+(i+1)+' or pi'+(i+1));continue;}
     ps.className='ps run'; pi.innerHTML='<span class="spin">◌</span>';
     await sl(900);
     ps.className='ps done'; pi.textContent='✓';
   }
   S.selBQs=S.proposal.bqs.map(function(_,i){return i;});
-  console.log('doParse: complete, selBQs=',S.selBQs,'going to stage 3');
   await sl(300); goTo(3); renderReview();
-  console.log('doParse: renderReview done');
 }
 
 // ═══ REVIEW ══════════════════════════════════════
 function renderReview(){
-  console.log('renderReview: starting, proposal=',S.proposal?S.proposal.client:'NULL');
   var p=S.proposal;
   document.getElementById('rwTitle').textContent=p.client+' · '+p.title;
   document.getElementById('rwMeta').textContent=p.practice+' · '+p.geography+' · '+p.period;
@@ -591,7 +903,21 @@ function getTypeSpecificInstructions(engType, bqFocus, client) {
   return focusInstructions;
 }
 
-function buildResearchPrompt(bq, p) {
+
+function buildSynthesisResearchPrompt(bq, p, plan, allResearch, client){
+  var engType=detectEngagementType(p, bq);
+  client=client||p.client||'the client';
+  return 'You are a senior FutureBridge research analyst. Synthesise the following research into a structured JSON output for this business question.'+
+    ' Client: '+client+'. Engagement: '+(p.title||'')+'. Geography: '+(p.geography||'Global')+'.'+
+    ' Business Question: '+bq.text+'.'+
+    ' Research collected: '+allResearch.slice(0,8000)+
+    ' Hypothesis to test: '+(plan&&plan.hypothesis?plan.hypothesis:'unknown')+
+    ' Parallel industry: '+(plan&&plan.parallel_industry?plan.parallel_industry:'none identified')+
+    ' Return ONLY valid JSON with these exact keys: executive_summary (string), engagement_type (string), stats (array of {value,label,confidence,source,url}), findings (array of {evidence_id,evidence_type,headline,body,client_implication,confidence,geo,data_date,source_name,source_url}), disruption_signals (array of {signal,company,date,type,client_implication}), client_decision_frame ({option_a,option_b,key_condition}), paid_source_flags (array of {source,what_it_unlocks,why_needed,priority}), primary_research_gaps (array of {gap,why_impossible,expert_profile,questions,hypothesis,priority}), profiles (array of {name,hq,role,geography,key_product,key_fact,client_relevance}), creative_angles (array of {angle_title,parallel_industry,insight,why_relevant_to_client}).'+
+    ' RULES: evidence_type must be FACT (directly cited) or INFERENCE (logical conclusion) or HYPOTHESIS (unverified). 4-5 findings minimum. Every finding body must end with: So what for '+client+': [one sentence actionable implication]. No markdown, no text before or after the JSON. Double quotes only. Escape apostrophes as \'.';
+}
+
+function buildResearchPrompt(bq, p, plan) {
   var engType = detectEngagementType(p, bq);
   var bqFocus = getBQFocus(bq);
   var client = p.client || 'the client';
@@ -612,32 +938,24 @@ function buildResearchPrompt(bq, p) {
     '',
     'BUSINESS QUESTION: ' + (bq.text||''),
     '',
-    '── SEARCH STRATEGY (run all 6 searches in order) ────────',
+    '── PLANNED SEARCH ANGLES (use these first) ─────────────',plan?'1. '+( plan.search_angle_1||''):'',plan?'2. '+(plan.search_angle_2||''):'',plan?'3. '+(plan.search_angle_3||''):'',
+    '── SEARCH STRATEGY ──────────────────────────────────────',
     '1. LANDSCAPE: "' + ((bq.kw||[])[0]||p.title||'') + ' ' + (geos[0]||'global') + ' players market 2024 2025"',
     '2. COMPETITORS: Search each of these by name + topic: ' + (p.competitors||[]).slice(0,3).join(', '),
-    '3. PRIMARY SOURCES: "' + ((bq.kw||[])[0]||'') + ' annual report investor presentation 2023 2024"',
-    geos.length > 1 ? '4. GEOGRAPHY: "' + ((bq.kw||[])[0]||'') + ' ' + (geos[1]||geos[0]||'') + ' 2024 2025"' : '4. MARKET DATA: "' + ((bq.kw||[])[0]||'') + ' market size statistics 2024 2025"',
-    '5. HIRING SIGNAL: "' + (p.competitors||[])[0] + ' ' + ((bq.kw||[])[0]||'') + ' jobs engineer hiring" — job postings reveal strategy before press releases',
-    '6. DISRUPTION: "' + ((bq.kw||[])[0]||'') + ' bankruptcy acquisition new entrant 2024 2025"',
-  '5. CLIENT LENS: "' + client + ' ' + ((bq.kw||[])[0]||'strategy') + ' strategy"',
+    geos.length > 1 ? '3. PER GEOGRAPHY: One dedicated search per geography: ' + geos.slice(0,4).join(' / ') : '3. MARKET DATA: Trade data, market size, import/export for this category',
+    '4. DISRUPTION: "' + ((bq.kw||[])[0]||'') + ' bankruptcy acquisition merger supply disruption 2023 2024 2025"',
+    '5. CLIENT LENS: "' + client + ' ' + ((bq.kw||[])[0]||'strategy') + ' strategy"',
     '',
     '── WHAT TO RESEARCH AND INCLUDE ────────────────────────',
     typeInstruction,
     '',
-    '── FINDING QUALITY STANDARDS (ALL 8 required per finding) ──',
+    '── FINDING QUALITY STANDARDS (ALL 6 required per finding) ──',
     '1. NAMED — specific company/product/person, never "leading players"',
     '2. NUMBERED — specific %, price, volume, year, count',
-    '3. MECHANISTIC — WHY/HOW not just WHAT — explain the full causal chain',
+    '3. MECHANISTIC — WHY/HOW not just WHAT',
     '4. GEO-TAGGED — which geography this applies to',
-    '5. REVIEWER-FRAMED — written for a partner presenting to client CEO/CFO. End every finding: So what for ' + client + ': [one sentence — specific actionable decision implication]',
-    '6. DEEP — if you find a lead, search for more specifics before writing',
-    '7. SOURCED — name the specific report, filing, or portal. Never vague.',
-    '8. TYPED — FACT (directly cited) | INFERENCE (logical conclusion) | HYPOTHESIS (needs validation)',
-    '',
-    '── PARALLEL INDUSTRY INTELLIGENCE ──────────────────────',
-    'Identify which OTHER industry solved the same problem first. Search for that analog.',
-    'Examples: wind bearings → aerospace bearing localisation India. Hair salon → dental chair ergonomics. Kefir → pharma probiotic fermentation.',
-    'Add 1-2 parallel findings in the creative_angles array.',
+    '5. CLIENT-FRAMED — end with "For ' + client + ': [specific threat/opportunity/decision]"',
+    '6. SOURCED — name the publication or site, never "industry sources"',
     '',
     '── DISRUPTION SIGNALS ──────────────────────────────────',
     'Search specifically for: company bankruptcies, acquisitions, new entrants, regulatory changes, supply disruptions in this market (last 24 months). Include even if only 1-2 found.',
@@ -657,10 +975,9 @@ function buildResearchPrompt(bq, p) {
     '  paid_source_flags: array of {source, what_it_unlocks, why_needed, priority}',
     '  primary_research_gaps: array of {gap, why_impossible, expert_profile, questions, hypothesis, priority}',
     '  profiles: array of {name, hq, role, geography, key_product, key_fact, client_relevance, source, url}',
-    '  creative_angles: array of 2-3 objects {angle_title, parallel_industry, insight, why_relevant_to_client} — SEPARATE from findings. Each identifies a parallel industry that solved the same problem first.',
     '',
     'RULES:',
-    '  - findings: 4-5 entries maximum — DEPTH over count. Each body 4-6 sentences.',
+    '  - findings: 3-5 entries, each must meet ALL 6 quality standards above',
     '  - profiles: 2-4 named companies with one specific fact each',
     '  - client_decision_frame: always include — Option A and Option B, explicit and actionable',
     '  - APOSTROPHES: every apostrophe in a string value MUST have a backslash before it (write Japan\\\'s)',
@@ -674,329 +991,265 @@ function buildResearchPrompt(bq, p) {
 
 // Parse research JSON safely
 function parseResearch(text){
-  var clean=text.replace(/```json\s*/gi,'').replace(/```\s*/g,'').trim();
-  var m=clean.match(/\{[\s\S]*\}/);
-  if(!m)return null;
+  if(!text||text.length<10) return null;
+
+  // Extract JSON block
+  var m=text.match(/\{[\s\S]*\}/);
+  if(!m) return null;
   var raw=m[0];
 
-  // Strategy 1: direct parse (works if model escaped properly)
-  try{return JSON.parse(raw);}catch(e0){}
+  // Pre-clean 1: invalid JSON escape \' → '
+  raw=raw.split("\\'").join("'");
 
-  // Strategy 2: sanitize apostrophes inside JSON string values
-  // Walk the string: when inside a quoted value, replace bare ' with \'
-  function sanitizeApostrophes(s){
-    var out=''; var inStr=false; var escape=false;
+  // Pre-clean 2: replace literal newlines/tabs inside strings
+  function cleanLiterals(s){
+    var out='',inStr=false,esc=false;
     for(var i=0;i<s.length;i++){
       var c=s[i];
-      if(escape){out+=c;escape=false;continue;}
-      if(c==='\\'){out+=c;escape=true;continue;}
+      if(esc){out+=c;esc=false;continue;}
+      if(c==='\\'){out+=c;esc=true;continue;}
       if(c==='"'){inStr=!inStr;out+=c;continue;}
-      if(inStr && c==="'"){out+="\\'";continue;}
+      if(inStr){
+        if(c==='\n'||c==='\r'){out+=' ';continue;}
+        if(c==='\t'){out+=' ';continue;}
+        if(c.charCodeAt(0)<32){continue;}
+      }
       out+=c;
     }
     return out;
   }
 
-  // Strategy 3: remove control chars + trailing commas + sanitize apostrophes
-  function fullSanitize(s){
-    return sanitizeApostrophes(s)
-      .replace(/[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]/g,' ')
-      .replace(/,\s*([}\]])/g,'$1')
-      .replace(/([{,]\s*)(\w+)\s*:/g,'$1"$2":');
-  }
+  // Strategy 1: direct after pre-cleans
+  try{return JSON.parse(cleanLiterals(raw));}catch(e){}
 
-  try{return JSON.parse(sanitizeApostrophes(raw));}catch(e1){}
-  try{return JSON.parse(fullSanitize(raw));}catch(e2){}
-
-  // Strategy 4: line-by-line apostrophe fix
-  // The apostrophe breaks the array — find lines with unescaped apostrophes in strings
-  function lineByLine(s){
-    return s.split('\n').map(function(line){
-      // Find string values on this line and escape apostrophes within them
-      return line.replace(/"([^"\\]*(\\.[^"\\]*)*)"/g,function(match){
-        return match.replace(/(?<!\\)'/g,"\\'");
-      });
-    }).join('\n');
-  }
-  try{return JSON.parse(lineByLine(raw));}catch(e3){}
-
-  // Strategy 5: parse outer fields individually to rescue partial data
-  function rescueFields(s){
-    var result={executive_summary:'',stats:[],findings:[],paid_source_flags:[],primary_research_gaps:[],profiles:[]};
-    // Extract executive_summary
-    var sumM=s.match(/"executive_summary"\s*:\s*"([\s\S]{0,1500}?)(?=",\s*"(?:stats|findings|paid|primary|profiles)")/);
-    if(sumM) result.executive_summary=sumM[1].replace(/\\n/g,' ').replace(/\\"/g,'"');
-
-    // Extract each finding object individually
-    var findSection=s.match(/"findings"\s*:\s*\[([\s\S]*?)\]\s*[,}]/);
-    if(findSection){
-      var findStr=findSection[1];
-      // Split on object boundaries
-      var depth=0; var start=-1; var objects=[];
-      for(var i=0;i<findStr.length;i++){
-        if(findStr[i]==='{'){if(depth===0)start=i;depth++;}
-        else if(findStr[i]==='}'){depth--;if(depth===0&&start>=0){objects.push(findStr.slice(start,i+1));start=-1;}}
-      }
-      objects.forEach(function(obj){
+  // Strategy 2: truncate at last complete object
+  function tryTruncate(s){
+    var lastBrace=s.lastIndexOf('"}');
+    while(lastBrace>s.length*0.3){
+      var candidate=cleanLiterals(s.slice(0,lastBrace+2));
+      for(var suffix of [']}',']}]}',']}]}]}',']}]}]}]}',']}]}]}]}]}']){
         try{
-          var fixed=sanitizeApostrophes(obj).replace(/[\x00-\x08\x0b\x0e-\x1f]/g,' ').replace(/,\s*}/g,'}');
-          result.findings.push(JSON.parse(fixed));
-        }catch(ex){
-          // Extract headline at minimum
-          var hm=obj.match(/"headline"\s*:\s*"([^"]{0,300})"/);
-          var bm=obj.match(/"body"\s*:\s*"([^"]{0,500})"/);
-          if(hm) result.findings.push({headline:hm[1],body:bm?bm[1]:'',type:'finding',confidence:'medium',source_name:'Research',source_url:'#'});
-        }
-      });
-    }
-
-    // Extract paid_source_flags
-    var paidSection=s.match(/"paid_source_flags"\s*:\s*\[([\s\S]{0,2000}?)\]\s*[,}]/);
-    if(paidSection){
-      var psStr=paidSection[1];
-      var depth2=0; var start2=-1;
-      for(var j=0;j<psStr.length;j++){
-        if(psStr[j]==='{'){if(depth2===0)start2=j;depth2++;}
-        else if(psStr[j]==='}'){depth2--;if(depth2===0&&start2>=0){
-          try{
-            var fixed2=sanitizeApostrophes(psStr.slice(start2,j+1)).replace(/,\s*}/g,'}');
-            result.paid_source_flags.push(JSON.parse(fixed2));
-          }catch(ex2){
-            var sm=psStr.slice(start2,j+1).match(/"source"\s*:\s*"([^"]{0,100})"/);
-            var wm=psStr.slice(start2,j+1).match(/"what_it_unlocks"\s*:\s*"([^"]{0,200})"/);
-            if(sm) result.paid_source_flags.push({source:sm[1],what_it_unlocks:wm?wm[1]:'',why_needed:'',priority:'HIGH'});
+          var p=JSON.parse(candidate+suffix);
+          if(p&&p.executive_summary){
+            console.log('parseResearch: truncation strategy succeeded at',lastBrace);
+            return p;
           }
-          start2=-1;
-        }}
+        }catch(e){}
       }
+      lastBrace=s.lastIndexOf('"}',lastBrace-1);
     }
+    return null;
+  }
+  var t=tryTruncate(raw);
+  if(t) return t;
 
-    // Extract primary_research_gaps
-    var gapSection=s.match(/"primary_research_gaps"\s*:\s*\[([\s\S]{0,2000}?)\]\s*[,}]/);
-    if(gapSection){
-      var gsStr=gapSection[1];
-      var depth3=0; var start3=-1;
-      for(var k=0;k<gsStr.length;k++){
-        if(gsStr[k]==='{'){if(depth3===0)start3=k;depth3++;}
-        else if(gsStr[k]==='}'){depth3--;if(depth3===0&&start3>=0){
-          try{
-            var fixed3=sanitizeApostrophes(gsStr.slice(start3,k+1)).replace(/,\s*}/g,'}');
-            result.primary_research_gaps.push(JSON.parse(fixed3));
-          }catch(ex3){
-            var gm=gsStr.slice(start3,k+1).match(/"gap"\s*:\s*"([^"]{0,200})"/);
-            if(gm) result.primary_research_gaps.push({gap:gm[1],why_impossible:'',expert_profile:'Industry expert',questions:[],priority:'HIGH'});
-          }
-          start3=-1;
-        }}
-      }
+  // Strategy 3: field rescue — extract each top-level field individually
+  function extractStr(s,key){
+    var rx=new RegExp('"'+key+'"\\s*:\\s*"([\\s\\S]{0,3000}?)(?=",\\s*"[a-z_]|"\\s*}\\s*[,}])');
+    var m=s.match(rx);
+    return m?m[1].replace(/\\n/g,' ').replace(/\\"/g,'"').replace(/\\'/g,"'"):'';
+  }
+  function extractArr(s,key){
+    var rx=new RegExp('"'+key+'"\\s*:\\s*(\\[[\\s\\S]{0,8000}?\\])\\s*[,}]');
+    var m=s.match(rx);
+    if(!m) return [];
+    try{return JSON.parse(cleanLiterals(m[1]));}catch(e){return [];}
+  }
+  function extractFindings(s){
+    var section=s.match(/"findings"\s*:\s*\[([\s\S]{0,15000}?)\]\s*[,}]/);
+    if(!section) return [];
+    var block=section[1];
+    var findings=[];
+    var depth=0,start=-1;
+    for(var i=0;i<block.length;i++){
+      if(block[i]==='{'){if(depth===0)start=i;depth++;}
+      else if(block[i]==='}'){depth--;if(depth===0&&start>=0){
+        try{
+          var obj=JSON.parse(cleanLiterals(block.slice(start,i+1)));
+          findings.push(obj);
+        }catch(e){}
+        start=-1;
+      }}
     }
-
-    return result;
+    return findings;
   }
 
-  var rescued=rescueFields(raw);
-  if(rescued.executive_summary||rescued.findings.length){
-    console.log('parseResearch: used field-rescue strategy, findings recovered:',rescued.findings.length);
+  var rescued={
+    executive_summary:extractStr(raw,'executive_summary'),
+    engagement_type:extractStr(raw,'engagement_type'),
+    stats:extractArr(raw,'stats'),
+    findings:extractFindings(raw),
+    disruption_signals:extractArr(raw,'disruption_signals'),
+    client_decision_frame:null,
+    paid_source_flags:extractArr(raw,'paid_source_flags'),
+    primary_research_gaps:extractArr(raw,'primary_research_gaps'),
+    profiles:extractArr(raw,'profiles'),
+    creative_angles:extractArr(raw,'creative_angles')
+  };
+
+  // Try to get client_decision_frame
+  var dfM=raw.match(/"client_decision_frame"\s*:\s*(\{[\s\S]{0,1000}?\})\s*[,}]/);
+  if(dfM){try{rescued.client_decision_frame=JSON.parse(cleanLiterals(dfM[1]));}catch(e){}}
+
+  if(rescued.executive_summary||rescued.findings.length>0){
+    console.log('parseResearch: field-rescue strategy, findings recovered:',rescued.findings.length);
     return rescued;
   }
 
-  // Final fallback: extract executive_summary directly via regex even if JSON fails
-  var fallback = {executive_summary:'',stats:[],findings:[],paid_source_flags:[],primary_research_gaps:[],profiles:[],creative_angles:[]};
-  var sumRx = raw.match(/"executive_summary"\s*:\s*"([\s\S]{10,2000}?)(?=",\s*"(?:engagement|stats|findings)|"\s*})/);
-  if(sumRx) fallback.executive_summary = sumRx[1].replace(/\n/g,' ').replace(/\"/g,'"').replace(/\'/g,"'").trim();
-  
-  // Try to get stats array
-  var statsRx = raw.match(/"stats"\s*:\s*(\[[\s\S]{0,3000}?\])\s*[,}]/);
-  if(statsRx){try{fallback.stats=JSON.parse(statsRx[1]);}catch(e){}}
-  
-  // Strategy 6: truncate at last complete top-level comma-separated field
-  var lastClose = raw.lastIndexOf('"},');
-  if(lastClose > 100){
-    var truncated = raw.slice(0, lastClose+2) + ',"findings":[],"stats":[],"paid_source_flags":[],"primary_research_gaps":[],"profiles":[],"creative_angles":[]}';
-    try{
-      var tp = JSON.parse(truncated);
-      console.log('parseResearch: truncation strategy succeeded');
-      if(tp.executive_summary) return tp;
-    }catch(e){}
-  }
-  
-  console.error('parseResearch: all strategies failed. Raw length:',raw.length,'First 300:',raw.slice(0,300));
-  if(fallback.executive_summary){
-    console.log('parseResearch: returning fallback with executive_summary only');
-    return fallback;
-  }
+  console.error('parseResearch: all strategies failed. Length:',raw.length,'First 200:',raw.slice(0,200));
   return null;
 }
 
-function extractFields(text){
-  var get=function(k){var m=text.match(new RegExp('"'+k+'"\\s*:\\s*"([\\s\\S]{0,1200}?)(?="\\s*,\\s*"[a-z_]+"|}\\s*[,}]|$)'));return m?m[1].replace(/\\n/g,' ').replace(/\\"/g,'"').trim():'';};
-  var execSum=get('executive_summary')||get('summary')||'Research completed. JSON parse encountered an issue — see console for raw response.';
-  // Try to extract findings array partially
-  var findMatch=text.match(/"findings"\s*:\s*\[([\s\S]{0,2000}?)\]/);
-  var finds=[];
-  if(findMatch){
-    var hls=findMatch[1].match(/"headline"\s*:\s*"([^"]{0,200})"/g)||[];
-    var bods=findMatch[1].match(/"body"\s*:\s*"([^"]{0,400})"/g)||[];
-    var impls=findMatch[1].match(/"client_implication"\s*:\s*"([^"]{0,300})"/g)||[];
-    for(var i=0;i<Math.min(hls.length,5);i++){
-      finds.push({type:'finding',confidence:'medium',
-        headline:(hls[i]||'').replace(/"headline"\s*:\s*"/,'').replace(/"$/,''),
-        body:(bods[i]||'').replace(/"body"\s*:\s*"/,'').replace(/"$/,''),
-        client_implication:(impls[i]||'').replace(/"client_implication"\s*:\s*"/,'').replace(/"$/,''),
-        source_name:'Research output',source_url:'#'});
-    }
-  }
-  if(!finds.length){
-    finds=[{type:'parse note',confidence:'medium',
-      headline:'JSON response received but could not be fully parsed',
-      body:'The research agent returned data but it contained characters that broke JSON parsing. Common causes: apostrophes in company names, special characters, or response length. Try running this BQ again.',
-      client_implication:'Re-run this BQ — if it fails again, check the browser console (F12) for the raw response.',
-      source_name:'System',source_url:'#'}];
-  }
-  console.warn('extractFields fallback used. Raw text length:', text.length, 'First 500 chars:', text.slice(0,500));
-  return{executive_summary:execSum,stats:[],findings:finds,paid_source_flags:[],primary_research_gaps:[],profiles:[]};
-}
 
-// Extract URLs from API response content blocks
-function extractSources(contentBlocks, bqId){
-  var sources=[];
-  contentBlocks.forEach(function(block){
-    if((block.type==='tool_use'||block.type==='server_tool_use')&&block.name==='web_search'){
-      var query=(block.input&&block.input.query)||'search';
-      sources.push({type:'searched',bq:bqId,title:'Search: '+query,url:'https://www.google.com/search?q='+encodeURIComponent(query),query:query});
-    }
-    if(block.type==='tool_result'){
-      var content=block.content;
-      if(typeof content==='string'){
-        var urls=content.match(/https?:\/\/[^\s"'<>]+/g)||[];
-        var titles=content.match(/"title"\s*:\s*"([^"]{5,100})"/g)||[];
-        urls.slice(0,8).forEach(function(url,i){
-          var title=titles[i]?(titles[i].match(/"([^"]+)"$/)||[])[1]||url:url;
-          sources.push({type:'read',bq:bqId,title:title.slice(0,100),url:url});
-        });
-      }else if(Array.isArray(content)){
-        content.forEach(function(item){
-          if(item.type==='text'&&item.text){
-            var urls=item.text.match(/https?:\/\/[^\s"'<>]{10,}/g)||[];
-            urls.slice(0,6).forEach(function(url){sources.push({type:'read',bq:bqId,title:url.split('/').slice(2,4).join('/'),url:url});});
-          }
-        });
-      }
-    }
-  });
-  // Deduplicate
-  var seen=new Set();
-  return sources.filter(function(s){if(seen.has(s.url))return false;seen.add(s.url);return true;});
-}
+// Main research orchestrator — sequential, one BQ at a time
 
-// Run one BQ via live API — single request, animated progress
 async function researchBQ(bq, p, onLog){
   var sources=[];
   var result=null;
+  var client=p.client||'the client';
 
   try{
-    // Animated log ticker while waiting
-    var steps=[
-      'Sending research brief to agent...',
-      'Searching: "'+bq.kw[0]+' '+p.competitors[0]+'"',
-      'Searching: "'+bq.kw[0]+' market data 2024 2025"',
-      'Reading results from industry sources...',
-      'Searching: "'+p.competitors[1]+' '+bq.kw[0]+'"',
-      'Reading company pages and reports...',
-      'Searching: regulatory landscape '+bq.kw[0],
-      'Extracting statistics and claims...',
-      'Synthesising findings into brief...',
-    ];
-    var stepIdx=0;
-    onLog('info', steps[0]);
-    var ticker=setInterval(function(){
-      stepIdx=(stepIdx+1)%steps.length;
-      onLog('tick', steps[stepIdx]);
-    }, 4500);
-
-    var resp, lastErr;
-    for(var attempt=1;attempt<=3;attempt++){
-      try{
-        console.log('BQ fetch attempt',attempt,'| model: claude-sonnet-4-6 | key length:',getApiKey().length,'| key prefix:',getApiKey().slice(0,12));
-        var _fp=fetch(window.FB_PROXY_URL||'https://api.anthropic.com/v1/messages',{
-          method:'POST',
-          headers:{'Content-Type':'application/json','anthropic-version':'2023-06-01','x-api-key':getApiKey()},
-          body:JSON.stringify({
-            model:'claude-sonnet-4-6',
-            max_tokens:6000,
-            system:'You are a senior FutureBridge research analyst. Use web_search to run 4-6 focused searches. CRITICAL JSON RULES — violations will break the parser: (1) Respond ONLY with a valid JSON object, no text before or after, no markdown. (2) ALL strings use double quotes. (3) APOSTROPHES MUST BE ESCAPED — write Japan\'s not Japan\'s, L\'Oréal not L\'Oréal, it\'s not it\'s. Every single apostrophe inside a string value must be preceded by a backslash. (4) No literal newlines inside strings — use a space. (5) No trailing commas. Required keys: executive_summary, stats, findings, paid_source_flags, primary_research_gaps, profiles.',
-            tools:[{type:'web_search_20250305',name:'web_search'}],
-            messages:[{role:'user',content:buildResearchPrompt(bq,p)}]
-          })
-        });
-        var _to=new Promise(function(_,rej){setTimeout(function(){rej(new Error('API timeout — no response after 4 minutes. Try again.'));},240000);});
-        resp=await Promise.race([_fp,_to]);
-        if(resp.ok) break;
-        var errText=await resp.text();
-        // Detect monthly cap
-        if(resp.status===529||errText.indexOf('credit balance')>=0||errText.indexOf('monthly')>=0){
-          clearInterval(ticker);
-          throw new Error('MONTHLY_CAP: Credit balance too low. Please add credit at console.anthropic.com → Plans & Billing.');
-        }
-        lastErr=new Error('API '+resp.status+' — '+errText.slice(0,120));
-        if(attempt<3){await new Promise(function(r){setTimeout(r,attempt*2000);});}
-      }catch(e){
-        if(e.message.indexOf('MONTHLY_CAP')>=0) throw e;
-        lastErr=e;
-        if(attempt<3){await new Promise(function(r){setTimeout(r,attempt*2000);});}
-      }
+    var ticker=null;
+    function startTicker(msgs){
+      var idx=0;
+      onLog('info',msgs[0]);
+      ticker=setInterval(function(){idx=(idx+1)%msgs.length;onLog('tick',msgs[idx]);},4000);
     }
-    clearInterval(ticker);
-    if(!resp||!resp.ok) throw (lastErr||new Error('Research failed after 3 attempts'));
+    function stopTicker(){if(ticker){clearInterval(ticker);ticker=null;}}
 
-    onLog('info','Processing results...');
-    var _jt=new Promise(function(_,rej){setTimeout(function(){rej(new Error('Response parsing timeout — try again'));},60000);});
-    var data=await Promise.race([resp.json(),_jt]);
-    var blocks=data.content||[];
-
-    // Extract searches and pages from content blocks
-    var searchCount=0, pageCount=0;
-    blocks.forEach(function(block){
-      if((block.type==='tool_use'||block.type==='server_tool_use')&&block.name==='web_search'){
-        searchCount++;
-        var q=(block.input&&block.input.query)||'search';
-        onLog('search','Searched: "'+q.slice(0,65)+'"');
-        sources.push({type:'searched',bq:bq.id,title:'Search: '+q,url:'https://www.google.com/search?q='+encodeURIComponent(q),query:q});
+    async function callAPI(body){
+      var resp,lastErr;
+      for(var attempt=1;attempt<=3;attempt++){
+        try{
+          onLog('info','API call attempt '+attempt+'...');
+          var _fp=fetch(window.FB_PROXY_URL||'https://api.anthropic.com/v1/messages',{
+            method:'POST',
+            headers:{'Content-Type':'application/json','anthropic-version':'2023-06-01','x-api-key':getApiKey()},
+            body:JSON.stringify(body)
+          });
+          var _to=new Promise(function(_,rej){setTimeout(function(){rej(new Error('API timeout after 4 minutes'));},240000);});
+          resp=await Promise.race([_fp,_to]);
+          if(resp.ok) break;
+          var et=await resp.text();
+          if(resp.status===529||et.indexOf('credit balance')>=0){
+            throw new Error('MONTHLY_CAP: Credit balance too low. Add credit at console.anthropic.com');
+          }
+          lastErr=new Error('API '+resp.status+' - '+et.slice(0,100));
+          if(attempt<3) await new Promise(function(r){setTimeout(r,attempt*2000);});
+        }catch(e){
+          if(e.message.indexOf('MONTHLY_CAP')>=0) throw e;
+          lastErr=e;
+          if(attempt<3) await new Promise(function(r){setTimeout(r,attempt*2000);});
+        }
       }
-      if(block.type==='tool_result'||block.type==='web_search_tool_result'||block.type==='server_tool_result'){
-        var cnt=block.content;
-        var urls=[];
-        if(typeof cnt==='string') urls=(cnt.match(/https?:\/\/[^\s"'<>]{15,}/g)||[]).slice(0,5);
-        else if(Array.isArray(cnt)){
-          cnt.forEach(function(c){
-            if(c.url) urls.push(c.url);
-            else if(c.text) urls=urls.concat((c.text.match(/https?:\/\/[^\s"'<>]{15,}/g)||[]).slice(0,3));
+      if(!resp||!resp.ok) throw(lastErr||new Error('API failed after 3 attempts'));
+      var _jt=new Promise(function(_,rej){setTimeout(function(){rej(new Error('JSON parse timeout'));},60000);});
+      return await Promise.race([resp.json(),_jt]);
+    }
+
+    function extractText(blocks){
+      return (blocks||[]).filter(function(b){return b.type==='text';}).map(function(b){return b.text;}).join('');
+    }
+
+    function extractSearches(blocks){
+      var searches=[];
+      (blocks||[]).forEach(function(block){
+        if((block.type==='tool_use'||block.type==='server_tool_use')&&block.name==='web_search'){
+          var q=(block.input&&block.input.query)||'search';
+          onLog('search','Searched: "'+q.slice(0,65)+'"');
+          sources.push({type:'searched',bq:bq.id,title:'Search: '+q,url:'https://www.google.com/search?q='+encodeURIComponent(q),query:q});
+          searches.push(q);
+        }
+        if(block.type==='tool_result'||block.type==='web_search_tool_result'||block.type==='server_tool_result'){
+          var cnt=block.content;
+          var urls=[];
+          if(typeof cnt==='string') urls=(cnt.match(/https?:\/\/[^\s"'<>]{15,}/g)||[]).slice(0,5);
+          else if(Array.isArray(cnt)){
+            cnt.forEach(function(c){
+              if(c.url) urls.push(c.url);
+              else if(c.text) urls=urls.concat((c.text.match(/https?:\/\/[^\s"'<>]{15,}/g)||[]).slice(0,3));
+            });
+          }
+          urls.forEach(function(url){
+            var domain=url.replace(/^https?:\/\//,'').split('/')[0];
+            onLog('read','Read: '+domain);
+            sources.push({type:'read',bq:bq.id,title:domain,url:url});
           });
         }
-        urls.forEach(function(url){
-          pageCount++;
-          var domain=url.replace(/^https?:\/\//,'').split('/')[0];
-          onLog('read','Read: '+domain);
-          sources.push({type:'read',bq:bq.id,title:domain,url:url});
-        });
-      }
-    });
-
-    var text=blocks.filter(function(b){return b.type==='text';}).map(function(b){return b.text;}).join('');
-    console.log('Text blocks found:', blocks.filter(function(b){return b.type==='text';}).length, '| text length:', text.length, '| total blocks:', blocks.length, '| block types:', blocks.map(function(b){return b.type;}).join(','));
-    if(!text || text.length < 10){
-      onLog('error','No text response received — model may have hit token limit during web searches');
-      console.error('Empty text response. All block types:', blocks.map(function(b){return b.type+':'+(b.text?b.text.length:0);}).join(', '));
-      // Try to recover from tool_result blocks directly
-      var toolTexts = blocks.filter(function(b){return b.type==='tool_result'||b.type==='web_search_tool_result';})
-        .map(function(b){return typeof b.content==='string'?b.content:JSON.stringify(b.content||'');}).join(' ');
-      if(toolTexts.length > 50) {
-        onLog('warn','Attempting recovery from search results...');
-        text = toolTexts.slice(0, 4000);
-      }
+      });
+      return searches;
     }
-    onLog('done','Complete — '+searchCount+' searches, '+sources.length+' sources');
-    result=parseResearch(text);
+
+    // ── PASS 1: PLAN ────────────────────────────────────────────
+    startTicker(['Planning research strategy...','Identifying best search angles...','Mapping data sources...']);
+    onLog('pass','Pass 1: Planning');
+
+    var planData=await callAPI({
+      model:'claude-sonnet-4-6',
+      max_tokens:800,
+      messages:[{role:'user',content:'You are a senior FutureBridge research analyst. Plan the research strategy. Client: '+client+'. BQ: '+bq.text+'. Competitors: '+(p.competitors||[]).join(', ')+'. Return ONLY valid JSON: {"search_angle_1":"","search_angle_2":"","search_angle_3":"","hypothesis":"","parallel_industry":""}'}]});
+
+    stopTicker();
+
+    var planText=extractText(planData.content);
+    var plan={search_angle_1:'',search_angle_2:'',search_angle_3:'',hypothesis:'',parallel_industry:''};
+    try{
+      var pm=planText.match(/\{[\s\S]*\}/);
+      if(pm) plan=JSON.parse(pm[0].split("\'").join("'"));
+    }catch(e){}
+    onLog('done','Plan: '+[plan.search_angle_1,plan.search_angle_2,plan.search_angle_3].filter(Boolean).join(' | ').slice(0,100));
+
+    // ── PASS 2: SEARCH ──────────────────────────────────────────
+    startTicker(['Running targeted searches...','Reading industry sources...','Scanning competitor data...','Extracting key data points...']);
+    onLog('pass','Pass 2: Searching');
+
+    var searchData=await callAPI({
+      model:'claude-sonnet-4-6',
+      max_tokens:4000,
+      tools:[{type:'web_search_20250305',name:'web_search'}],
+      messages:[{role:'user',content:buildResearchPrompt(bq,p,plan)}]
+    });
+    stopTicker();
+
+    var searches2=extractSearches(searchData.content);
+    var searchText=extractText(searchData.content);
+    onLog('done','Pass 2: '+searches2.length+' searches complete');
+
+    // ── PASS 3: FOLLOW THE LEAD ─────────────────────────────────
+    startTicker(['Following key lead...','Digging deeper...','Finding the non-obvious...']);
+    onLog('pass','Pass 3: Following lead');
+
+    var followPrompt='Follow-up research for '+bq.text+'. Initial findings: '+searchText.slice(0,2000)+'. Run 2-3 targeted searches on the single most promising lead found. Focus on specific numbers, named companies, and pricing data.';
+
+    var followData=await callAPI({
+      model:'claude-sonnet-4-6',
+      max_tokens:3000,
+      tools:[{type:'web_search_20250305',name:'web_search'}],
+      messages:[{role:'user',content:followPrompt}]
+    });
+    stopTicker();
+
+    var searches3=extractSearches(followData.content);
+    var followText=extractText(followData.content);
+    onLog('done','Pass 3: '+searches3.length+' follow-up searches complete');
+
+    // ── PASS 4: SYNTHESISE ──────────────────────────────────────
+    startTicker(['Synthesising findings...','Applying FIH framework...','Building structured output...']);
+    onLog('pass','Pass 4: Synthesising');
+
+    var allResearch='Initial research: '+searchText+' Follow-up: '+followText;
+    var synthPrompt=buildSynthesisResearchPrompt(bq,p,plan,allResearch,client);
+
+    var synthData=await callAPI({
+      model:'claude-sonnet-4-6',
+      max_tokens:6000,
+      messages:[{role:'user',content:synthPrompt}]
+    });
+    stopTicker();
+
+    var rawText=extractText(synthData.content);
+    result=parseResearch(rawText);
+    onLog('done','Synthesis complete — '+(result&&result.findings?result.findings.length:0)+' findings');
 
     if(result){
       (result.findings||[]).forEach(function(f){
@@ -1006,6 +1259,7 @@ async function researchBQ(bq, p, onLog){
     }
 
   }catch(err){
+    if(ticker){clearInterval(ticker);}
     onLog('error','Error: '+err.message);
     return{result:null,sources:sources,errorMsg:err.message};
   }
@@ -1015,104 +1269,11 @@ async function researchBQ(bq, p, onLog){
   return{result:result,sources:sources};
 }
 
-
-// Main research orchestrator — sequential, one BQ at a time
-
-function runDemo(){
-  var p=S.proposal;
-  if(!p){alert('Please upload a proposal file first.');return;}
-  if(p.client!=="Miba AG"){
-    alert('Demo mode is only available for the Miba AG — Wind Turbine Bearings proposal.\nPlease upload the Miba proposal file to use demo mode.');
-    return;
-  }
-  goTo(4);
-  var sel=S.selBQs.map(function(i){return p.bqs[i];});
-  var grid=document.getElementById('agentsGrid');
-  if(grid) grid.innerHTML='';
-  document.getElementById('progFill').style.width='0%';
-
-  var demoDiv=document.createElement('div');
-  demoDiv.style.cssText='background:#EEEDFE;border:.5px solid #7F77DD;border-radius:6px;padding:6px 12px;font-size:11px;color:#26215C;font-weight:500;text-align:center;margin-bottom:10px';
-  demoDiv.textContent='Demo mode — pre-loaded research data (no API calls)';
-  var runSubEl=document.getElementById('runSub');
-  if(runSubEl&&runSubEl.parentNode) runSubEl.parentNode.insertBefore(demoDiv,runSubEl);
-
-  var allResults=[];
-  sel.forEach(function(bq,i){
-    var card=document.createElement('div');
-    card.className='agent-card';
-    card.id='ac-'+i;
-    var steps=['Searching competitive landscape...','Analysing value chain data...','Extracting pricing signals...','Synthesising findings...'];
-    card.innerHTML='<div class="ac-top"><span class="ac-id" id="agi-'+i+'">↺</span><span class="ac-title">'+bq.id+': '+bq.text.slice(0,60)+'...</span></div>'+
-      '<div class="ac-log" id="alog-'+i+'"><div class="log-row"><span class="log-tick">→</span><span>'+steps[0]+'</span></div></div>'+
-      '<div class="ac-meta"><span id="src-'+i+'">0</span> sources</div>';
-    var g=document.getElementById('agentsGrid');
-    if(g) g.appendChild(card);
-
-    setTimeout(function(bqId,bqIdx,bqSteps){
-      return function(){
-        var stepI=0;
-        var ticker=setInterval(function(){
-          stepI++;
-          var el=document.getElementById('alog-'+bqIdx);
-          if(stepI<bqSteps.length&&el){
-            el.innerHTML+='<div class="log-row"><span class="log-tick">→</span><span>'+bqSteps[stepI]+'</span></div>';
-          }
-        },600);
-
-        setTimeout(function(){
-          clearInterval(ticker);
-          var data=DEMO_RESULTS.bqs[bqId];
-          if(!data) return;
-          var srcEl=document.getElementById('src-'+bqIdx);
-          if(srcEl) srcEl.textContent=((data.profiles||[]).length+(data.paid_source_flags||[]).length+4);
-          var c=document.getElementById('ac-'+bqIdx);
-          if(c) c.className='agent-card done';
-          var agi=document.getElementById('agi-'+bqIdx);
-          if(agi) agi.textContent='✓';
-          allResults.push({bq:bqId,bqText:bq.text,data:data});
-          S.bqResults[bqId]=data;
-          document.getElementById('progFill').style.width=Math.round((allResults.length/sel.length)*100)+'%';
-
-          if(allResults.length===sel.length){
-            S.allSources=[];
-            S.detectedEngType=DEMO_RESULTS.engagement_type;
-            var parts=allResults.map(function(r){return r.data.executive_summary;}).filter(Boolean);
-            S.summary=parts[0]||(parts.length>1?parts.slice(1).map(function(s){var m=s.match(/[^.!?]+[.!?]+/);return m?m[0]:'';}).filter(Boolean).join(' '):'');
-            setTimeout(function(){
-              goTo(5);renderResults();
-              var sb=document.getElementById('synthBtn');
-              if(sb){sb.disabled=false;sb.textContent='Synthesise into sections (demo)';sb.onclick=function(){runDemoSynthesis();};}
-            },400);
-          }
-        },sel.length>1?2800:1800);
-      };
-    }(bq.id,i,steps),i*1200);
-  });
-}
-
-function runDemoSynthesis(){
-  var btn=document.getElementById('synthBtn');
-  var statusEl=document.getElementById('synthStatus');
-  if(btn){btn.disabled=true;btn.textContent='Synthesising...';}
-  if(statusEl){statusEl.textContent='Building section view from demo data...';}
-  setTimeout(function(){
-    S.synthesis=DEMO_SYNTHESIS;
-    S.detectedEngType=DEMO_SYNTHESIS.engagement.type;
-    renderSectionView(DEMO_SYNTHESIS);
-    var secTab=document.getElementById('tab-sections');
-    if(secTab) showTab('sections',secTab);
-    if(btn){btn.disabled=false;btn.textContent='Synthesise into sections (demo)';}
-    if(statusEl){statusEl.textContent='Demo synthesis complete — 6 sections generated';}
-  },1800);
-}
-
-
 async function runResearch(){
   var key=getApiKey();
-  var usingProxy=!!(window.FB_PROXY_URL&&window.FB_PROXY_URL.length>0);
+  var usingProxy=!!(window.FB_PROXY_URL&&window.FB_PROXY_URL.length>10);
   if(!usingProxy&&(!key||key.trim().length<20)){
-    alert('Please enter your Anthropic API key in the field on the upload screen.');
+    alert('Please enter your Anthropic API key on the upload screen.');
     return;
   }
   if(!S.selBQs.length){alert('Select at least one BQ');return;}
@@ -1169,6 +1330,14 @@ async function runResearch(){
         line.innerHTML='<span class="log-icon">'+(icons[type]||'·')+'</span><span>'+msg+'</span>';
         logEl.appendChild(line); logEl.scrollTop=logEl.scrollHeight;
         if(type==='search'){sc++;scEl.textContent=sc;}
+        if(type==='pass'){
+          var passEl=document.createElement('div');
+          passEl.style.cssText='font-size:10px;font-weight:500;color:var(--teal);padding:3px 0;border-top:.5px solid var(--lgray);margin-top:3px';
+          passEl.textContent='► '+info;
+          logEl.appendChild(passEl);
+          logEl.scrollTop=logEl.scrollHeight;
+          return;
+        }
         if(type==='read'){pc++;pcEl.textContent=pc;}
         rcEl.textContent=sc+pc;
       };
@@ -1278,158 +1447,253 @@ function showApiError(bqId, msg){
 
 // ═══ RENDER RESULTS ═══════════════════════════════
 function renderResults(){
-  var p=S.proposal, sel=S.selBQs.map(function(i){return p.bqs[i];});
-  var tf=sel.reduce(function(n,bq){var d=S.bqResults[bq.id];return n+(d&&d.findings?d.findings.length:0);},0);
-  var tg=sel.reduce(function(n,bq){var d=S.bqResults[bq.id];
-    var gaps=d&&(d.primary_research_gaps||d.gaps)||[];
-    var paid=d&&d.paid_source_flags||[];
-    return n+gaps.length+paid.length;},0);
-  document.getElementById('resTitle').textContent=p.client+' · Research intelligence';
-  document.getElementById('resMeta').textContent=sel.length+' BQs · '+tf+' findings · '+tg+' gaps & flags · '+S.allSources.length+' sources';
-  document.getElementById('pcnt').textContent=S.profiles.length;
-  document.getElementById('scnt').textContent=S.allSources.length;
-  document.getElementById('exTxt').textContent=S.summary;
+  var p=S.proposal;
+  var bqIds=S.selBQs.map(function(i){return p.bqs[i].id;});
+  var container=document.getElementById('bqAcc');
+  if(!container) return;
+  container.innerHTML='';
 
-  var acc=document.getElementById('bqAcc'); acc.innerHTML='';
-  sel.forEach(function(bq,bi){
-    var d=S.bqResults[bq.id]||{};
-    var f=d.findings||[];
+  bqIds.forEach(function(bqId){
+    var bq=p.bqs.find(function(b){return b.id===bqId;});
+    var d=S.bqResults[bqId];
+    if(!bq) return;
+
+    var card=document.createElement('div');
+    card.className='bq-card';
+    card.id='card-'+bqId;
+
+    // ── CARD HEADER (clickable to expand/collapse) ────────────
+    var hd=document.createElement('div');
+    hd.className='bq-card-hd';
+    hd.innerHTML='<span class="bq-card-id">'+escH(bqId)+'</span>'+
+      '<span class="bq-card-q">'+escH(bq.text.slice(0,100))+(bq.text.length>100?'...':'')+'</span>'+
+      '<span class="bq-card-toggle" id="tog-'+bqId+'">▾</span>';
+    hd.onclick=function(){
+      var body=document.getElementById('body-'+bqId);
+      var tog=document.getElementById('tog-'+bqId);
+      if(!body) return;
+      var collapsed=body.style.display==='none';
+      body.style.display=collapsed?'block':'none';
+      tog.style.transform=collapsed?'':'rotate(-90deg)';
+    };
+    card.appendChild(hd);
+
+    var body=document.createElement('div');
+    body.className='bq-card-body';
+    body.id='body-'+bqId;
+
+    if(!d){
+      body.innerHTML='<div style="padding:20px 18px;color:var(--mgray);font-size:12px">Research not available for this BQ</div>';
+      card.appendChild(body);
+      container.appendChild(card);
+      return;
+    }
+
+    var html='';
+
+    // ── PAID SOURCE FLAGS (red banner — top, cannot miss) ──────
+    var paid=d.paid_source_flags||[];
+    if(paid.length){
+      html+='<div class="paid-banner"><span class="paid-icon">🔒</span><div style="flex:1">'+
+        '<div class="paid-lbl">Paid sources required — cannot complete this BQ without</div>'+
+        '<div class="paid-items">'+paid.map(function(s){
+          var pri=s.priority||'HIGH';
+          var priColor=pri==='CRITICAL'?'#A32D2D':'#633806';
+          var priBg=pri==='CRITICAL'?'#A32D2D':'#FBAE40';
+          return '<div class="paid-item"><span class="paid-priority" style="background:'+priBg+'">'+escH(pri)+'</span>'+
+            '<strong>'+escH(s.source||'')+'</strong> — '+escH(s.what_it_unlocks||s.why_needed||'')+'</div>';
+        }).join('')+'</div></div></div>';
+    }
+
+    // ── EXEC SUMMARY ──────────────────────────────────────────
+    if(d.executive_summary){
+      html+='<div class="bq-exec"><div class="exec-lbl">Executive summary</div>'+
+        '<div class="exec-body">'+escH(d.executive_summary)+'</div></div>';
+    }
+
+    // ── KEY STATISTICS ─────────────────────────────────────────
     var st=d.stats||[];
-    var g=d.primary_research_gaps||d.gaps||[];
-    var pf=d.paid_source_flags||[];
-    var isMod2=parseInt((bq.id||'').replace(/\D/g,''))>=7;
+    if(st.length){
+      var confColor=function(c){
+        if(!c) return {bg:'#F1EFE8',col:'#5F5E5A'};
+        if(c.indexOf('paid')>=0) return {bg:'#fdecea',col:'#A32D2D'};
+        if(c==='web-verified') return {bg:'#e0f5ee',col:'#085041'};
+        return {bg:'#FEF5E4',col:'#633806'};
+      };
+      html+='<div class="bq-stats"><div class="stats-lbl">Key statistics</div><div class="stats-grid">'+
+        st.map(function(s){
+          var cc=confColor(s.confidence);
+          return '<div class="stat-card">'+
+            '<div class="stat-v">'+escH(String(s.value||''))+'</div>'+
+            '<div class="stat-l">'+escH(s.label||'')+'</div>'+
+            '<span class="stat-conf" style="background:'+cc.bg+';color:'+cc.col+'">'+escH(s.confidence||'unverified')+'</span>'+
+            '<div class="stat-src">'+escH(s.source_name||s.source||'')+'</div>'+
+          '</div>';
+        }).join('')+'</div></div>';
+    }
 
-    var pills='<span class="mp" style="background:#fdecea;color:var(--red)">'+f.length+' finding'+(f.length!==1?'s':'')+'</span>'+
-      (st.length?'<span class="mp" style="background:#e0f5ee;color:#0F6E56">'+st.length+' stat'+(st.length!==1?'s':'')+'</span>':'')+
-      (g.length?'<span class="mp" style="background:#FEF5E4;color:#633806">'+g.length+' gap'+(g.length!==1?'s':'')+'</span>':'')+
-      (pf.length?'<span class="mp" style="background:#fdecea;color:#A32D2D">'+pf.length+' paid flag'+(pf.length!==1?'s':'')+'</span>':'')+
-      '<span class="chev">▼</span>';
+    // ── FINDINGS with FIH badges ───────────────────────────────
+    var findings=d.findings||[];
+    var factInf=findings.filter(function(f){return f.evidence_type!=='HYPOTHESIS';});
+    var hyps=findings.filter(function(f){return f.evidence_type==='HYPOTHESIS';});
+    var inferences=findings.filter(function(f){return f.evidence_type==='INFERENCE';});
 
-    // STATS with confidence tags
-    var statsH=st.length?'<div class="bq-stats"><div class="sec-lbl" style="color:var(--teal)">Key statistics</div><div class="stats-row">'+
-      st.map(function(s){
-        var confColor=s.confidence&&s.confidence.indexOf('paid')>=0?'#A32D2D':s.confidence==='web-verified'?'#0F6E56':'#633806';
-        var confBg=s.confidence&&s.confidence.indexOf('paid')>=0?'#fdecea':s.confidence==='web-verified'?'#e0f5ee':'#FEF5E4';
-        return'<div class="stat"><div class="stat-v">'+s.value+'</div><div class="stat-l">'+s.label+'</div>'+
-          '<div style="font-size:9px;padding:1px 6px;border-radius:3px;background:'+confBg+';color:'+confColor+';margin-bottom:3px;display:inline-block">'+(s.confidence||'unverified')+'</div>'+
-          '<div class="stat-s">Source: <a href="'+(s.url||'#')+'" target="_blank">'+s.source+'</a></div></div>';
-      }).join('')+'</div></div>':'';
-
-    // FINDINGS with geo tag + client implication
-    var findH=f.length?'<div class="bq-findings"><div class="sec-lbl">Key findings</div>'+
-      f.map(function(fi,idx){
-        var gk=bq.id+'-'+idx;
-        var geoTag=fi.geo?'<span style="font-size:9px;background:#e0f5ee;color:#085041;padding:1px 6px;border-radius:3px;margin-left:6px">'+fi.geo+'</span>':'';
-        return'<div class="finding" id="fb-'+gk+'">'+
-          '<div class="f-top"><span class="f-type">'+(fi.type||'').replace(/_/g,' ')+'</span>'+geoTag+
-          '<span class="f-conf '+(fi.confidence==='high'?'conf-h':'conf-m')+'">'+(fi.confidence==='high'?'● High':'◐ Medium')+'</span>'+
-          '<div class="f-acts"><button class="f-btn fb-more" onclick="toggleMore(\''+gk+'\')">+ More</button>'+
-          '<button class="f-btn fb-edit" onclick="openEdit(\''+gk+'\','+bi+','+idx+')">✎ Edit</button></div></div>'+
-          '<div class="f-hl" id="fh-'+gk+'">'+fi.headline+'</div>'+
-          '<div class="f-body" id="fbo-'+gk+'">'+fi.body+'</div>'+
-          '<div class="f-impl"><strong style="color:var(--amber)">→ For '+p.client+':</strong> <span id="fi-'+gk+'">'+(fi.client_implication||fi.implication||'')+'</span></div>'+
-          '<div class="f-src">◆<div><strong id="fsn-'+gk+'">'+fi.source_name+'</strong><br>'+
-          '<a href="'+(fi.source_url||'#')+'" target="_blank" id="fsu-'+gk+'">'+fi.source_url+'</a></div></div>'+
-          '<div class="more-panel" id="more-'+gk+'">'+
-          '<div class="more-lbl">Additional research</div>'+
-          '<input class="more-in" id="moreq-'+gk+'" placeholder="Dig deeper into this finding...">'+
-          '<button class="more-run" onclick="runMore(\''+gk+'\',\''+bq.id+'\')">Research →</button>'+
-          '<div class="more-res" id="morer-'+gk+'"></div></div></div>';
-      }).join('')+'</div>':'';
-
-    // DISRUPTION SIGNALS
-    var disruptH='';
-    var ds=d.disruption_signals||[];
-    if(ds.length){
-      disruptH='<div class="bq-gap" style="border-color:#534AB7"><div class="gap-lbl" style="color:#3C3489;background:#EEEDFE">Disruption signals — strategic watch items</div>'+
-        ds.map(function(sig){
-          var typeColor={'bankruptcy':'#A32D2D','acquisition':'#085041','regulation':'#633806','supply':'#633806','entry':'#0C447C'}[sig.type]||'#444441';
-          var typeBg={'bankruptcy':'#fdecea','acquisition':'#e0f5ee','regulation':'#FEF5E4','supply':'#FEF5E4','entry':'#E6F1FB'}[sig.type]||'#F1EFE8';
-          return'<div class="gap-block" style="border-left:3px solid #534AB7">'+
-            '<div class="gap-name" style="display:flex;align-items:center;gap:8px">'+
-            '<span style="font-size:9px;padding:2px 8px;border-radius:3px;background:'+typeBg+';color:'+typeColor+';font-weight:500">'+(sig.type||'signal').toUpperCase()+'</span>'+
-            '<span style="font-size:12px;font-weight:500;color:var(--dark)">'+(sig.signal||'')+'</span>'+
-            (sig.date?'<span style="font-size:10px;color:var(--mgray)">'+sig.date+'</span>':'')+
+    if(factInf.length){
+      html+='<div class="bq-findings"><div class="findings-lbl">Key findings</div>'+
+        factInf.map(function(f){
+          var et=(f.evidence_type||'INFERENCE').toUpperCase();
+          return '<div class="finding">'+
+            '<div class="finding-hd">'+
+              '<span class="fih-badge fih-'+et+'">'+et+'</span>'+
+              '<div class="finding-headline">'+escH(f.headline||'')+'</div>'+
             '</div>'+
-            (sig.company?'<div class="gap-why"><strong>Company:</strong> '+sig.company+'</div>':'')+
-            (sig.client_implication?'<div class="gap-why" style="color:#3C3489"><strong>For '+p.client+':</strong> '+sig.client_implication+'</div>':'')+
-            '</div>';
+            (f.geo||f.data_date?'<div class="finding-meta">'+
+              (f.geo?'<span class="finding-geo">'+escH(f.geo)+'</span>':'')+
+              (f.data_date?'<span class="finding-date">'+escH(f.data_date)+'</span>':'')+
+            '</div>':'')+
+            (f.body?'<div class="finding-body">'+escH(f.body)+'</div>':'')+
+            (f.client_implication?'<div class="finding-implication">→ '+escH(f.client_implication)+'</div>':'')+
+            ((f.source_name||f.source_url)?'<div class="finding-source">Source: '+
+              (f.source_url&&f.source_url!=='#'?
+                '<a href="'+escH(f.source_url)+'" target="_blank">'+escH(f.source_name||f.source_url)+'</a>':
+                escH(f.source_name||''))+
+            '</div>':'')+
+          '</div>';
         }).join('')+'</div>';
     }
 
-    // CLIENT DECISION FRAME
-    var decisionH='';
-    var df=d.client_decision_frame||null;
-    if(df&&(df.option_a||df.option_b)){
-      decisionH='<div style="background:#EEEDFE22;border:0.5px solid #7F77DD;border-radius:9px;padding:13px 16px;margin-bottom:10px">'+
-        '<div style="font-size:9px;font-weight:500;letter-spacing:1.5px;text-transform:uppercase;color:#534AB7;margin-bottom:10px">Strategic options for '+p.client+'</div>'+
-        (df.option_a?'<div style="margin-bottom:8px"><span style="font-size:10px;font-weight:500;background:#534AB7;color:#fff;padding:2px 8px;border-radius:3px;margin-right:8px">Option A</span><span style="font-size:12px;color:var(--dark)">'+df.option_a+'</span></div>':'')+
-        (df.option_b?'<div style="margin-bottom:8px"><span style="font-size:10px;font-weight:500;background:#AFA9EC;color:#26215C;padding:2px 8px;border-radius:3px;margin-right:8px">Option B</span><span style="font-size:12px;color:var(--dark)">'+df.option_b+'</span></div>':'')+
-        (df.key_condition?'<div style="font-size:11px;color:#534AB7;margin-top:6px;padding-top:6px;border-top:0.5px solid #AFA9EC"><strong>Key condition:</strong> '+df.key_condition+'</div>':'')+
-        '</div>';
+    // ── HYPOTHESIS section ─────────────────────────────────────
+    if(hyps.length){
+      html+='<div class="bq-hypothesis"><div class="hypothesis-lbl">Hypotheses — requiring validation</div>'+
+        hyps.map(function(f){
+          return '<div class="hypothesis-card">'+
+            '<div class="hypothesis-q">'+escH(f.headline||'')+'</div>'+
+            (f.body?'<div style="font-size:11px;color:var(--dark);line-height:1.55;margin-bottom:6px">'+escH(f.body)+'</div>':'')+
+            '<div class="hypothesis-wwtbt">What would need to be true: '+escH(f.client_implication||f.body||'Requires primary research to validate')+'</div>'+
+          '</div>';
+        }).join('')+'</div>';
     }
 
-    // PAID SOURCE FLAGS — new section
-    var paidH=pf.length?'<div class="bq-gap" style="border-color:#E24B4A">'+
-      '<div class="gap-lbl" style="color:#A32D2D;background:#FCEBEB">Paid sources required — flag for manual intervention</div>'+
-      pf.map(function(flag){
-        var priColor=flag.priority==='CRITICAL'?'#A32D2D':flag.priority==='HIGH'?'#633806':'#0F6E56';
-        var priBg=flag.priority==='CRITICAL'?'#fdecea':flag.priority==='HIGH'?'#FEF5E4':'#e0f5ee';
-        return'<div class="gap-block" style="border-left:3px solid #E24B4A">'+
-          '<div class="gap-name" style="color:#A32D2D">'+flag.source+
-          '<span class="gap-pri" style="background:'+priBg+';color:'+priColor+'">'+flag.priority+'</span></div>'+
-          '<div class="gap-why"><strong>Unlocks:</strong> '+flag.what_it_unlocks+'</div>'+
-          '<div class="gap-why"><strong>Needed for:</strong> '+flag.why_needed+'</div></div>';
-      }).join('')+'</div>':'';
+    // ── INSIGHTS REQUIRING VALIDATION ─────────────────────────
+    if(inferences.length){
+      html+='<div class="bq-validation"><div class="validation-lbl">Insights requiring validation</div>'+
+        inferences.map(function(f){
+          return '<div class="validation-item">'+
+            '<div class="validation-headline">'+escH(f.headline||'')+'</div>'+
+            '<div class="validation-path">Validation path: '+escH(f.client_implication||'Expert interview or paid source required')+'</div>'+
+          '</div>';
+        }).join('')+'</div>';
+    }
 
-    // PRIMARY RESEARCH GAPS — enhanced
-    var creativeH='';
+    // ── PARALLEL INDUSTRY ─────────────────────────────────────
     var ca=d.creative_angles||[];
     if(ca.length){
-      var caItems=ca.map(function(c){
-        return '<div style="border:.5px solid #AFA9EC;border-radius:8px;padding:11px 14px;margin-bottom:8px">'+
-          '<div style="font-size:11px;font-weight:500;color:#3C3489;margin-bottom:3px">'+escH(c.angle_title||'')+'</div>'+
-          '<div style="font-size:10px;font-weight:500;color:#534AB7;margin-bottom:5px">Parallel: '+escH(c.parallel_industry||'')+'</div>'+
-          '<div style="font-size:11px;color:var(--dark);line-height:1.65;margin-bottom:5px">'+escH(c.insight||'')+'</div>'+
-          (c.why_relevant_to_client?'<div style="font-size:10px;color:#26215C;padding:5px 8px;background:#EEEDFE;border-radius:4px">Relevance: '+escH(c.why_relevant_to_client)+'</div>':'')+
-        '</div>';
-      }).join('');
-      creativeH='<div class="bq-gap" style="border-color:#AFA9EC">'+
-        '<div class="gap-lbl" style="color:#534AB7">Creative intelligence — parallel industry</div>'+
-        '<div style="font-size:10px;color:#534AB7;margin-bottom:10px;font-style:italic">Adjacent industries that solved this problem first</div>'+
-        caItems+'</div>';
+      html+='<div class="bq-parallel"><div class="parallel-lbl">Parallel industry intelligence</div>'+
+        ca.map(function(c){
+          return '<div class="parallel-item">'+
+            '<div class="parallel-title">'+escH(c.angle_title||'')+'</div>'+
+            (c.parallel_industry?'<div class="parallel-industry">Parallel: '+escH(c.parallel_industry)+'</div>':'')+
+            (c.insight?'<div class="parallel-insight">'+escH(c.insight)+'</div>':'')+
+            (c.why_relevant_to_client?'<div class="parallel-relevance">Relevance: '+escH(c.why_relevant_to_client)+'</div>':'')+
+          '</div>';
+        }).join('')+'</div>';
     }
 
-    var gapH=g.length?'<div class="bq-gap">'+
-      '<div class="gap-lbl">Gaps requiring primary research</div>'+
-      g.map(function(gap){
-        return'<div class="gap-block"><div class="gap-name">'+(gap.gap||gap.gap||'Research gap')+
-          '<span class="gap-pri '+(gap.priority==='HIGH'?'pri-h':'pri-m')+'">'+gap.priority+'</span></div>'+
-          '<div class="gap-why">'+(gap.why_impossible||gap.why||'')+'</div>'+
-          '<div class="gap-expert"><div class="ge-head">Expert: '+(gap.expert_profile||gap.expert||'Industry expert')+'</div>'+
-          (gap.questions||[]).map(function(q,qi){return'<div class="ge-q"><span class="ge-qn">'+(qi+1)+'.</span><span>'+q+'</span></div>';}).join('')+
-          (gap.hypothesis?'<div class="ge-hyp"><strong>Hypothesis:</strong> '+gap.hypothesis+'</div>':'')+
-          '</div></div>';
-      }).join('')+'</div>':'';
+    // ── DISRUPTION SIGNALS ─────────────────────────────────────
+    var dis=d.disruption_signals||[];
+    if(dis.length){
+      html+='<div class="bq-disruption"><div class="disruption-lbl">Disruption signals</div>'+
+        dis.map(function(s){
+          return '<div class="disruption-item">'+
+            '<div class="disruption-signal">'+escH(s.signal||'')+'</div>'+
+            (s.company||s.date?'<div class="disruption-co">'+escH(s.company||'')+(s.date?' · '+escH(s.date):'')+(s.type?' · '+escH(s.type):'')+'</div>':'')+
+            (s.client_implication?'<div class="disruption-impl">'+escH(s.client_implication)+'</div>':'')+
+          '</div>';
+        }).join('')+'</div>';
+    }
 
-    var moreH='<div class="bq-more">'+
-      '<input class="bq-more-in" id="bqmoreq-'+bq.id+'" placeholder="Need more on '+bq.id+'? Ask a follow-on...">'+
-      '<button class="bq-more-btn" onclick="runBQMore(\''+bq.id+'\')">Research more →</button>'+
-      '<div class="bq-more-res" id="bqmorer-'+bq.id+'"></div></div>';
-
-    var execSum=d.executive_summary||d.executive_summary||d.summary||'';
-    var card=document.createElement('div'); card.className='bq-res open'; card.id='bacc-'+bq.id;
-    card.innerHTML=
-      '<div class="bq-hd" onclick="toggleAcc(\''+bq.id+'\')">'+
-      '<span class="bq-pill'+(isMod2?' m2':'')+'">'+bq.id+'</span>'+
-      '<span class="bq-q">'+bq.text+'</span>'+
-      '<div class="bq-meta-pills">'+pills+'</div></div>'+
-      '<div class="bq-bd">'+
-      '<div class="bq-sum"><div class="sec-lbl">Executive summary</div><div class="sum-txt">'+execSum+'</div></div>'+
-      statsH+findH+disruptH+decisionH+paidH+creativeH+gapH+moreH+
+    // ── CLIENT DECISION FRAME ─────────────────────────────────
+    var df=d.client_decision_frame;
+    if(df&&(df.option_a||df.option_b)){
+      html+='<div class="bq-decision"><div class="decision-lbl">Client decision frame</div>'+
+        '<div class="decision-grid">'+
+          '<div class="decision-opt"><div class="decision-opt-lbl">Option A</div><div class="decision-opt-body">'+escH(df.option_a||'')+'</div></div>'+
+          '<div class="decision-opt"><div class="decision-opt-lbl">Option B</div><div class="decision-opt-body">'+escH(df.option_b||'')+'</div></div>'+
+        '</div>'+
+        (df.key_condition?'<div class="decision-condition"><div class="decision-cond-lbl">Key condition</div>'+escH(df.key_condition)+'</div>':'')+
       '</div>';
-    acc.appendChild(card);
+    }
+
+    // ── PRIMARY RESEARCH GAPS ──────────────────────────────────
+    var gaps=d.primary_research_gaps||[];
+    if(gaps.length){
+      html+='<div class="bq-gaps"><div class="gaps-lbl">Primary research required</div>'+
+        gaps.map(function(g){
+          var pri=g.priority||'HIGH';
+          var priBg=pri==='CRITICAL'?'#A32D2D':'#FBAE40';
+          return '<div class="gap-card">'+
+            '<div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:6px">'+
+              '<span class="gap-priority" style="background:'+priBg+';color:#fff">'+escH(pri)+'</span>'+
+              '<div class="gap-title">'+escH(g.gap||g.title||'')+'</div>'+
+            '</div>'+
+            (g.why_impossible?'<div class="gap-why">Why web research cannot answer this: '+escH(g.why_impossible)+'</div>':'')+
+            (g.expert_profile?'<div class="gap-expert">Expert needed: '+escH(g.expert_profile)+'</div>':'')+
+            (g.questions&&g.questions.length?'<div class="gap-qs">Questions to ask:<br>'+g.questions.map(function(q,i){return (i+1)+'. '+escH(q);}).join('<br>')+'</div>':'')+
+            (g.hypothesis?'<div class="gap-hyp">Hypothesis to test: '+escH(g.hypothesis)+'</div>':'')+
+          '</div>';
+        }).join('')+'</div>';
+    }
+
+    // ── COMPETITOR PROFILES ────────────────────────────────────
+    var profiles=d.profiles||[];
+    if(profiles.length){
+      html+='<div class="bq-profiles"><div class="profiles-lbl">Competitor profiles</div>'+
+        profiles.map(function(pr){
+          return '<div class="profile-card">'+
+            '<div style="flex:1">'+
+              '<div class="profile-name">'+escH(pr.name||'')+'</div>'+
+              '<div class="profile-hq">'+escH(pr.hq||'')+(pr.geography?' · '+escH(pr.geography):'')+'</div>'+
+              (pr.role?'<div class="profile-role">'+escH(pr.role)+'</div>':'')+
+              (pr.key_fact?'<div class="profile-fact">'+escH(pr.key_fact)+'</div>':'')+
+              (pr.key_product?'<div class="profile-fact" style="color:var(--mgray)">'+escH(pr.key_product)+'</div>':'')+
+              (pr.client_relevance?'<div class="profile-rel">'+escH(pr.client_relevance)+'</div>':'')+
+              '<a class="profile-deep" onclick="alert(\'Profile Builder agent — coming in Stage 2\')">Deep dive ↗</a>'+
+            '</div>'+
+          '</div>';
+        }).join('')+'</div>';
+    }
+
+    body.innerHTML=html;
+    card.appendChild(body);
+    container.appendChild(card);
   });
+
+  // Summary text for synthesis
+  var parts=[];
+  bqIds.forEach(function(id){
+    var d2=S.bqResults[id];
+    if(d2&&d2.executive_summary) parts.push(d2.executive_summary);
+  });
+  S.summary=parts.join(' ');
+  S.detectedEngType=S.bqResults[bqIds[0]]&&S.bqResults[bqIds[0]].engagement_type||'general';
+
+  // Update results header
+  var p2=S.proposal;
+  var rtEl=document.getElementById('resTitle');
+  var rmEl=document.getElementById('resMeta');
+  if(rtEl) rtEl.textContent=p2.client+' - '+p2.title;
+  if(rmEl) rmEl.textContent=p2.practice+' - '+p2.geography+' - '+p2.period;
+  var exEl=document.getElementById('exTxt');
+  if(exEl) exEl.textContent=S.summary.slice(0,300)+(S.summary.length>300?'...':'');
+}
+
+function toggleBQCard(bqId){
+  var body=document.getElementById('body-'+bqId);
+  var chev=document.getElementById('chev-'+bqId);
+  if(!body) return;
+  var isOpen=body.classList.contains('open');
+  body.classList.toggle('open',!isOpen);
+  if(chev) chev.classList.toggle('open',!isOpen);
 }
 
 
@@ -1529,6 +1793,135 @@ function copySrcs(){
   navigator.clipboard.writeText(text).then(function(){alert(S.allSources.length+' sources copied');});
 }
 
+
+
+
+function runDemoSynthesis(){
+  var btn=document.getElementById('synthBtn');
+  var st=document.getElementById('synthStatus');
+  if(btn){btn.disabled=true;btn.textContent='Synthesising...';}
+  if(st) st.textContent='Building section view from demo data...';
+  setTimeout(function(){
+    if(!DEMO_SYNTHESIS){if(btn)btn.textContent='Synthesise (demo)';return;}
+    S.synthesis=DEMO_SYNTHESIS;
+    S.detectedEngType=(DEMO_SYNTHESIS.engagement&&DEMO_SYNTHESIS.engagement.type)||'value_chain_pricing';
+    renderSectionView(DEMO_SYNTHESIS);
+    var secTab=document.getElementById('tab-sections');
+    if(secTab) showTab('sections',secTab);
+    if(btn){btn.disabled=false;btn.textContent='Synthesise (demo)';}
+    if(st) st.textContent='Demo synthesis complete - 6 sections generated';
+  },1800);
+}
+
+function runDemo(){
+  var p=S.proposal;
+  if(!p){alert('Upload a proposal first');return;}
+  if(p.client!=='Miba AG'){
+    alert('Demo mode is pre-loaded for the Miba AG proposal only. Upload the Miba proposal file to use demo mode.');
+    return;
+  }
+  goTo(4);
+  var sel=S.selBQs.map(function(i){return p.bqs[i];});
+  var grid=document.getElementById('agentsGrid');
+  if(grid) grid.innerHTML='';
+  var progFill=document.getElementById('progFill');
+  if(progFill) progFill.style.width='0%';
+
+  // Demo banner
+  var banner=document.createElement('div');
+  banner.style.cssText='background:#EEEDFE;border:.5px solid #7F77DD;border-radius:6px;padding:6px 12px;font-size:11px;color:#26215C;font-weight:500;text-align:center;margin-bottom:10px';
+  banner.textContent='Demo mode — pre-loaded research data (no API calls)';
+  var runSub=document.getElementById('runSub');
+  if(runSub&&runSub.parentNode) runSub.parentNode.insertBefore(banner,runSub);
+
+  var completed=[];
+  sel.forEach(function(bq,i){
+    var card=document.createElement('div');
+    card.className='agent-card';
+    card.id='ac-'+i;
+    card.innerHTML='<div class="ac-top"><span class="ac-id" id="agi-'+i+'">↺</span>'+
+      '<span class="ac-title">'+bq.id+': '+bq.text.slice(0,60)+'...</span></div>'+
+      '<div class="ac-log" id="alog-'+i+'"><div class="log-row"><span class="log-tick">→</span><span>Loading demo data...</span></div></div>'+
+      '<div class="ac-meta"><span id="src-'+i+'">0</span> sources</div>';
+    if(grid) grid.appendChild(card);
+
+    setTimeout(function(bqObj,bqIdx){return function(){
+      var demoResult=DEMO_RESULTS&&DEMO_RESULTS.bqs?DEMO_RESULTS.bqs[bqObj.id]:null;
+      if(demoResult){
+        S.bqResults[bqObj.id]=demoResult;
+        var srcEl=document.getElementById('src-'+bqIdx);
+        if(srcEl) srcEl.textContent=((demoResult.profiles||[]).length+(demoResult.paid_source_flags||[]).length+4);
+        var c=document.getElementById('ac-'+bqIdx);
+        if(c) c.className='agent-card done';
+        var agi=document.getElementById('agi-'+bqIdx);
+        if(agi) agi.textContent='✓';
+      }
+      completed.push(bqObj.id);
+      if(progFill) progFill.style.width=Math.round(completed.length/sel.length*100)+'%';
+      if(completed.length===sel.length){
+        S.detectedEngType='value_chain_pricing';
+        setTimeout(function(){goTo(5);renderResults();},400);
+      }
+    };}(bq,i),i*800+500);
+  });
+}
+
+function exportBaseline(){
+  var p=S.proposal;
+  if(!p||!Object.keys(S.bqResults).length){alert('No research to export');return;}
+  var baseline={
+    version:1,
+    exported_at:new Date().toISOString(),
+    client:p.client,
+    title:p.title,
+    practice:p.practice,
+    geography:p.geography,
+    period:p.period,
+    competitors:p.competitors,
+    engagement_type:S.detectedEngType||'general',
+    bq_results:S.bqResults,
+    synthesis:S.synthesis||null,
+    monitoring_config:{
+      track_companies:p.competitors||[],
+      track_keywords:(p.bqs||[]).map(function(bq){return (bq.kw||[]).slice(0,2);}).flat().filter(function(k,i,a){return a.indexOf(k)===i;}),
+      baseline_date:new Date().toISOString().split('T')[0]
+    }
+  };
+  var json=JSON.stringify(baseline,null,2);
+  var b=new Blob([json],{type:'application/json'});
+  var a=document.createElement('a');
+  a.href=URL.createObjectURL(b);
+  a.download=(p.client||'Research').replace(/\s+/g,'_')+'_Baseline_'+new Date().toISOString().split('T')[0]+'.json';
+  a.click();
+  setTimeout(function(){URL.revokeObjectURL(a.href);},2000);
+}
+
+
+function saveBaseline(){
+  var p=S.proposal;
+  if(!p||!Object.keys(S.bqResults).length){alert('Run research first');return;}
+  S.baseline={
+    version:'1.0',
+    created:new Date().toISOString(),
+    client:p.client,
+    title:p.title,
+    practice:p.practice,
+    geography:p.geography,
+    period:p.period,
+    competitors:p.competitors,
+    engagement_type:S.detectedEngType,
+    bq_results:S.bqResults,
+    synthesis:S.synthesis||null
+  };
+  var blob=new Blob([JSON.stringify(S.baseline,null,2)],{type:'application/json'});
+  var a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download=(p.client||'FutureBridge').replace(/\s+/g,'_')+'_baseline_'+new Date().toISOString().slice(0,10)+'.json';
+  a.click();
+  setTimeout(function(){URL.revokeObjectURL(a.href);},2000);
+}
+
+
 function dlReport(){
   var p=S.proposal,sel=S.selBQs.map(function(i){return p.bqs[i];});
   var h='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>'+p.client+'</title><style>body{font-family:Arial,sans-serif;max-width:900px;margin:40px auto;color:#4B4B55;font-size:13px;line-height:1.6}h1{font-size:22px;border-bottom:3px solid #F94F5E;padding-bottom:8px}h2{font-size:10px;color:#F94F5E;letter-spacing:1.5px;text-transform:uppercase;margin:22px 0 6px}.sum{background:#F9F8F6;border-left:4px solid #F94F5E;padding:11px 15px;margin:9px 0}.stat{display:inline-block;background:#F2FBF7;border-top:2px solid #22AE8A;padding:8px 12px;margin:3px 4px 3px 0;vertical-align:top}.stat-v{font-size:20px;color:#22AE8A;font-weight:bold}.finding{border-left:3px solid #F94F5E;padding:7px 11px;margin:7px 0;background:#FAFAFA}.finding h4{margin:0 0 3px}.impl{font-size:11px;color:#633806;background:#FEF5E4;padding:4px 8px;border-left:2px solid #FBAE40}.gap{background:#FFFBF3;border:1px solid #FBAE40;border-radius:5px;padding:10px;margin:7px 0}.gap h4{color:#633806;margin:0 0 4px}.gap ol{margin:5px 0 5px 18px;font-size:11px}.hyp{font-size:11px;color:#633806;background:#FEF5E4;padding:4px 8px;border-left:2px solid #FBAE40;margin-top:5px}hr{border:none;border-top:1px solid #DBDBDD;margin:18px 0}.footer{font-size:10px;color:#A4A3A4;text-align:center;margin-top:40px;border-top:1px solid #DBDBDD;padding-top:10px}</style></head><body>';
@@ -1583,7 +1976,6 @@ function reset(){
   goTo(1);
 }
 
-
 var DEMO_SYNTHESIS = {
   engagement:{type:"value_chain_pricing"},
   cross_cutting:{
@@ -1600,6 +1992,7 @@ var DEMO_SYNTHESIS = {
     {id:"str",title:"Strategic options for Miba",icon:"🎯",coverage_level:"complete",source_bqs:["BQ1","BQ2","BQ3","BQ4"],synthesis:"Miba faces a binary strategic choice: enter as a technology-premium niche supplier targeting Siemens Gamesa/Vestas India at Rs16-20 lakh per unit with import + local assembly; or enter as a volume competitor targeting Suzlon/Inox Wind at Rs13-15 lakh requiring full localisation. Option A is lower risk and faster to revenue. Option B captures Suzlon's 3GW order book but requires 4-5 year investment horizon. Decision window is narrow — Suzlon's 2025-2027 bearing tenders will lock in preferred supplier positions.",bullet_points:["Option A: target Siemens Gamesa/Vestas India (offshore specs, IECRE) at Rs16-20 lakh/unit; import rings + local HT/grinding; capex Rs40-60 Cr; Year 2 operational","Option B: target Suzlon + Inox Wind at Rs13-15 lakh/unit; full localisation Phase 1 (Rs80-100 Cr) + Phase 2 forging (Rs120-140 Cr); cost parity Year 5-7","Steel price hedging mandatory in either scenario — quarterly LME-indexed adjustment clauses are non-negotiable for a new India subsidiary","Immediate next step: 2 expert interviews to validate pricing and forging supply before any investment decision","Decision window: Suzlon 3GW order book drives 2025-2027 tenders — Miba must achieve preferred vendor qualification before end of 2025"],coverage_note:null}
   ]
 };
+
 
 var DEMO_RESULTS = {
   proposal_key:'miba',
@@ -1627,6 +2020,7 @@ var DEMO_RESULTS = {
     BQ4:{executive_summary:"Raw materials (bearing steel rings) account for 45-52% of the ex-works price of a 3MW main shaft SRB in India — the dominant and most volatile cost driver. Heat treatment energy costs represent 8-12% of manufacturing cost and have risen 18-22% since 2022. Labour accounts for 10-14% of cost — the primary India advantage. Net ex-works price for a domestically manufactured 3MW SRB set from Schaeffler/SKF India is estimated at Rs14-18 lakh ($16,800-$21,600) vs EU22,000-EU28,000 for European-manufactured units.",engagement_type:"value_chain_pricing",stats:[{value:"45-52%",label:"Raw material as % of ex-works price — 3MW SRB India",confidence:"estimated",source:"FutureBridge estimate",url:"#"},{value:"Rs14-18 lakh",label:"Estimated ex-works price — 3MW SRB set, India-manufactured",confidence:"estimated",source:"FutureBridge triangulation",url:"#"},{value:"EU22,000-EU28,000",label:"Ex-works price — European-manufactured 3MW SRB equivalent",confidence:"estimated",source:"FutureBridge estimate",url:"#"},{value:"18-22%",label:"Rise in industrial power tariffs Maharashtra/Gujarat since 2022",confidence:"estimated",source:"Maharashtra Electricity Regulatory Commission",url:"#"}],findings:[{evidence_id:"E001",evidence_type:"INFERENCE",headline:"Steel rings (100Cr6) account for 45-52% of ex-works cost — 15% steel price increase translates to 6-8% ex-works price pressure",body:"Bearing-grade steel rings represent the largest single cost element in main shaft SRB manufacturing. At current domestic steel prices (approximately Rs95-110/kg for 100Cr6), the ring material cost for a 3MW SRB set (ring weight approximately 350-450 kg) is approximately Rs6-8 lakh. Steel price volatility since 2022 has been 22-28% peak-to-trough. Schaeffler and SKF manage this via quarterly steel price adjustment clauses in OEM supply contracts. So what for Miba AG: steel price hedging strategy is non-negotiable before entering any OEM supply agreement — unhedged 45-52% raw material exposure creates plus-minus 8-12% annual P&L volatility unacceptable for a new India subsidiary.",confidence:"medium",geo:"India",data_date:"2024",source_name:"ICRA Bearing Sector Report 2024",source_url:"https://icra.in"},{evidence_id:"E002",evidence_type:"INFERENCE",headline:"Heat treatment energy cost risen 18-22% since 2022 — Pune manufacturers exploring solar captive power",body:"The heat treatment stage consumes approximately 180-220 kWh per ring set. At Maharashtra industrial power tariff of Rs9-11/kWh (increased from Rs7.5-8.5 in 2022), heat treatment energy cost per 3MW SRB set is approximately Rs35,000-55,000. This represents 8-12% of total manufacturing cost. Pune-based manufacturers are exploring on-site solar captive power to partially offset this. So what for Miba AG: energy cost trajectory in Maharashtra and Gujarat must be modelled in any India P&L — captive solar should be evaluated as a risk mitigation option from Year 3.",confidence:"medium",geo:"India — Maharashtra",data_date:"2024",source_name:"Maharashtra Electricity Regulatory Commission",source_url:"#"},{evidence_id:"E003",evidence_type:"FACT",headline:"Labour cost in India is 60% below European equivalent — structural and durable advantage",body:"Employee expenses account for approximately 10% of sales for Schaeffler India vs approximately 25% in developed countries. For a 3MW SRB set, labour-intensive grinding and assembly operations cost approximately Rs1.2-1.8 lakh at Indian wage rates vs EU4,000-6,000 at German/Austrian rates. This structural 60% labour cost advantage is durable and grows proportionally with turbine size as grinding hours per unit increase. So what for Miba AG: the labour advantage is the primary economic rationale for India manufacturing — it holds at any volume level and must anchor the India investment case.",confidence:"high",geo:"India vs Europe",data_date:"2024",source_name:"Mathmarkets Schaeffler India Analysis 2024",source_url:"https://mathmarkets.in"}],disruption_signals:[{signal:"Suzlon Energy announced 3GW domestic wind turbine order book for FY2025 — largest domestic wind OEM demand signal in 5 years",company:"Suzlon Energy",date:"Q3 2024",type:"demand",client_implication:"For Miba: Suzlon 3GW order book is the demand catalyst that justifies India manufacturing investment — timing of entry should align with Suzlon 2026-2027 supply ramp"},{signal:"Steel prices (100Cr6) fell 12% in H2 2024 — creates 2025 OEM contract renegotiation pressure of 5-8%",company:"Tata Steel/SAIL",date:"H2 2024",type:"commodity",client_implication:"For Miba: 2025 supply contract negotiations will include downward price pressure — Miba must model steel price floor and adjustment mechanisms before committing to India supply agreements"}],client_decision_frame:{option_a:"Price at Rs13-15 lakh per 3MW SRB set to compete on Suzlon/Inox Wind Tier 1 programs — requires in-house forging and full localisation; achievable Year 4-5",option_b:"Price at Rs16-20 lakh targeting Siemens Gamesa/Vestas India offshore and premium onshore — achievable Year 2-3 with import + local assembly model; avoids direct price war",key_condition:"Steel price hedging strategy is non-negotiable in either scenario — unhedged 100Cr6 exposure creates plus-minus 8-12% P&L volatility unacceptable for a new India subsidiary"},paid_source_flags:[{source:"TradeMap HS 8482.50 (spherical roller bearings) — unit import/export values India",what_it_unlocks:"Actual average import prices for wind-grade SRBs into India — directly validates ex-works price estimates",why_needed:"Without unit-level trade data, all ex-works pricing is estimate; TradeMap provides the only publicly available proxy",priority:"CRITICAL"}],primary_research_gaps:[{gap:"Actual OEM contract price and annual price adjustment mechanism for Schaeffler/SKF India supply to Suzlon for 2MW-3MW main shaft SRBs",why_impossible:"OEM supply contract terms are under NDA",expert_profile:"Former supply chain director at Suzlon Energy with active Schaeffler/SKF bearing contract exposure",questions:["What is the OEM contract price range for a 3MW SRB set under current Suzlon supply agreement?","What is the quarterly steel price adjustment formula?","What volume guarantees does Suzlon provide?"],hypothesis:"Suzlon pays Rs15-17 lakh per 3MW SRB set under current Schaeffler contract (2024); price adjusted quarterly against SAIL HRC index",priority:"CRITICAL"}],creative_angles:[{angle_title:"LNG plant cold-box heat exchanger pricing — how complex industrial equipment OEM contracts handle material cost pass-through",parallel_industry:"LNG plant equipment supply (Air Products, Linde engineering contracts)",insight:"LNG cold-box manufacturers solved the stainless steel cost pass-through problem 20 years ago — the standard contract structure separates the base fabrication margin from material costs, with material indexed quarterly to LME or domestic steel indices. The fabrication margin is fixed for the contract term (typically 3-5 years) while material pass-through is automatic. This structure eliminates the material price risk for both buyer and seller and is now standard in all complex industrial equipment OEM contracts in India.",why_relevant_to_client:"Miba should specify this exact LNG-style contract structure in Suzlon and Inox Wind negotiations — separate fabrication margin (fixed) from material cost (LME-indexed quarterly). This is standard in adjacent industries and will be recognised and accepted by sophisticated OEM procurement teams."}],profiles:[{name:"Suzlon Energy Limited",hq:"Pune, Maharashtra",role:"Largest domestic wind turbine OEM — primary target customer",geography:"India",key_product:"2MW-3MW onshore wind turbines; growing 3.5MW platform",key_fact:"3GW order book announced Q3 2024; 60%+ localisation content required; active Schaeffler and SKF India customer",client_relevance:"Primary OEM customer target for Miba India Phase 1 — volume and spec requirements must drive India investment sizing"}]}
   }
 };
+
 
 
 const PROPOSALS={
@@ -2126,7 +2520,7 @@ async function runSynthesis() {
   try {
     var resp = await fetch(window.FB_PROXY_URL||'https://api.anthropic.com/v1/messages', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'anthropic-version': '2023-06-01', 'x-api-key': getApiKey() },
+      headers:{'Content-Type':'application/json','anthropic-version':'2023-06-01','x-api-key':getApiKey()},
       body: JSON.stringify({
         model: 'claude-sonnet-4-6',
         max_tokens: 6000,
@@ -2169,56 +2563,8 @@ function parseSynthesis(text) {
   var m = clean.match(/\{[\s\S]*\}/);
   if (!m) return null;
   var raw = m[0];
-
-  // Pre-fix: replace \' with ' — model outputs invalid JSON escape
-  // Strategy 0: aggressive pre-clean (literal newlines, control chars, bad escapes)
-  // Fix invalid JSON escape: \' is not valid JSON, replace with '
-  raw = raw.split("\\'").join("'");
-
-  function aggressiveClean(s) {
-    var out = '';
-    var inStr = false;
-    var esc = false;
-    for (var i = 0; i < s.length; i++) {
-      var c = s[i];
-      if (esc) { out += c; esc = false; continue; }
-      if (c === '\\') { out += c; esc = true; continue; }
-      if (c === '"') { inStr = !inStr; out += c; continue; }
-      if (inStr) {
-        if (c === '\n' || c === '\r') { out += ' '; continue; }
-        if (c === '\t') { out += ' '; continue; }
-        if (c.charCodeAt(0) < 32) { continue; }
-      }
-      out += c;
-    }
-    return out;
-  }
-  try { return JSON.parse(aggressiveClean(raw)); } catch(e0) {}
-
   // Strategy 1: direct
   try { return JSON.parse(raw); } catch(e) {}
-  
-  // Strategy 1.5: truncate at last complete finding object
-  function truncateAtLastComplete(s){
-    var lastBrace = s.lastIndexOf('}');
-    while(lastBrace > 0){
-      var candidate = s.slice(0, lastBrace+1);
-      // Find the parent array/object close
-      var testStr = candidate;
-      // Try adding closing brackets
-      for(var closes of [']}', ']}]}', ']}]}]}', ']}]}]}]}']){
-        try{
-          var tp = JSON.parse(testStr + closes);
-          return tp;
-        }catch(e){}
-      }
-      lastBrace = s.lastIndexOf('}', lastBrace-1);
-      if(lastBrace < s.length * 0.5) break; // Don't truncate more than half
-    }
-    return null;
-  }
-  var t15 = truncateAtLastComplete(raw);
-  if(t15 && t15.executive_summary){ console.log('parseResearch: truncation strategy 1.5 succeeded'); return t15; }
   // Strategy 2: apostrophe sanitise
   function san(s) {
     var out=''; var inStr=false; var esc=false;
@@ -2396,4 +2742,4 @@ function dlSectionCSV() {
 
 </script>
 </body>
-</htmlrej(new Error('API timeout — no response after 4 minutes. Try again.')>
+</html>
