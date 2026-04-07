@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>FB Research Data Collection — Version 1</title>
+<title>FutureBridge Research Workbench</title>
 <style>
 /* ── RESET ──────────────────────────────────────────────────── */
 *{box-sizing:border-box;margin:0;padding:0}
@@ -303,7 +303,7 @@ input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;h
   <div class="logo" onclick="reset()" title="Back to upload">
     <img src="https://www.futurebridge.com/wp-content/uploads/2019/07/future-bridge-type-logo.png" alt="FutureBridge">
     <span class="logo-sep"></span>
-    <span class="logo-tool">Research Intelligence</span>
+    <span class="logo-tool">Research Workbench</span>
   </div>
   <div class="hdr-r">
     <div class="step-bar">
@@ -311,7 +311,7 @@ input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;h
       <div class="step" id="st2">Reading</div>
       <div class="step" id="st3">Review BQs</div>
       <div class="step" id="st4">Researching</div>
-      <div class="step" id="st5">Results</div>
+      <div class="step" id="st5">Evidence Pack</div>
     </div>
     <div class="back-btn" id="backBtn" onclick="goBack()">&#8592; Back</div>
   </div>
@@ -386,10 +386,10 @@ input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;h
   <div class="res-top">
     <div><div class="res-title" id="resTitle"></div><div class="res-meta" id="resMeta"></div></div>
     <div class="out-btns">
-      <button class="out-btn" style="background:#534AB7;border-color:#534AB7;color:#fff;font-weight:500" id="synthBtn" onclick="runSynthesis()">⚡ Synthesise into sections</button> <button class="btn btn-out btn-sm" onclick="exportBaseline()" title="Export research baseline for Monitoring Agent">↓ Save baseline</button>
+      <button class="out-btn" style="background:#534AB7;border-color:#534AB7;color:#fff;font-weight:500" id="synthBtn" onclick="runSynthesis()">⚡ Build Intelligence Summary</button> <button class="out-btn" onclick="exportSectionPPTX()" id="dlSectionPptxBtn" style="background:#534AB7;color:#fff;border-color:#534AB7">⬇ Intelligence Summary (PPTX)</button> <button class="btn btn-out btn-sm" onclick="exportBaseline()" title="Export research baseline for Monitoring Agent">↓ Save baseline</button>
       <span id="synthStatus" style="font-size:11px;color:var(--mgray);align-self:center"></span>
-      <button class="out-btn red" onclick="dlReport()">⬇ BQ report</button>
-      <button class="out-btn" onclick="exportToPPTX()" id="dlPptxBtn" style="background:#F94F5E;color:#fff;border-color:#F94F5E">⬇ Export PPTX</button>
+      <button class="out-btn red" onclick="dlReport()">⬇ Evidence Pack</button>
+      <button class="out-btn" onclick="exportToPPTX()" id="dlPptxBtn" style="background:#F94F5E;color:#fff;border-color:#F94F5E">⬇ Evidence Pack (PPTX)</button>
       <button class="out-btn" onclick="dlData()">⬇ BQ data (CSV)</button>
       <button class="out-btn" style="background:#0F6E56;border-color:#0F6E56;color:#fff" onclick="dlSectionReport()">⬇ Section report</button>
       <button class="out-btn" onclick="dlSectionCSV()">⬇ Section (CSV)</button>
@@ -1380,7 +1380,7 @@ async function buildProfiles(bqId){
     'Return ONLY a JSON array: [{name,hq,founded,type,role,geography,key_product,key_fact,client_relevance,source_url}]. '+
     'type must be competitor, startup, or supplier. Include at least 1 startup and 1 supplier.';
   try{
-    onLog('info','Building profiles for '+bqId+'...');
+    console.log('buildProfiles: running for',bqId);
     var data=await callAPI({
       model:'claude-sonnet-4-6',max_tokens:2000,
       tools:[{type:'web_search_20250305',name:'web_search'}],
@@ -1400,6 +1400,47 @@ async function buildProfiles(bqId){
     if(btn){btn.textContent='Retry';btn.disabled=false;}
   }catch(e){
     console.error('buildProfiles:',e);
+    if(btn){btn.textContent='Error — retry';btn.disabled=false;}
+  }
+}
+
+async function reEvaluateHypothesis(bqId, hypIdx){
+  var btn=document.getElementById('reevalbtn-'+bqId+'-'+hypIdx);
+  if(btn){btn.textContent='Evaluating...';btn.disabled=true;}
+  var d=S.bqResults&&S.bqResults[bqId]?S.bqResults[bqId]:{};
+  var hyps=d.hypotheses||[];
+  var h=hyps[hypIdx];
+  if(!h){if(btn){btn.textContent='Error';btn.disabled=false;}return;}
+  var findings=(d.findings||[]).map(function(f){return f.headline+': '+f.body;}).join('\n');
+  var stats=(d.stats||[]).map(function(s){return s.value+' '+s.label;}).join(', ');
+  var prompt='You are evaluating a research hypothesis against collected evidence.\n'+
+    'Hypothesis: '+( h.statement||h.headline||'')+'.\n'+
+    'What would need to be true: '+(h.what_would_need_to_be_true||h.client_implication||'')+'.\n'+
+    'Evidence collected:\n'+findings+'\nKey stats: '+stats+'.\n'+
+    'Based ONLY on the evidence above, evaluate the hypothesis. '+
+    'Return ONLY valid JSON: {"verdict":"Supported|Partially supported|Refuted|Unresolvable","note":"one sentence explanation citing specific evidence","new_confidence":"high|medium|low"}';
+  try{
+    var data=await callAPI({
+      model:'claude-sonnet-4-6',max_tokens:500,
+      messages:[{role:'user',content:prompt}]
+    });
+    var text=(data.content||[]).filter(function(b){return b.type==='text';}).map(function(b){return b.text;}).join('');
+    text=text.replace(/```json\s*/gi,'').replace(/```\s*/g,'').trim();
+    var m=text.match(/\{[\s\S]*\}/);
+    if(m){
+      var r=JSON.parse(m[0].split("\'").join("'"));
+      if(!S.bqResults[bqId]) S.bqResults[bqId]={};
+      if(!S.bqResults[bqId].hypotheses) S.bqResults[bqId].hypotheses=[];
+      S.bqResults[bqId].hypotheses[hypIdx]=Object.assign({},h,{
+        reeval_verdict:r.verdict,
+        reeval_note:r.note,
+        confidence_level:r.new_confidence||h.confidence_level
+      });
+      renderResults(); return;
+    }
+    if(btn){btn.textContent='Retry';btn.disabled=false;}
+  }catch(e){
+    console.error('reEval:',e);
     if(btn){btn.textContent='Error — retry';btn.disabled=false;}
   }
 }
@@ -1605,9 +1646,20 @@ function renderResults(){
           (f.body?'<div style="font-size:11px;color:var(--dark);line-height:1.55;margin-bottom:6px">'+escH(f.body)+'</div>':'')+
           '<div class="hypothesis-wwtbt">What would need to be true: '+escH(f.client_implication||f.body||'Requires primary research to validate')+'</div>'+
           (f.confidence_level?'<div style="font-size:9px;font-weight:600;margin-top:5px;color:'+(f.confidence_level==='high'?'#166534':f.confidence_level==='low'?'#B91C1C':'#854D0E')+'">Confidence: '+escH(f.confidence_level.toUpperCase())+'</div>':'')+
+          (f.reeval_verdict?'<div style="margin-top:7px;padding:6px 10px;border-radius:6px;background:'+(f.reeval_verdict==='Supported'?'#E0F5EE':f.reeval_verdict==='Refuted'?'#FCEBEB':'#FEF5E4')+';font-size:10px;font-weight:600;color:'+(f.reeval_verdict==='Supported'?'#085041':f.reeval_verdict==='Refuted'?'#A32D2D':'#633806')+'">✓ Re-evaluated: '+escH(f.reeval_verdict)+(f.reeval_note?' — '+escH(f.reeval_note.slice(0,120)):'')+'</div>':'')+
+          '<div style="margin-top:8px"><button class="btn btn-sm" id="reevalbtn-'+bqId+'-'+fi+'" style="font-size:10px;padding:4px 10px">Re-evaluate</button></div>'+
         '</div>';
       }).join('');
     }
+    // Bind re-evaluate buttons
+    (function(_id,_hyps){
+      _hyps.forEach(function(f,fi){
+        setTimeout(function(){
+          var b=document.getElementById('reevalbtn-'+_id+'-'+fi);
+          if(b) b.onclick=function(){reEvaluateHypothesis(_id,fi);};
+        },150);
+      });
+    })(bqId,hyps);
     html+='</div>';
 
     // ── INSIGHTS REQUIRING VALIDATION ─────────────────────────
@@ -2206,7 +2258,7 @@ function dlReport(){
     h+='<hr>';
   });
 
-  h+='<div class="footer">FutureBridge Research Intelligence Platform \xb7 '+p.client+' \xb7 '+new Date().getFullYear()+'</div>';
+  h+='<div class="footer">FutureBridge FutureBridge Research Workbench \xb7 '+p.client+' \xb7 '+new Date().getFullYear()+'</div>';
   h+='</body></html>';
 
   var b=new Blob([h],{type:'text/html'});
@@ -2886,105 +2938,207 @@ function renderSectionView(parsed) {
 
   var sections = parsed.sections || [];
   var cc = parsed.cross_cutting || {};
-  var p = S.proposal;
-
-  // ── STRATEGIC ANALOGIES — top of section view ───────────────
   var sa = parsed.strategic_analogies || [];
-  if (sa.length) {
-    var saWrap = document.createElement('div');
-    saWrap.style.cssText = 'margin-bottom:20px';
+  var p = S.proposal || {};
+  var client = (p.client||'the client');
+  var bqs = p.bqs || [];
 
-    var saHd = document.createElement('div');
-    saHd.style.cssText = 'background:#2E1065;border-radius:12px 12px 0 0;padding:14px 20px;display:flex;align-items:center;gap:10px';
-    saHd.innerHTML = '<span style="font-size:20px">🔭</span>' +
-      '<div><div style="font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#C4B5FD;margin-bottom:2px">Strategic Intelligence</div>' +
-      '<div style="font-size:16px;font-weight:700;color:#fff">Strategic Analogies</div>' +
-      '<div style="font-size:11px;color:#A78BFA;margin-top:2px">What another industry already solved — and what ' + (S.proposal&&S.proposal.client||'the client') + ' can learn from it</div></div>';
-    saWrap.appendChild(saHd);
+  // ── 1. ENGAGEMENT HEADER ─────────────────────────────────────
+  var hdr = document.createElement('div');
+  hdr.style.cssText = 'background:var(--dark);border-radius:10px;padding:16px 20px;margin-bottom:14px;display:flex;align-items:flex-start;justify-content:space-between';
+  hdr.innerHTML =
+    '<div>' +
+      '<div style="font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#939399;margin-bottom:6px">FutureBridge Research Workbench — Section Intelligence</div>' +
+      '<div style="font-size:18px;font-weight:700;color:#fff;margin-bottom:4px">' + escH(p.title||'Research Intelligence') + '</div>' +
+      '<div style="font-size:12px;color:#939399">' + escH(client) +
+        (p.geography ? ' &nbsp;·&nbsp; ' + escH(p.geography) : '') +
+        (p.period ? ' &nbsp;·&nbsp; ' + escH(p.period) : '') +
+      '</div>' +
+    '</div>' +
+    '<div style="text-align:right">' +
+      '<div style="font-size:9px;color:#6F6F77;margin-bottom:4px">' + bqs.length + ' business questions</div>' +
+      '<div style="font-size:9px;color:#6F6F77">' + sections.length + ' sections synthesised</div>' +
+    '</div>';
+  container.appendChild(hdr);
 
-    sa.forEach(function(a, i) {
-      var card = document.createElement('div');
-      card.style.cssText = 'background:#fff;border:1px solid #C4B5FD;border-top:none;padding:18px 20px;' +
-        (i === sa.length - 1 ? 'border-radius:0 0 12px 12px' : '');
-
-      var sourceBQs = (a.source_bqs||[]).map(function(bq){
-        return '<span style="font-size:9px;font-weight:600;background:#EDE9FE;color:#5B21B6;padding:1px 7px;border-radius:10px;margin-right:4px">'+bq+'</span>';
-      }).join('');
-
-      card.innerHTML =
-        '<div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:10px">' +
-          '<div style="font-size:14px;font-weight:700;color:#2E1065">' + escH(a.title||'') + '</div>' +
-          '<div>' + sourceBQs + '</div>' +
-        '</div>' +
-        (a.source_industry ? '<div style="display:inline-block;font-size:10px;font-weight:600;color:#5B21B6;background:#EDE9FE;padding:3px 10px;border-radius:4px;margin-bottom:12px">Adjacent industry: ' + escH(a.source_industry) + '</div>' : '') +
-        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">' +
-          '<div>' +
-            '<div style="font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#9CA3AF;margin-bottom:6px">The analogy</div>' +
-            '<div style="font-size:12.5px;color:#374151;line-height:1.7">' + escH(a.the_analogy||'') + '</div>' +
-          '</div>' +
-          '<div style="background:#F5F3FF;border-radius:8px;padding:12px 14px">' +
-            '<div style="font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#5B21B6;margin-bottom:6px">What ' + escH(S.proposal&&S.proposal.client||'the client') + ' can learn</div>' +
-            '<div style="font-size:12.5px;color:#2E1065;line-height:1.7;font-weight:500">' + escH(a.what_client_can_learn||'') + '</div>' +
-          '</div>' +
-        '</div>';
-
-      if (i < sa.length - 1) {
-        card.style.borderBottom = '.5px solid #E5E9F0';
-      }
-      saWrap.appendChild(card);
+  // ── 2. BQ COVERAGE MATRIX ────────────────────────────────────
+  if (bqs.length) {
+    var matrix = document.createElement('div');
+    matrix.style.cssText = 'background:var(--white);border:.5px solid var(--gray);border-radius:10px;margin-bottom:14px;overflow:hidden';
+    var matHd = document.createElement('div');
+    matHd.style.cssText = 'padding:10px 16px;border-bottom:.5px solid var(--gray);display:flex;align-items:center;justify-content:space-between';
+    matHd.innerHTML = '<span style="font-size:11px;font-weight:600;color:var(--dark)">BQ Coverage Matrix</span>' +
+      '<span style="font-size:9px;color:var(--mgray)">Status across all business questions</span>';
+    matrix.appendChild(matHd);
+    var matBody = document.createElement('div');
+    matBody.style.cssText = 'padding:8px 10px';
+    bqs.forEach(function(bq) {
+      var d = (S.bqResults||{})[bq.id] || {};
+      var findings = (d.findings||[]).length;
+      var profiles = (d.profiles||[]).length;
+      var gaps = (d.primary_research_gaps||[]).length;
+      var stats = (d.stats||[]).length;
+      var hasData = findings > 0 || stats > 0;
+      var statusBg = hasData ? (findings>=3?'#e0f5ee':'#FEF5E4') : '#fdecea';
+      var statusTxt = hasData ? (findings>=3?'#085041':'#633806') : '#A32D2D';
+      var statusLbl = hasData ? (findings>=3?'Complete':'Partial') : 'Not run';
+      var row = document.createElement('div');
+      row.style.cssText = 'display:flex;align-items:center;gap:10px;padding:7px 6px;border-radius:6px;margin-bottom:3px;background:#FAFAFA';
+      row.innerHTML =
+        '<span style="font-size:9px;font-weight:700;color:var(--red);font-family:var(--fm);min-width:28px">' + escH(bq.id) + '</span>' +
+        '<span style="font-size:10px;color:var(--dark);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + escH((bq.text||'').slice(0,100)) + '</span>' +
+        '<span style="font-size:9px;padding:2px 8px;border-radius:8px;font-weight:600;background:' + statusBg + ';color:' + statusTxt + '">' + statusLbl + '</span>' +
+        (findings?'<span style="font-size:9px;color:var(--mgray)">' + findings + ' findings</span>':'') +
+        (stats?'<span style="font-size:9px;color:var(--mgray)">' + stats + ' stats</span>':'') +
+        (profiles?'<span style="font-size:9px;color:var(--teal)">' + profiles + ' profiles</span>':'') +
+        (gaps?'<span style="font-size:9px;color:#A32D2D">' + gaps + ' gaps</span>':'');
+      matBody.appendChild(row);
     });
-
-    container.appendChild(saWrap);
+    matrix.appendChild(matBody);
+    container.appendChild(matrix);
   }
 
-  // Cross-cutting insight banner
+  // ── 3. KEY INSIGHT BANNER ────────────────────────────────────
   if (cc.key_insight || cc.recommended_next_step) {
     var banner = document.createElement('div');
-    banner.style.cssText = 'background:#EEEDFE;border:.5px solid #7F77DD;border-radius:10px;padding:16px 20px;margin-bottom:16px';
+    banner.style.cssText = 'background:#EEEDFE;border:.5px solid #7F77DD;border-radius:10px;padding:16px 20px;margin-bottom:14px';
     banner.innerHTML =
-      '<div style="font-size:9px;font-weight:500;letter-spacing:2px;text-transform:uppercase;color:#534AB7;margin-bottom:8px">Key insight across all research</div>' +
-      (cc.key_insight ? '<div style="font-size:13px;font-weight:500;color:#26215C;margin-bottom:8px">' + cc.key_insight + '</div>' : '') +
-      (cc.recommended_next_step ? '<div style="font-size:12px;color:#534AB7"><strong>Recommended next step:</strong> ' + cc.recommended_next_step + '</div>' : '') +
-      (cc.biggest_gap ? '<div style="font-size:11px;color:#888;margin-top:6px;padding-top:6px;border-top:.5px solid #AFA9EC"><strong>Biggest remaining gap:</strong> ' + cc.biggest_gap + '</div>' : '');
+      '<div style="font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#534AB7;margin-bottom:10px">Key insight across all research</div>' +
+      (cc.key_insight ? '<div style="font-size:14px;font-weight:600;color:#26215C;line-height:1.6;margin-bottom:10px">' + escH(cc.key_insight) + '</div>' : '') +
+      (cc.recommended_next_step ? '<div style="font-size:12px;color:#534AB7;padding:10px 12px;background:#fff;border-radius:6px;border:.5px solid #AFA9EC"><strong>Recommended next step:</strong> ' + escH(cc.recommended_next_step) + '</div>' : '') +
+      (cc.biggest_gap ? '<div style="font-size:11px;color:#888;margin-top:8px;padding-top:8px;border-top:.5px solid #AFA9EC"><strong>Biggest remaining gap:</strong> ' + escH(cc.biggest_gap) + '</div>' : '');
     container.appendChild(banner);
   }
 
-  // Section cards
-  sections.forEach(function(sec) {
-    var covColor = sec.coverage_level === 'complete' ? '#0F6E56' : sec.coverage_level === 'partial' ? '#633806' : '#A32D2D';
-    var covBg    = sec.coverage_level === 'complete' ? '#e0f5ee' : sec.coverage_level === 'partial' ? '#FEF5E4' : '#fdecea';
-    var covLabel = sec.coverage_level === 'complete' ? 'Complete' : sec.coverage_level === 'partial' ? 'Partial' : 'Gap — needs data';
+  // ── 4. SECTION CARDS ─────────────────────────────────────────
+  if (sections.length) {
+    var secHd = document.createElement('div');
+    secHd.style.cssText = 'font-size:9px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--mgray);margin-bottom:8px;padding:0 4px';
+    secHd.textContent = 'Research Sections';
+    container.appendChild(secHd);
 
-    var card = document.createElement('div');
-    card.style.cssText = 'background:var(--white);border:.5px solid var(--gray);border-radius:10px;margin-bottom:10px;overflow:hidden';
-    card.id = 'sec-' + sec.id;
+    sections.forEach(function(sec) {
+      var covColor = sec.coverage_level==='complete'?'#0F6E56':sec.coverage_level==='partial'?'#633806':'#A32D2D';
+      var covBg    = sec.coverage_level==='complete'?'#e0f5ee':sec.coverage_level==='partial'?'#FEF5E4':'#fdecea';
+      var covLabel = sec.coverage_level==='complete'?'Complete':sec.coverage_level==='partial'?'Partial':'Gap';
+      var card = document.createElement('div');
+      card.style.cssText = 'background:var(--white);border:.5px solid var(--gray);border-radius:10px;margin-bottom:8px;overflow:hidden';
+      card.id = 'sec-' + sec.id;
+      var bqTags = (sec.source_bqs||[]).map(function(b){
+        return '<span style="font-size:9px;background:#fdecea;color:var(--red);padding:1px 6px;border-radius:3px;font-family:var(--fm)">' + b + '</span>';
+      }).join(' ');
+      var bullets = (sec.bullet_points||[]).map(function(bp) {
+        return '<div style="display:flex;gap:8px;align-items:flex-start;margin-bottom:7px">' +
+          '<div style="width:5px;height:5px;border-radius:50%;background:var(--red);flex-shrink:0;margin-top:6px"></div>' +
+          '<div style="font-size:12px;color:var(--dark);line-height:1.6">' + bp + '</div></div>';
+      }).join('');
+      card.innerHTML =
+        '<div style="display:flex;align-items:center;gap:10px;padding:13px 16px;border-bottom:.5px solid var(--gray);cursor:pointer" onclick="toggleSec(\'' + sec.id + '\')">' +
+          '<span style="font-size:16px;color:var(--mgray)">' + (sec.icon||'·') + '</span>' +
+          '<span style="font-size:13px;font-weight:500;color:var(--dark);flex:1">' + escH(sec.title||'') + '</span>' +
+          bqTags +
+          '<span style="font-size:9px;font-weight:500;padding:3px 9px;border-radius:20px;background:' + covBg + ';color:' + covColor + '">' + covLabel + '</span>' +
+          '<span style="font-size:10px;color:var(--mgray);margin-left:4px" id="schev-' + sec.id + '">▼</span>' +
+        '</div>' +
+        '<div id="secbd-' + sec.id + '" style="padding:14px 16px">' +
+          '<div style="font-size:12px;color:var(--mgray);line-height:1.75;margin-bottom:12px;padding-bottom:12px;border-bottom:.5px solid var(--lgray)">' + (sec.synthesis||'') + '</div>' +
+          bullets +
+          (sec.coverage_note ? '<div style="margin-top:10px;padding:9px 12px;background:#FFFBF3;border-left:2px solid var(--amber);font-size:11px;color:#633806;line-height:1.6"><strong>Coverage note:</strong> ' + sec.coverage_note + '</div>' : '') +
+        '</div>';
+      container.appendChild(card);
+    });
+  }
 
-    var bqTags = (sec.source_bqs||[]).map(function(b){
-      return '<span style="font-size:9px;background:#fdecea;color:var(--red);padding:1px 6px;border-radius:3px;font-family:var(--fm)">' + b + '</span>';
-    }).join(' ');
-
-    var bullets = (sec.bullet_points||[]).map(function(bp) {
-      return '<div style="display:flex;gap:8px;align-items:flex-start;margin-bottom:7px">' +
-        '<div style="width:5px;height:5px;border-radius:50%;background:var(--red);flex-shrink:0;margin-top:6px"></div>' +
-        '<div style="font-size:12px;color:var(--dark);line-height:1.6">' + bp + '</div></div>';
-    }).join('');
-
-    card.innerHTML =
-      '<div style="display:flex;align-items:center;gap:10px;padding:13px 16px;border-bottom:.5px solid var(--gray);cursor:pointer" onclick="toggleSec(\'' + sec.id + '\')">' +
-        '<span style="font-size:16px;color:var(--mgray)">' + (sec.icon||'·') + '</span>' +
-        '<span style="font-size:13px;font-weight:500;color:var(--dark);flex:1">' + (sec.title||'') + '</span>' +
-        bqTags +
-        '<span style="font-size:9px;font-weight:500;padding:3px 9px;border-radius:20px;background:' + covBg + ';color:' + covColor + '">' + covLabel + '</span>' +
-        '<span style="font-size:10px;color:var(--mgray);margin-left:4px" id="schev-' + sec.id + '">▼</span>' +
-      '</div>' +
-      '<div id="secbd-' + sec.id + '" style="padding:14px 16px">' +
-        '<div style="font-size:12px;color:var(--mgray);line-height:1.75;margin-bottom:12px;padding-bottom:12px;border-bottom:.5px solid var(--lgray)">' + (sec.synthesis||'') + '</div>' +
-        bullets +
-        (sec.coverage_note ? '<div style="margin-top:10px;padding:9px 12px;background:#FFFBF3;border-left:2px solid var(--amber);font-size:11px;color:#633806;line-height:1.6"><strong>Coverage note:</strong> ' + sec.coverage_note + '</div>' : '') +
-      '</div>';
-
-    container.appendChild(card);
+  // ── 5. PRIMARY RESEARCH GAPS — standalone ────────────────────
+  var allGaps = [];
+  (S.proposal&&S.proposal.bqs||[]).forEach(function(bq) {
+    var d = (S.bqResults||{})[bq.id] || {};
+    (d.primary_research_gaps||[]).forEach(function(g) {
+      allGaps.push({bqId:bq.id, gap:g});
+    });
   });
+  if (allGaps.length) {
+    var gapSection = document.createElement('div');
+    gapSection.style.cssText = 'margin-bottom:14px';
+    var gapHd = document.createElement('div');
+    gapHd.style.cssText = 'background:#FFF2F0;border:.5px solid #FCA5A5;border-radius:10px 10px 0 0;padding:12px 16px;display:flex;align-items:center;gap:10px';
+    gapHd.innerHTML =
+      '<div style="width:28px;height:28px;border-radius:6px;background:#F94F5E;display:flex;align-items:center;justify-content:center;flex-shrink:0">' +
+        '<span style="color:#fff;font-size:14px;font-weight:700">!</span>' +
+      '</div>' +
+      '<div>' +
+        '<div style="font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#A32D2D">Primary Research Gaps</div>' +
+        '<div style="font-size:11px;color:#B91C1C;margin-top:1px">What web research cannot answer — requires expert interview or paid database (' + allGaps.length + ' gaps across ' + (S.proposal&&S.proposal.bqs||[]).length + ' BQs)</div>' +
+      '</div>';
+    gapSection.appendChild(gapHd);
+    allGaps.forEach(function(item, idx) {
+      var g = item.gap;
+      var pri = (g.priority||'MEDIUM').toUpperCase();
+      var priBg = pri==='HIGH'?'#FCEBEB':pri==='MEDIUM'?'#FEF5E4':'#E0F5EE';
+      var priTxt = pri==='HIGH'?'#A32D2D':pri==='MEDIUM'?'#633806':'#085041';
+      var isLast = idx === allGaps.length - 1;
+      var gCard = document.createElement('div');
+      gCard.style.cssText = 'background:var(--white);border:.5px solid #FCA5A5;border-top:none;padding:12px 16px;' +
+        (isLast ? 'border-radius:0 0 10px 10px' : '');
+      gCard.innerHTML =
+        '<div style="display:flex;align-items:flex-start;gap:10px">' +
+          '<span style="font-size:9px;font-weight:700;color:var(--red);font-family:var(--fm);min-width:28px;margin-top:2px">' + escH(item.bqId) + '</span>' +
+          '<div style="flex:1">' +
+            '<div style="display:flex;align-items:center;gap:8px;margin-bottom:5px">' +
+              '<span style="font-size:9px;font-weight:700;padding:2px 8px;border-radius:8px;background:' + priBg + ';color:' + priTxt + '">' + pri + '</span>' +
+              '<span style="font-size:12px;font-weight:600;color:var(--dark)">' + escH(g.gap||'') + '</span>' +
+            '</div>' +
+            (g.why_impossible ? '<div style="font-size:11px;color:var(--mgray);margin-bottom:4px">Why web fails: ' + escH(g.why_impossible) + '</div>' : '') +
+            (g.expert_profile ? '<div style="font-size:11px;color:var(--dark)"><strong>Expert needed:</strong> ' + escH(g.expert_profile) + '</div>' : '') +
+            (g.questions ? '<div style="font-size:11px;color:var(--dark);font-style:italic;margin-top:3px">Ask: ' + escH(g.questions) + '</div>' : '') +
+          '</div>' +
+        '</div>';
+      gapSection.appendChild(gCard);
+    });
+    container.appendChild(gapSection);
+  }
+
+  // ── 6. STRATEGIC ANALOGIES — after main content ───────────────
+  if (sa.length) {
+    var saSection = document.createElement('div');
+    saSection.style.cssText = 'margin-bottom:14px';
+    var saHd = document.createElement('div');
+    saHd.style.cssText = 'background:#2E1065;border-radius:10px 10px 0 0;padding:14px 20px;display:flex;align-items:center;gap:10px';
+    saHd.innerHTML =
+      '<div>' +
+        '<div style="font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#C4B5FD;margin-bottom:2px">Adjacent Intelligence</div>' +
+        '<div style="font-size:14px;font-weight:700;color:#fff">Strategic Analogies</div>' +
+        '<div style="font-size:11px;color:#A78BFA;margin-top:2px">Industries that solved the same problem first — what ' + escH(client) + ' can learn</div>' +
+      '</div>';
+    saSection.appendChild(saHd);
+    sa.forEach(function(a, i) {
+      var sourceBQs = (a.source_bqs||[]).map(function(bq){
+        return '<span style="font-size:9px;font-weight:600;background:#EDE9FE;color:#5B21B6;padding:1px 7px;border-radius:10px;margin-right:4px">' + escH(bq) + '</span>';
+      }).join('');
+      var isLast = i === sa.length - 1;
+      var aCard = document.createElement('div');
+      aCard.style.cssText = 'background:#fff;border:.5px solid #C4B5FD;border-top:none;padding:16px 20px;' +
+        (isLast ? 'border-radius:0 0 10px 10px' : 'border-bottom:.5px solid #E5E9F0');
+      aCard.innerHTML =
+        '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">' +
+          '<div style="font-size:14px;font-weight:700;color:#2E1065">' + escH(a.title||a.angle_title||'') + '</div>' +
+          '<div>' + sourceBQs + '</div>' +
+        '</div>' +
+        (a.source_industry||a.parallel_industry ? '<div style="display:inline-block;font-size:10px;font-weight:600;color:#5B21B6;background:#EDE9FE;padding:3px 10px;border-radius:4px;margin-bottom:10px">Adjacent industry: ' + escH(a.source_industry||a.parallel_industry) + '</div>' : '') +
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">' +
+          '<div>' +
+            '<div style="font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#9CA3AF;margin-bottom:6px">The analogy</div>' +
+            '<div style="font-size:12px;color:#374151;line-height:1.7">' + escH(a.the_analogy||a.insight||'') + '</div>' +
+          '</div>' +
+          '<div style="background:#F5F3FF;border-radius:8px;padding:12px 14px">' +
+            '<div style="font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#5B21B6;margin-bottom:6px">What ' + escH(client) + ' can learn</div>' +
+            '<div style="font-size:12px;color:#2E1065;line-height:1.7;font-weight:500">' + escH(a.what_client_can_learn||a.why_relevant_to_client||'') + '</div>' +
+          '</div>' +
+        '</div>';
+      saSection.appendChild(aCard);
+    });
+    container.appendChild(saSection);
+  }
 }
 
 function toggleSec(id) {
@@ -3089,6 +3243,157 @@ function dlSectionCSV() {
 // FB PPTX GENERATOR — FutureBridge Research Intelligence Output
 // Integrates into index.html as a standalone function block
 // ═══════════════════════════════════════════════════════════════
+
+async function exportSectionPPTX(){
+  var btn=document.getElementById('dlSectionPptxBtn');
+  if(btn){btn.textContent='Loading...';btn.disabled=true;}
+  if(!S.synthesis){alert('Run Intelligence Summary first.');if(btn){btn.textContent='\u2193 Intelligence Summary (PPTX)';btn.disabled=false;}return;}
+  loadPptxGenJS(async function(){
+    try{
+      if(btn) btn.textContent='Building deck...';
+      await buildSectionDeck();
+      if(btn){btn.textContent='\u2193 Intelligence Summary (PPTX)';btn.disabled=false;}
+    }catch(e){
+      console.error('Section PPTX error:',e);
+      alert('Export failed: '+e.message);
+      if(btn){btn.textContent='\u2193 Intelligence Summary (PPTX)';btn.disabled=false;}
+    }
+  });
+}
+
+async function buildSectionDeck(){
+  var p=S.proposal||{};
+  var syn=S.synthesis||{};
+  var sections=syn.sections||[];
+  var cc=syn.cross_cutting||{};
+  var sa=syn.strategic_analogies||[];
+  var client=p.client||'Client';
+  var title=p.title||'Intelligence Summary';
+  var date=new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
+  var docName='Intelligence Summary | '+title;
+
+  var FB={red:'F94F5E',orange:'FBAE40',charcoal:'4B4B55',grey1:'6F6F77',grey2:'939399',
+    border:'DBDBDD',footer:'A4A3A4',white:'FFFFFF',black:'000000',
+    teal:'00A693',purple:'534AB7',purpleLight:'EEEDFE',redLight:'FEDCDF'};
+  var FONT='Arial';
+
+  function safe(s,max){return String(s||'').slice(0,max||500);}
+  function addFooter(slide,n,doc){
+    slide.addShape('line',{x:0.17,y:5.35,w:9.66,h:0,line:{color:FB.border,width:0.5}});
+    slide.addText(String(n),{x:0.17,y:5.40,w:0.25,h:0.18,fontSize:8,fontFace:FONT,color:FB.footer,margin:0});
+    slide.addText(safe(doc,80),{x:0.60,y:5.40,w:5.40,h:0.18,fontSize:8,fontFace:FONT,color:FB.footer,margin:0});
+    slide.addText('Strictly Confidential',{x:7.67,y:5.40,w:1.20,h:0.18,fontSize:8,fontFace:FONT,color:FB.footer,align:'right',margin:0});
+    slide.addText('FutureBridge',{x:8.60,y:5.36,w:1.20,h:0.22,fontSize:10,fontFace:FONT,color:FB.charcoal,bold:true,align:'right',margin:0});
+  }
+  function addNav(slide){
+    slide.addShape('rect',{x:0.17,y:0.10,w:0.15,h:0.04,fill:{color:FB.charcoal},line:{color:FB.charcoal,width:0}});
+    slide.addShape('rect',{x:0.17,y:0.16,w:0.12,h:0.04,fill:{color:FB.charcoal},line:{color:FB.charcoal,width:0}});
+    slide.addShape('rect',{x:0.17,y:0.22,w:0.09,h:0.04,fill:{color:FB.charcoal},line:{color:FB.charcoal,width:0}});
+  }
+
+  var pres=new PptxGenJS();
+  pres.layout='LAYOUT_16x9';
+  var pg=0;
+
+  // COVER
+  var cover=pres.addSlide();
+  cover.background={color:FB.black};
+  cover.addShape('rect',{x:0.35,y:0.45,w:2.20,h:0.55,fill:{color:FB.white},line:{color:FB.white,width:0}});
+  cover.addShape('rect',{x:0.35,y:1.20,w:1.70,h:0.45,fill:{color:FB.white},line:{color:FB.white,width:0}});
+  cover.addShape('rect',{x:0.35,y:1.85,w:0.55,h:0.55,fill:{color:FB.purple},line:{color:FB.purple,width:0}});
+  cover.addText('Intelligence Summary',{x:3.3,y:0.50,w:6.3,h:0.30,fontSize:11,fontFace:FONT,color:'AFA9EC',margin:0});
+  cover.addText(safe(title,80),{x:3.3,y:0.88,w:6.3,h:0.80,fontSize:20,fontFace:FONT,color:FB.white,bold:true,margin:0});
+  if(p.geography) cover.addText(safe(p.geography,60),{x:3.3,y:1.75,w:6.3,h:0.30,fontSize:12,fontFace:FONT,color:FB.grey2,margin:0});
+  cover.addText('Prepared for: '+safe(client,60),{x:3.3,y:2.50,w:6.3,h:0.25,fontSize:10,fontFace:FONT,color:FB.grey2,margin:0});
+  cover.addText(date,{x:3.3,y:2.78,w:6.3,h:0.25,fontSize:10,fontFace:FONT,color:FB.grey2,bold:true,margin:0});
+  cover.addText('FutureBridge',{x:8.30,y:5.20,w:1.50,h:0.28,fontSize:12,fontFace:FONT,color:FB.white,bold:true,align:'right',margin:0});
+
+  // KEY INSIGHT BANNER (if present)
+  if(cc.key_insight||cc.recommended_next_step){
+    var ki=pres.addSlide();
+    addNav(ki);
+    ki.addShape('rect',{x:0.17,y:0.30,w:9.66,h:1.20,fill:{color:FB.purpleLight},line:{color:'AFA9EC',width:0.5}});
+    ki.addShape('rect',{x:0.17,y:0.30,w:0.08,h:1.20,fill:{color:FB.purple},line:{color:FB.purple,width:0}});
+    ki.addText('Key Insight',{x:0.40,y:0.36,w:9.20,h:0.22,fontSize:9,fontFace:FONT,color:FB.purple,bold:true,margin:0});
+    ki.addText(safe(cc.key_insight||'',300),{x:0.40,y:0.60,w:9.20,h:0.60,fontSize:11,fontFace:FONT,color:'26215C',bold:true,margin:0});
+    if(cc.recommended_next_step){
+      ki.addText('Recommended next step',{x:0.17,y:1.70,w:9.66,h:0.22,fontSize:10,fontFace:FONT,color:FB.charcoal,bold:true,margin:0});
+      ki.addText(safe(cc.recommended_next_step,300),{x:0.17,y:1.96,w:9.66,h:0.60,fontSize:10,fontFace:FONT,color:FB.grey1,margin:0});
+    }
+    if(cc.confidence_summary){
+      ki.addText(safe(cc.confidence_summary,200),{x:0.17,y:2.80,w:9.66,h:0.50,fontSize:10,fontFace:FONT,color:FB.grey1,italic:true,margin:0});
+    }
+    addFooter(ki,++pg,docName);
+  }
+
+  // STRATEGIC ANALOGIES
+  if(sa.length){
+    var saSlide=pres.addSlide();
+    addNav(saSlide);
+    saSlide.addText('Strategic Analogies — Cross-Sector Signals',{x:0.17,y:0.30,w:9.67,h:0.45,fontSize:14,fontFace:FONT,color:FB.charcoal,bold:true,margin:0});
+    saSlide.addText('Industries that solved the same structural problem first',{x:0.17,y:0.78,w:9.67,h:0.25,fontSize:10,fontFace:FONT,color:FB.grey1,margin:0});
+    saSlide.addShape('line',{x:0.17,y:1.08,w:9.66,h:0,line:{color:FB.border,width:0.5}});
+    sa.slice(0,3).forEach(function(a,i){
+      var ax=0.17+i*3.22,aw=3.10;
+      saSlide.addShape('rect',{x:ax,y:1.20,w:aw,h:3.80,fill:{color:FB.purpleLight},line:{color:'AFA9EC',width:0.5}});
+      saSlide.addShape('rect',{x:ax,y:1.20,w:aw,h:0.06,fill:{color:'7F77DD'},line:{color:'7F77DD',width:0}});
+      saSlide.addText(safe(a.parallel_industry||a.angle_title,50),{x:ax+0.12,y:1.28,w:aw-0.24,h:0.25,fontSize:9,fontFace:FONT,color:FB.purple,bold:true,margin:0});
+      saSlide.addText(safe(a.angle_title||a.insight,80),{x:ax+0.12,y:1.58,w:aw-0.24,h:0.35,fontSize:10,fontFace:FONT,color:'26215C',bold:true,margin:0});
+      saSlide.addText(safe(a.insight||'',350),{x:ax+0.12,y:2.00,w:aw-0.24,h:1.80,fontSize:9,fontFace:FONT,color:'3C3489',margin:3});
+      if(a.why_relevant_to_client){
+        saSlide.addShape('rect',{x:ax,y:4.70,w:aw,h:0.30,fill:{color:'AFA9EC'},line:{color:'AFA9EC',width:0}});
+        saSlide.addText('→ '+safe(a.why_relevant_to_client,120),{x:ax+0.10,y:4.70,w:aw-0.20,h:0.30,fontSize:8,fontFace:FONT,color:'26215C',margin:3});
+      }
+    });
+    addFooter(saSlide,++pg,docName);
+  }
+
+  // ONE SLIDE PER SECTION
+  sections.forEach(function(sec){
+    var sSlide=pres.addSlide();
+    addNav(sSlide);
+    // Title
+    sSlide.addText(safe(sec.title,100),{x:0.17,y:0.30,w:9.67,h:0.45,fontSize:14,fontFace:FONT,color:FB.charcoal,bold:true,margin:0});
+    // Coverage badge
+    var covBg=sec.coverage_level==='complete'?'E0F5EE':sec.coverage_level==='partial'?'FEF5E4':'FCEBEB';
+    var covTxt=sec.coverage_level==='complete'?'085041':sec.coverage_level==='partial'?'633806':'A32D2D';
+    var covLabel=sec.coverage_level==='complete'?'Complete':sec.coverage_level==='partial'?'Partial':'Gap';
+    sSlide.addShape('rect',{x:9.00,y:0.30,w:0.83,h:0.22,fill:{color:covBg},line:{color:covTxt,width:0.5}});
+    sSlide.addText(covLabel,{x:9.00,y:0.30,w:0.83,h:0.22,fontSize:8,fontFace:FONT,color:covTxt,bold:true,align:'center',margin:0});
+    // Synthesis text
+    if(sec.synthesis){
+      sSlide.addText(safe(sec.synthesis,400),{x:0.17,y:0.78,w:9.67,h:0.50,fontSize:10,fontFace:FONT,color:FB.grey1,margin:0});
+    }
+    sSlide.addShape('line',{x:0.17,y:1.32,w:9.66,h:0,line:{color:FB.border,width:0.5}});
+    // Bullet points (left col)
+    var bullets=sec.bullet_points||[];
+    if(bullets.length){
+      var bqTags=[];
+      bullets.slice(0,6).forEach(function(bp,bi){
+        var by=1.42+bi*0.52;
+        sSlide.addShape('rect',{x:0.17,y:by+0.12,w:0.07,h:0.07,fill:{color:FB.red},line:{color:FB.red,width:0}});
+        sSlide.addText(safe(bp.text||bp,200),{x:0.35,y:by,w:5.80,h:0.46,fontSize:9,fontFace:FONT,color:FB.charcoal,margin:0,valign:'middle'});
+        if(bp.bq_sources&&bp.bq_sources.length){
+          bp.bq_sources.forEach(function(bqid){
+            sSlide.addShape('rect',{x:6.25,y:by+0.10,w:0.35,h:0.20,fill:{color:FB.redLight},line:{color:'FCB9BE',width:0.5}});
+            sSlide.addText(safe(bqid,6),{x:6.25,y:by+0.10,w:0.35,h:0.20,fontSize:7,fontFace:FONT,color:FB.red,align:'center',margin:0});
+          });
+        }
+      });
+    }
+    // Coverage note
+    if(sec.coverage_note){
+      sSlide.addShape('rect',{x:6.60,y:1.42,w:3.23,h:2.20,fill:{color:'FFFBF3'},line:{color:'FBAE40',width:0.5}});
+      sSlide.addShape('rect',{x:6.60,y:1.42,w:0.06,h:2.20,fill:{color:'FBAE40'},line:{color:'FBAE40',width:0}});
+      sSlide.addText('Coverage note',{x:6.75,y:1.48,w:3.00,h:0.20,fontSize:8,fontFace:FONT,color:'633806',bold:true,margin:0});
+      sSlide.addText(safe(sec.coverage_note,250),{x:6.75,y:1.72,w:3.00,h:1.80,fontSize:9,fontFace:FONT,color:'633806',margin:3});
+    }
+    addFooter(sSlide,++pg,docName);
+  });
+
+  var fileName=(client+'_Intelligence_Summary_'+title).replace(/[^a-zA-Z0-9_\- ]/g,'_').replace(/\s+/g,'_').slice(0,80)+'.pptx';
+  await pres.writeFile({fileName:fileName});
+}
 
 var FB_PPTX_LOADED = false;
 
