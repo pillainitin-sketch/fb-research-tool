@@ -555,7 +555,7 @@ async function extractBQsFromFile(file,extracted){
   } else {
     var text=(extracted.text||'').slice(0,8000);
     if(!text||text.length<50) return null;
-    prompt='This is text from a FutureBridge proposal. Extract: client, title, practice, geography, period, competitors, all BQs with scope_nouns (3-5 must-cover technical terms per BQ from the proposal text). Return ONLY valid JSON: {"client":"","title":"","practice":"","geography":"","period":"","competitors":[],"bqs":[{"id":"BQ1","text":"","kw":[],"scope_nouns":[],"gap":false}]}.\n\n'+text;
+    prompt='This is text from a FutureBridge proposal. Extract: client, title, practice, geography, period, competitors, all BQs. For each BQ extract scope_nouns (3-5 must-cover technical terms). Also extract scope_exclusions: topics, industries, or solution types the proposal explicitly says NOT to include (e.g. skin care analogs, supplier partnerships, home care applications). Return ONLY valid JSON: {"client":"","title":"","practice":"","geography":"","period":"","competitors":[],"scope_exclusions":[],"bqs":[{"id":"BQ1","text":"","kw":[],"scope_nouns":[],"gap":false}]}.\n\n'+text;
   }
 
   try{
@@ -804,8 +804,8 @@ function buildSynthesisResearchPrompt(bq, p, plan, allResearch, client){
     ' Research collected: '+allResearch.slice(0,8000)+
     ' Hypotheses to test: '+(plan&&plan.hypotheses&&plan.hypotheses.length?JSON.stringify(plan.hypotheses):plan&&plan.hypothesis?'[{"statement":"'+plan.hypothesis+'"}]':'none identified')+
     ' Adjacent intelligence: '+(plan&&plan.parallel_industry?plan.parallel_industry:'none identified')+
-    ' Return ONLY valid JSON. Generate keys IN THIS ORDER — order matters for quality. 1. creative_angles (REQUIRED never empty — array of 1-3 {angle_title,parallel_industry,insight,why_relevant_to_client} — which other industry solved this problem first). 2. hypotheses (REQUIRED never empty — array of 2-3 {statement,what_would_need_to_be_true,confidence_level:low/medium/high} — what you BELIEVE is true about this BQ before findings; these frame the research and must be specific and testable). 3. executive_summary (string — 3-4 sentences with named companies and numbers). 4. engagement_type (string). 5. stats (array of {value,label,confidence,source_name,source_url}). 6. findings (array of {evidence_id,evidence_type,headline,body,client_implication,confidence,geo,data_date,source_name,source_url,trl_level,trl_label,assessment} — evidence_type FACT/INFERENCE/HYPOTHESIS; findings should test the hypotheses above). 7. disruption_signals (array of {signal,company,date,type,client_implication}). 8. client_decision_frame ({option_a,option_b,key_condition}). 9. paid_source_flags (array of {source,what_it_unlocks,why_needed,priority}). 10. profiles (array of {name,hq,founded,type,role,geography,key_product,key_fact,client_relevance,source_url} — type: competitor, startup, or supplier; include all three types; 3-6 total). 11. primary_research_gaps (array of {gap,why_impossible,expert_profile,questions,hypothesis,priority}).'+
-    ' RULES: evidence_type must be FACT (directly cited) or INFERENCE (logical conclusion) or HYPOTHESIS (unverified). 4-5 findings minimum. Every finding body must end with: So what for '+client+': [one sentence actionable implication]. No markdown, no text before or after the JSON. Double quotes only. Escape apostrophes as \'.';
+    ' Return ONLY valid JSON. Generate keys IN THIS ORDER — order matters for quality. 1. creative_angles (REQUIRED never empty — array of 1-3 {angle_title,parallel_industry,insight,why_relevant_to_client} — which other industry solved this problem first). 2. hypotheses (REQUIRED never empty — array of 2-3 {statement,what_would_need_to_be_true,confidence_level:low/medium/high} — what you BELIEVE is true about this BQ before findings). 3. primary_research_gaps (REQUIRED minimum 2 entries — array of {gap,why_impossible,expert_profile,questions,hypothesis,priority:high/medium/low} — what cannot be answered from web research alone; needs expert interview or paid database). 4. executive_summary (string — 3-4 sentences with named companies and numbers). 5. engagement_type (string). 6. stats (array of {value,label,confidence,source_name,source_url}). 7. findings (array of {evidence_id,evidence_type,headline,body,client_implication,confidence,geo,data_date,source_name,source_url,trl_level,trl_label,assessment} — evidence_type FACT=cited with source_url INFERENCE=logical conclusion HYPOTHESIS=unverified). 8. disruption_signals (array of {signal,company,date,type,client_implication}). 9. client_decision_frame ({option_a,option_b,key_condition}). 10. paid_source_flags (array of {source,what_it_unlocks,why_needed,priority}). 11. profiles (array of {name,hq,founded,type,role,geography,key_product,key_fact,client_relevance,source_url} — type: competitor startup or supplier; 3-6 total).'+
+    ' RULES: (1) primary_research_gaps minimum 2 required — what web research cannot answer. (2) FACT requires a source_url — if you cannot provide a URL demote to INFERENCE. (3) 4-5 findings minimum. (4) Every finding body ends with: So what for '+client+': [specific implication]. (5) No markdown. Double quotes only. Escape apostrophes as \'.';
 }
 
 function buildResearchPrompt(bq, p, plan) {
@@ -831,7 +831,8 @@ function buildResearchPrompt(bq, p, plan) {
     '',
     '── PLANNED SEARCH ANGLES (use these first) ─────────────',plan?'1. '+( plan.search_angle_1||''):'',plan?'2. '+(plan.search_angle_2||''):'',plan?'3. '+(plan.search_angle_3||''):'',
     '── SCOPE LOCK — MUST COVER ──────────────────────────────',
-    (bq.scope_nouns&&bq.scope_nouns.length?'These specific terms from the proposal MUST appear in your findings: '+(bq.scope_nouns||[]).join(', ')+'. Run dedicated searches for any not covered by the main strategy. If still not found, create a primary_research_gap entry.':'No scope nouns defined — cover BQ broadly.'),
+    (bq.scope_nouns&&bq.scope_nouns.length?'These specific terms MUST appear in your findings: '+(bq.scope_nouns||[]).join(', ')+'. Run dedicated searches for any not covered. If still not found, create a primary_research_gap entry.':'No scope nouns defined — cover BQ broadly.')+
+    (p.scope_exclusions&&p.scope_exclusions.length?'── SCOPE EXCLUSIONS — DO NOT RESEARCH ─────────────────── These topics are explicitly OUT OF SCOPE per the proposal: '+(p.scope_exclusions||[]).join(', ')+'. Do not include findings on these topics.':''),
     '',
     '── SEARCH STRATEGY (6 searches — run all in order) ──────',
     '1. LANDSCAPE: "' + ((bq.kw||[])[0]||p.title||'') + ' ' + (geos[0]||'global') + ' players market 2024 2025"',
@@ -1359,6 +1360,54 @@ function showApiError(bqId, msg){
 
 
 // ═══ RENDER RESULTS ═══════════════════════════════
+async function buildProfiles(bqId){
+  var bq=null;
+  if(S.proposal&&S.proposal.bqs){
+    for(var j=0;j<S.proposal.bqs.length;j++){
+      if(S.proposal.bqs[j].id===bqId){bq=S.proposal.bqs[j];break;}
+    }
+  }
+  var d=S.bqResults&&S.bqResults[bqId]?S.bqResults[bqId]:{};
+  var btn=document.getElementById('pbtn-'+bqId);
+  if(btn){btn.textContent='Building...';btn.disabled=true;}
+
+  var client=S.proposal?S.proposal.client:'the client';
+  var context=((d.executive_summary||'')+' '+(d.findings||[]).map(function(f){
+    return f.headline+' '+f.body;}).join(' ')).slice(0,3000);
+
+  var prompt='You are a FutureBridge research analyst. Find 4-6 named companies for this BQ. '+
+    'BQ: '+(bq?bq.text:bqId)+'. Client: '+client+'. Geography: '+(S.proposal?S.proposal.geography:'Global')+'. '+
+    'Context from research: '+context+'. '+
+    'Return ONLY a JSON array: [{name,hq,founded,type,role,geography,key_product,key_fact,client_relevance,source_url}]. '+
+    'type must be competitor, startup, or supplier. Include at least 1 startup and 1 supplier. Named companies only.';
+
+  try{
+    onLog('info','Building profiles for '+bqId+'...');
+    var data=await callAPI({
+      model:'claude-sonnet-4-6',
+      max_tokens:2000,
+      tools:[{type:'web_search_20250305',name:'web_search'}],
+      messages:[{role:'user',content:prompt}]
+    });
+    var text=(data.content||[]).filter(function(b){return b.type==='text';}).map(function(b){return b.text;}).join('');
+    text=text.replace(/```json\s*/gi,'').replace(/```\s*/g,'').trim();
+    var m=text.match(/\[[\s\S]*\]/);
+    if(m){
+      var profs=JSON.parse(m[0].split("\'").join("'"));
+      if(Array.isArray(profs)&&profs.length>0){
+        if(!S.bqResults[bqId]) S.bqResults[bqId]={};
+        S.bqResults[bqId].profiles=profs;
+        renderResults();
+        return;
+      }
+    }
+    if(btn){btn.textContent='Retry';btn.disabled=false;}
+  }catch(e){
+    console.error('buildProfiles:',e);
+    if(btn){btn.textContent='Error — retry';btn.disabled=false;}
+  }
+}
+
 function formatParas(text){
   if(!text) return '';
   // Split at sentence boundaries that look like paragraph breaks
@@ -1643,8 +1692,23 @@ function renderResults(){
     // ── COMPETITOR PROFILES ────────────────────────────────────
     var profiles=d.profiles||[];
     console.log('Profiles for '+bqId+':',profiles.length,'items',JSON.stringify(profiles).slice(0,200));
+    if(profiles.length < 2){
+      html+='<div class="bq-profiles">'+
+        '<div class="profiles-lbl">Profiles — competitors, startups, suppliers</div>'+
+        '<div style="display:flex;align-items:center;gap:10px;padding:8px 0">'+
+          '<span style="font-size:11px;color:var(--mgray);font-style:italic">'+
+            (profiles.length===0?'Not generated in this research pass.':'Only '+profiles.length+' profile found.')+
+          '</span>'+
+          '<button class="btn btn-teal btn-sm" id="pbtn-'+bqId+'">Build profiles</button>'+
+        '</div>'+
+      '</div>';
+      (function(id){setTimeout(function(){
+        var b=document.getElementById('pbtn-'+id);
+        if(b) b.onclick=function(){buildProfiles(id);};
+      },100);})(bqId);
+    }
     if(profiles.length){
-      html+='<div class="bq-profiles"><div class="profiles-lbl">Competitor profiles</div>'+
+      html+='<div class="bq-profiles"><div class="profiles-lbl">Profiles — competitors, startups, suppliers</div>'+
         profiles.map(function(pr){
           return '<div class="profile-card">'+
             '<div style="flex:1">'+
@@ -2046,6 +2110,7 @@ function dlReport(){
             (f.source_url&&f.source_url!=='#'?'<a href="'+f.source_url+'">'+f.source_name+'</a>':f.source_name||'')+
           '</div>';
         }
+        if(f.trl_level){try{var trlCls=parseInt(f.trl_level)<=3?'track':parseInt(f.trl_level)<=6?'prepare':'act';h+='<div style="margin-top:5px"><span style="font-size:9px;font-weight:700;padding:2px 8px;border-radius:8px;background:'+(trlCls==='track'?'#EDE9FE':trlCls==='prepare'?'#FEF9C3':'#DCFCE7')+';color:'+(trlCls==='track'?'#5B21B6':trlCls==='prepare'?'#854D0E':'#166534')+'">TRL '+f.trl_level+' · '+(f.trl_label||'')+'</span></div>';}catch(e){}}
         h+='</div>';
       });
     }
