@@ -389,6 +389,7 @@ input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;h
       <button class="out-btn" style="background:#534AB7;border-color:#534AB7;color:#fff;font-weight:500" id="synthBtn" onclick="runSynthesis()">⚡ Synthesise into sections</button> <button class="btn btn-out btn-sm" onclick="exportBaseline()" title="Export research baseline for Monitoring Agent">↓ Save baseline</button>
       <span id="synthStatus" style="font-size:11px;color:var(--mgray);align-self:center"></span>
       <button class="out-btn red" onclick="dlReport()">⬇ BQ report</button>
+      <button class="out-btn" onclick="exportToPPTX()" id="dlPptxBtn" style="background:#F94F5E;color:#fff;border-color:#F94F5E">⬇ Export PPTX</button>
       <button class="out-btn" onclick="dlData()">⬇ BQ data (CSV)</button>
       <button class="out-btn" style="background:#0F6E56;border-color:#0F6E56;color:#fff" onclick="dlSectionReport()">⬇ Section report</button>
       <button class="out-btn" onclick="dlSectionCSV()">⬇ Section (CSV)</button>
@@ -555,7 +556,7 @@ async function extractBQsFromFile(file,extracted){
   } else {
     var text=(extracted.text||'').slice(0,8000);
     if(!text||text.length<50) return null;
-    prompt='This is text from a FutureBridge proposal. Extract: client, title, practice, geography, period, competitors, all BQs. For each BQ extract scope_nouns (3-5 must-cover technical terms). Also extract scope_exclusions: topics, industries, or solution types the proposal explicitly says NOT to include (e.g. skin care analogs, supplier partnerships, home care applications). Return ONLY valid JSON: {"client":"","title":"","practice":"","geography":"","period":"","competitors":[],"scope_exclusions":[],"bqs":[{"id":"BQ1","text":"","kw":[],"scope_nouns":[],"gap":false}]}.\n\n'+text;
+    prompt='This is text from a FutureBridge proposal. Extract: client, title, practice, geography, period, competitors, all BQs with scope_nouns (3-5 must-cover technical terms per BQ). Also extract scope_exclusions: topics the proposal explicitly says NOT to research (e.g. skin care analogs, supplier partnerships). Return ONLY valid JSON: {"client":"","title":"","practice":"","geography":"","period":"","competitors":[],"scope_exclusions":[],"bqs":[{"id":"BQ1","text":"","kw":[],"scope_nouns":[],"gap":false}]}.\n\n'+text;
   }
 
   try{
@@ -805,7 +806,7 @@ function buildSynthesisResearchPrompt(bq, p, plan, allResearch, client){
     ' Hypotheses to test: '+(plan&&plan.hypotheses&&plan.hypotheses.length?JSON.stringify(plan.hypotheses):plan&&plan.hypothesis?'[{"statement":"'+plan.hypothesis+'"}]':'none identified')+
     ' Adjacent intelligence: '+(plan&&plan.parallel_industry?plan.parallel_industry:'none identified')+
     ' Return ONLY valid JSON. Generate keys IN THIS ORDER — order matters for quality. 1. creative_angles (REQUIRED never empty — array of 1-3 {angle_title,parallel_industry,insight,why_relevant_to_client} — which other industry solved this problem first). 2. hypotheses (REQUIRED never empty — array of 2-3 {statement,what_would_need_to_be_true,confidence_level:low/medium/high} — what you BELIEVE is true about this BQ before findings). 3. primary_research_gaps (REQUIRED minimum 2 entries — array of {gap,why_impossible,expert_profile,questions,hypothesis,priority:high/medium/low} — what cannot be answered from web research alone; needs expert interview or paid database). 4. executive_summary (string — 3-4 sentences with named companies and numbers). 5. engagement_type (string). 6. stats (array of {value,label,confidence,source_name,source_url}). 7. findings (array of {evidence_id,evidence_type,headline,body,client_implication,confidence,geo,data_date,source_name,source_url,trl_level,trl_label,assessment} — evidence_type FACT=cited with source_url INFERENCE=logical conclusion HYPOTHESIS=unverified). 8. disruption_signals (array of {signal,company,date,type,client_implication}). 9. client_decision_frame ({option_a,option_b,key_condition}). 10. paid_source_flags (array of {source,what_it_unlocks,why_needed,priority}). 11. profiles (array of {name,hq,founded,type,role,geography,key_product,key_fact,client_relevance,source_url} — type: competitor startup or supplier; 3-6 total).'+
-    ' RULES: (1) primary_research_gaps minimum 2 required — what web research cannot answer. (2) FACT requires a source_url — if you cannot provide a URL demote to INFERENCE. (3) 4-5 findings minimum. (4) Every finding body ends with: So what for '+client+': [specific implication]. (5) No markdown. Double quotes only. Escape apostrophes as \'.';
+    ' RULES: (1) primary_research_gaps minimum 2 required. (2) FACT requires source_url — no URL demote to INFERENCE. (3) 4-5 findings minimum. (4) Every finding ends with: So what for '+client+': [implication]. (5) No markdown. Double quotes only. Escape apostrophes as \'.';
 }
 
 function buildResearchPrompt(bq, p, plan) {
@@ -831,8 +832,8 @@ function buildResearchPrompt(bq, p, plan) {
     '',
     '── PLANNED SEARCH ANGLES (use these first) ─────────────',plan?'1. '+( plan.search_angle_1||''):'',plan?'2. '+(plan.search_angle_2||''):'',plan?'3. '+(plan.search_angle_3||''):'',
     '── SCOPE LOCK — MUST COVER ──────────────────────────────',
-    (bq.scope_nouns&&bq.scope_nouns.length?'These specific terms MUST appear in your findings: '+(bq.scope_nouns||[]).join(', ')+'. Run dedicated searches for any not covered. If still not found, create a primary_research_gap entry.':'No scope nouns defined — cover BQ broadly.')+
-    (p.scope_exclusions&&p.scope_exclusions.length?'── SCOPE EXCLUSIONS — DO NOT RESEARCH ─────────────────── These topics are explicitly OUT OF SCOPE per the proposal: '+(p.scope_exclusions||[]).join(', ')+'. Do not include findings on these topics.':''),
+    (bq.scope_nouns&&bq.scope_nouns.length?'These specific terms from the proposal MUST appear in your findings: '+(bq.scope_nouns||[]).join(', ')+'. Run dedicated searches for any not covered by the main strategy. If still not found, create a primary_research_gap entry.':'No scope nouns defined — cover BQ broadly.')+
+    (p.scope_exclusions&&p.scope_exclusions.length?'── SCOPE EXCLUSIONS — DO NOT RESEARCH ───── These topics are OUT OF SCOPE per the proposal: '+(p.scope_exclusions||[]).join(', ')+'. Do not research these areas.':''),
     '',
     '── SEARCH STRATEGY (6 searches — run all in order) ──────',
     '1. LANDSCAPE: "' + ((bq.kw||[])[0]||p.title||'') + ' ' + (geos[0]||'global') + ' players market 2024 2025"',
@@ -1370,22 +1371,18 @@ async function buildProfiles(bqId){
   var d=S.bqResults&&S.bqResults[bqId]?S.bqResults[bqId]:{};
   var btn=document.getElementById('pbtn-'+bqId);
   if(btn){btn.textContent='Building...';btn.disabled=true;}
-
   var client=S.proposal?S.proposal.client:'the client';
   var context=((d.executive_summary||'')+' '+(d.findings||[]).map(function(f){
     return f.headline+' '+f.body;}).join(' ')).slice(0,3000);
-
-  var prompt='You are a FutureBridge research analyst. Find 4-6 named companies for this BQ. '+
-    'BQ: '+(bq?bq.text:bqId)+'. Client: '+client+'. Geography: '+(S.proposal?S.proposal.geography:'Global')+'. '+
-    'Context from research: '+context+'. '+
+  var prompt='Find 4-6 named companies relevant to this BQ for '+client+'. '+
+    'BQ: '+(bq?bq.text:bqId)+'. Geography: '+(S.proposal?S.proposal.geography:'Global')+'. '+
+    'Context: '+context+'. '+
     'Return ONLY a JSON array: [{name,hq,founded,type,role,geography,key_product,key_fact,client_relevance,source_url}]. '+
-    'type must be competitor, startup, or supplier. Include at least 1 startup and 1 supplier. Named companies only.';
-
+    'type must be competitor, startup, or supplier. Include at least 1 startup and 1 supplier.';
   try{
     onLog('info','Building profiles for '+bqId+'...');
     var data=await callAPI({
-      model:'claude-sonnet-4-6',
-      max_tokens:2000,
+      model:'claude-sonnet-4-6',max_tokens:2000,
       tools:[{type:'web_search_20250305',name:'web_search'}],
       messages:[{role:'user',content:prompt}]
     });
@@ -1397,8 +1394,7 @@ async function buildProfiles(bqId){
       if(Array.isArray(profs)&&profs.length>0){
         if(!S.bqResults[bqId]) S.bqResults[bqId]={};
         S.bqResults[bqId].profiles=profs;
-        renderResults();
-        return;
+        renderResults(); return;
       }
     }
     if(btn){btn.textContent='Retry';btn.disabled=false;}
@@ -2110,7 +2106,7 @@ function dlReport(){
             (f.source_url&&f.source_url!=='#'?'<a href="'+f.source_url+'">'+f.source_name+'</a>':f.source_name||'')+
           '</div>';
         }
-        if(f.trl_level){try{var trlCls=parseInt(f.trl_level)<=3?'track':parseInt(f.trl_level)<=6?'prepare':'act';h+='<div style="margin-top:5px"><span style="font-size:9px;font-weight:700;padding:2px 8px;border-radius:8px;background:'+(trlCls==='track'?'#EDE9FE':trlCls==='prepare'?'#FEF9C3':'#DCFCE7')+';color:'+(trlCls==='track'?'#5B21B6':trlCls==='prepare'?'#854D0E':'#166534')+'">TRL '+f.trl_level+' · '+(f.trl_label||'')+'</span></div>';}catch(e){}}
+        if(f.trl_level){try{var tl=parseInt(f.trl_level)||0;var tclr=tl<=3?'#EDE9FE;color:#5B21B6':tl<=6?'#FEF9C3;color:#854D0E':'#DCFCE7;color:#166534';h+='<div style="margin-top:5px"><span style="font-size:9px;font-weight:700;padding:2px 8px;border-radius:8px;background:'+tclr+'">TRL '+f.trl_level+(f.trl_label?' · '+f.trl_label:'')+'</span></div>';}catch(e){}}
         h+='</div>';
       });
     }
@@ -3088,6 +3084,379 @@ function dlSectionCSV() {
   a.click();
   setTimeout(function(){ URL.revokeObjectURL(a.href); }, 2000);
 }
+
+// ═══════════════════════════════════════════════════════════════
+// FB PPTX GENERATOR — FutureBridge Research Intelligence Output
+// Integrates into index.html as a standalone function block
+// ═══════════════════════════════════════════════════════════════
+
+var FB_PPTX_LOADED = false;
+
+function loadPptxGenJS(cb) {
+  if (window.PptxGenJS) { cb(); return; }
+  if (FB_PPTX_LOADED) { var t=setInterval(function(){if(window.PptxGenJS){clearInterval(t);cb();}},100); return; }
+  FB_PPTX_LOADED = true;
+  var s = document.createElement('script');
+  s.src = 'https://unpkg.com/pptxgenjs@4.0.1/dist/pptxgen.bundle.js';
+  s.onload = function() { cb(); };
+  s.onerror = function() { alert('Could not load PPTX library. Check your internet connection.'); };
+  document.head.appendChild(s);
+}
+
+async function exportToPPTX() {
+  var btn = document.getElementById('dlPptxBtn');
+  if (btn) { btn.textContent = 'Loading...'; btn.disabled = true; }
+
+  loadPptxGenJS(async function() {
+    try {
+      if (btn) btn.textContent = 'Building deck...';
+      await buildFBDeck();
+      if (btn) { btn.textContent = 'Export to PPTX'; btn.disabled = false; }
+    } catch(e) {
+      console.error('PPTX export error:', e);
+      alert('Export failed: ' + e.message);
+      if (btn) { btn.textContent = 'Export to PPTX'; btn.disabled = false; }
+    }
+  });
+}
+
+async function buildFBDeck() {
+  var p = S.proposal || {};
+  var results = S.bqResults || {};
+  var bqs = (p.bqs || []);
+  var client = p.client || 'Client';
+  var title = p.title || 'Research Intelligence Output';
+  var date = new Date().toLocaleDateString('en-GB', {day:'2-digit',month:'short',year:'numeric'});
+  var docName = 'Research Intelligence | ' + title;
+
+  // ── Design System ──────────────────────────────────────────
+  var FB = {
+    red:'F94F5E', orange:'FBAE40', charcoal:'4B4B55',
+    grey1:'6F6F77', grey2:'939399', grey3:'B7B7BB',
+    border:'DBDBDD', footer:'A4A3A4', redLight:'FEDCDF',
+    redMid:'FCB9BE', white:'FFFFFF', black:'000000',
+    teal:'00A693', purple:'534AB7', tealLight:'E1F5EE',
+    purpleLight:'EEEDFE',
+  };
+  var FONT = 'Arial';
+
+  var FIH_COLORS = {
+    FACT:    { bg:'E0F5EE', txt:'085041', border:'9FE1CB' },
+    INFERENCE:{ bg:'FEF5E4', txt:'633806', border:'FAC775' },
+    HYPOTHESIS:{ bg:'FCEBEB', txt:'A32D2D', border:'F7C1C1' },
+  };
+  var PRIORITY_COLORS = {
+    HIGH:   { bg:'FCEBEB', txt:'A32D2D', border:'F7C1C1' },
+    MEDIUM: { bg:'FEF5E4', txt:'633806', border:'FAC775' },
+    LOW:    { bg:'E0F5EE', txt:'085041', border:'9FE1CB' },
+  };
+  var TYPE_COLORS = { COMPETITOR:FB.red, SUPPLIER:FB.grey1, STARTUP:FB.teal };
+  var CONF_COLORS = {
+    high:  { bg:'E0F5EE', txt:'085041', pill:'DCFCE7' },
+    medium:{ bg:'FEF5E4', txt:'633806', pill:'FEF9C3' },
+    low:   { bg:'FCEBEB', txt:'A32D2D', pill:'FCE8E8' },
+  };
+
+  // ── Helpers ──────────────────────────────────────────────
+  function safe(s, max) { return String(s||'').slice(0, max||500); }
+  function addFooter(slide, n, doc) {
+    slide.addShape('line', {x:0.17,y:5.35,w:9.66,h:0,line:{color:FB.border,width:0.5}});
+    slide.addText(String(n), {x:0.17,y:5.40,w:0.25,h:0.18,fontSize:8,fontFace:FONT,color:FB.footer,margin:0});
+    slide.addText(safe(doc,80), {x:0.60,y:5.40,w:5.40,h:0.18,fontSize:8,fontFace:FONT,color:FB.footer,margin:0});
+    slide.addText('Strictly Confidential', {x:7.67,y:5.40,w:1.20,h:0.18,fontSize:8,fontFace:FONT,color:FB.footer,align:'right',margin:0});
+    slide.addText('FutureBridge', {x:8.60,y:5.36,w:1.20,h:0.22,fontSize:10,fontFace:FONT,color:FB.charcoal,bold:true,align:'right',margin:0});
+  }
+  function addNav(slide) {
+    slide.addShape('rect',{x:0.17,y:0.10,w:0.15,h:0.04,fill:{color:FB.charcoal},line:{color:FB.charcoal,width:0}});
+    slide.addShape('rect',{x:0.17,y:0.16,w:0.12,h:0.04,fill:{color:FB.charcoal},line:{color:FB.charcoal,width:0}});
+    slide.addShape('rect',{x:0.17,y:0.22,w:0.09,h:0.04,fill:{color:FB.charcoal},line:{color:FB.charcoal,width:0}});
+  }
+  function addTitle(slide, t, sub) {
+    slide.addText(safe(t,120), {x:0.17,y:0.30,w:9.67,h:0.45,fontSize:14,fontFace:FONT,color:FB.charcoal,bold:true,margin:0});
+    if (sub) slide.addText(safe(sub,200), {x:0.17,y:0.78,w:9.67,h:0.25,fontSize:10,fontFace:FONT,color:FB.grey1,margin:0});
+    slide.addShape('line',{x:0.17,y:1.08,w:9.66,h:0,line:{color:FB.border,width:0.5}});
+  }
+
+  // ── Build Presentation ───────────────────────────────────
+  var pres = new PptxGenJS();
+  pres.layout = 'LAYOUT_16x9';
+  pres.title = title;
+  var pg = 0;
+
+  // ─── SLIDE: COVER ───────────────────────────────────────
+  var cover = pres.addSlide();
+  cover.background = {color:FB.black};
+  cover.addShape('rect',{x:0.35,y:0.45,w:2.20,h:0.55,fill:{color:FB.white},line:{color:FB.white,width:0}});
+  cover.addShape('rect',{x:0.35,y:1.20,w:1.70,h:0.45,fill:{color:FB.white},line:{color:FB.white,width:0}});
+  cover.addShape('rect',{x:0.35,y:1.85,w:0.55,h:0.55,fill:{color:FB.red},line:{color:FB.red,width:0}});
+  cover.addText('Research Intelligence Output', {x:3.3,y:0.50,w:6.3,h:0.30,fontSize:11,fontFace:FONT,color:FB.red,margin:0});
+  cover.addText(safe(title,80), {x:3.3,y:0.88,w:6.3,h:0.80,fontSize:20,fontFace:FONT,color:FB.white,bold:true,margin:0});
+  if (p.practice) cover.addText(safe(p.practice,80), {x:3.3,y:1.75,w:6.3,h:0.30,fontSize:12,fontFace:FONT,color:FB.grey2,margin:0});
+  cover.addText('Prepared for: ' + safe(client,60), {x:3.3,y:2.50,w:6.3,h:0.25,fontSize:10,fontFace:FONT,color:FB.grey3,margin:0});
+  if (p.geography) cover.addText('Geography: ' + safe(p.geography,60), {x:3.3,y:2.78,w:6.3,h:0.25,fontSize:10,fontFace:FONT,color:FB.grey3,margin:0});
+  cover.addText(date, {x:3.3,y:3.06,w:6.3,h:0.25,fontSize:10,fontFace:FONT,color:FB.grey3,bold:true,margin:0});
+  cover.addText('FutureBridge', {x:8.30,y:5.20,w:1.50,h:0.28,fontSize:12,fontFace:FONT,color:FB.white,bold:true,align:'right',margin:0});
+
+  // ─── SLIDE: TOC ─────────────────────────────────────────
+  var toc = pres.addSlide();
+  addNav(toc);
+  toc.addText('Contents', {x:0.17,y:0.30,w:9.67,h:0.45,fontSize:18,fontFace:FONT,color:FB.charcoal,bold:true,margin:0});
+  toc.addShape('line',{x:0.17,y:0.80,w:9.66,h:0,line:{color:FB.red,width:1.5}});
+  bqs.forEach(function(bq, i) {
+    var ty = 1.00 + i * 0.55;
+    toc.addShape('rect',{x:0.17,y:ty,w:0.40,h:0.40,fill:{color:FB.red},line:{color:FB.red,width:0}});
+    toc.addText(bq.id||('BQ'+(i+1)), {x:0.17,y:ty,w:0.40,h:0.40,fontSize:13,fontFace:FONT,color:FB.white,bold:true,align:'center',valign:'middle',margin:0});
+    toc.addText(safe(bq.text,120), {x:0.70,y:ty+0.02,w:9.00,h:0.36,fontSize:10,fontFace:FONT,color:FB.charcoal,margin:0,valign:'middle'});
+  });
+  addFooter(toc, ++pg, docName);
+
+  // ─── PER BQ SLIDES ──────────────────────────────────────
+  bqs.forEach(function(bq, bqIdx) {
+    var d = results[bq.id] || {};
+    var bqLabel = bq.id || ('BQ'+(bqIdx+1));
+    var findings = d.findings || [];
+    var hyps = d.hypotheses || [];
+    var gaps = d.primary_research_gaps || [];
+    var profiles = d.profiles || [];
+    var stats = d.stats || [];
+    var disruption = d.disruption_signals || [];
+    var df = d.client_decision_frame || null;
+    var paid = d.paid_source_flags || [];
+    var analogies = d.creative_angles || [];
+    var execSum = d.executive_summary || '';
+
+    // ── A: BQ DIVIDER ─────────────────────────────────────
+    var div = pres.addSlide();
+    addNav(div);
+    div.addText(bqLabel, {x:0.35,y:1.50,w:1.80,h:1.20,fontSize:55,fontFace:FONT,color:FB.red,bold:true,margin:0});
+    div.addShape('line',{x:2.30,y:1.55,w:0,h:1.10,line:{color:FB.border,width:1}});
+    div.addText(safe(bq.text,200), {x:2.55,y:1.55,w:7.10,h:0.80,fontSize:15,fontFace:FONT,color:FB.charcoal,margin:0});
+    if (bq.scope_nouns && bq.scope_nouns.length) {
+      div.addText('Must cover:', {x:2.55,y:2.55,w:0.90,h:0.22,fontSize:8,fontFace:FONT,color:FB.grey1,margin:0});
+      var px = 3.60;
+      bq.scope_nouns.slice(0,6).forEach(function(n) {
+        var nw = Math.min(n.length * 0.062 + 0.20, 2.50);
+        div.addShape('rect',{x:px,y:2.55,w:nw,h:0.22,fill:{color:FB.redLight},line:{color:FB.redMid,width:0.5}});
+        div.addText(safe(n,40), {x:px+0.06,y:2.55,w:nw-0.06,h:0.22,fontSize:7,fontFace:FONT,color:FB.red,margin:0});
+        px += nw + 0.12;
+        if (px > 9.5) return;
+      });
+    }
+    // Coverage badge
+    var covComplete = bq.scope_nouns && bq.scope_nouns.length > 0;
+    var covBg = covComplete ? 'E0F5EE' : 'FEF5E4';
+    var covTxt = covComplete ? '085041' : '633806';
+    var covBorder = covComplete ? '9FE1CB' : 'FAC775';
+    div.addShape('rect',{x:0.35,y:3.10,w:1.50,h:0.24,fill:{color:covBg},line:{color:covBorder,width:0.5}});
+    div.addText(covComplete ? 'Scope locked' : 'No scope lock', {x:0.35,y:3.10,w:1.50,h:0.24,fontSize:8,fontFace:FONT,color:covTxt,align:'center',margin:0});
+    addFooter(div, ++pg, docName);
+
+    // ── B: EXECUTIVE SUMMARY + STATS ──────────────────────
+    if (execSum || stats.length) {
+      var es = pres.addSlide();
+      addNav(es);
+      addTitle(es, bqLabel + ' — Executive Summary', d.engagement_type || '');
+      if (execSum) {
+        es.addText(safe(execSum, 800), {x:0.17,y:1.18,w:6.20,h:3.80,fontSize:10,fontFace:FONT,color:FB.charcoal,margin:5,valign:'top'});
+      }
+      stats.slice(0,4).forEach(function(s, i) {
+        var sx = 6.60, sy = 1.18 + i * 0.94;
+        es.addShape('rect',{x:sx,y:sy,w:3.20,h:0.82,fill:{color:'F8F8F8'},line:{color:FB.border,width:0.5}});
+        var conf = (s.confidence||'').toUpperCase();
+        var barColor = conf==='FACT'?FB.teal:conf==='HIGH'?FB.teal:FB.orange;
+        es.addShape('rect',{x:sx,y:sy,w:0.07,h:0.82,fill:{color:barColor},line:{color:barColor,width:0}});
+        es.addText(safe(s.value||s.val,30), {x:sx+0.18,y:sy+0.05,w:3.00,h:0.42,fontSize:18,fontFace:FONT,color:FB.charcoal,bold:true,margin:0});
+        es.addText(safe(s.label||s.lbl,60), {x:sx+0.18,y:sy+0.48,w:2.20,h:0.28,fontSize:8,fontFace:FONT,color:FB.grey1,margin:0});
+        if (s.source_name||s.source) es.addText(safe(s.source_name||s.source,30), {x:sx+0.18,y:sy+0.62,w:2.90,h:0.16,fontSize:7,fontFace:FONT,color:FB.grey2,italic:true,margin:0});
+      });
+      addFooter(es, ++pg, docName);
+    }
+
+    // ── C: HYPOTHESES ─────────────────────────────────────
+    if (hyps.length) {
+      var hypS = pres.addSlide();
+      addNav(hypS);
+      addTitle(hypS, bqLabel + ' — Research Hypotheses', 'Formed before searching — each drove the search strategy and is tested against evidence');
+      hyps.slice(0,2).forEach(function(h, i) {
+        var hy = 1.20 + i * 1.85;
+        var conf = (h.confidence_level || 'medium').toLowerCase();
+        var hc = CONF_COLORS[conf] || CONF_COLORS.medium;
+        hypS.addShape('rect',{x:0.17,y:hy,w:7.80,h:1.70,fill:{color:'FAFAFA'},line:{color:FB.border,width:0.5}});
+        hypS.addShape('rect',{x:0.17,y:hy,w:0.06,h:1.70,fill:{color:'AFA9EC'},line:{color:'AFA9EC',width:0}});
+        hypS.addShape('rect',{x:0.32,y:hy+0.08,w:0.65,h:0.20,fill:{color:hc.pill},line:{color:hc.pill,width:0}});
+        hypS.addText((h.confidence_level||'MEDIUM').toUpperCase(), {x:0.32,y:hy+0.08,w:0.65,h:0.20,fontSize:7,fontFace:FONT,color:hc.txt,bold:true,align:'center',margin:0});
+        hypS.addText('HYPOTHESIS', {x:1.05,y:hy+0.08,w:0.90,h:0.20,fontSize:7,fontFace:FONT,color:'5B21B6',bold:true,margin:0});
+        hypS.addText(safe(h.statement||h.headline||'',300), {x:0.32,y:hy+0.32,w:7.45,h:0.45,fontSize:9,fontFace:FONT,color:FB.charcoal,bold:true,margin:0});
+        var wwtbt = h.what_would_need_to_be_true || h.body || '';
+        if (wwtbt) {
+          hypS.addText('What would need to be true:', {x:0.32,y:hy+0.82,w:7.45,h:0.16,fontSize:8,fontFace:FONT,color:FB.grey1,bold:true,italic:true,margin:0});
+          hypS.addText(safe(wwtbt,300), {x:0.32,y:hy+1.00,w:7.45,h:0.55,fontSize:8,fontFace:FONT,color:FB.grey1,italic:true,margin:0});
+        }
+        // Right verify panel
+        hypS.addShape('rect',{x:8.10,y:hy,w:1.70,h:1.70,fill:{color:hc.bg},line:{color:FB.border,width:0.5}});
+        hypS.addText('Verify via', {x:8.15,y:hy+0.08,w:1.60,h:0.20,fontSize:7,fontFace:FONT,color:hc.txt,bold:true,margin:0});
+        hypS.addText('Primary research or paid database', {x:8.15,y:hy+0.30,w:1.60,h:0.50,fontSize:8,fontFace:FONT,color:hc.txt,margin:0});
+      });
+      addFooter(hypS, ++pg, docName);
+    }
+
+    // ── D: KEY FINDINGS (up to 4 per slide, overflow) ─────
+    if (findings.length) {
+      var factInf = findings.filter(function(f){return (f.evidence_type||'').toUpperCase()!=='HYPOTHESIS';});
+      var allFindings = findings; // include all
+      var chunkSize = 4;
+      for (var chunk=0; chunk < allFindings.length; chunk += chunkSize) {
+        var batch = allFindings.slice(chunk, chunk+chunkSize);
+        var fSlide = pres.addSlide();
+        addNav(fSlide);
+        var slideNum = chunk===0 ? '' : ' (' + (Math.floor(chunk/chunkSize)+1) + ')';
+        addTitle(fSlide, bqLabel + ' — Key Findings' + slideNum, 'FACT · INFERENCE · HYPOTHESIS — tagged by epistemic status');
+        batch.forEach(function(f, i) {
+          var fy = 1.20 + i * 1.00;
+          var et = (f.evidence_type||'INFERENCE').toUpperCase();
+          var fc = FIH_COLORS[et] || FIH_COLORS.INFERENCE;
+          fSlide.addShape('rect',{x:0.17,y:fy,w:9.66,h:0.88,fill:{color:'FAFAFA'},line:{color:FB.border,width:0.5}});
+          fSlide.addShape('rect',{x:0.17,y:fy,w:0.06,h:0.88,fill:{color:fc.border},line:{color:fc.border,width:0}});
+          // FIH badge
+          fSlide.addShape('rect',{x:0.32,y:fy+0.06,w:0.75,h:0.18,fill:{color:fc.bg},line:{color:fc.border,width:0.5}});
+          fSlide.addText(et, {x:0.32,y:fy+0.06,w:0.75,h:0.18,fontSize:7,fontFace:FONT,color:fc.txt,bold:true,align:'center',margin:0});
+          // TRL badge
+          if (f.trl_level) {
+            var tl = parseInt(f.trl_level)||0;
+            var trlBg = tl<=3?'EDE9FE':tl<=6?'FEF9C3':'DCFCE7';
+            var trlTxt = tl<=3?'5B21B6':tl<=6?'854D0E':'166534';
+            fSlide.addShape('rect',{x:1.16,y:fy+0.06,w:0.55,h:0.18,fill:{color:trlBg},line:{color:trlBg,width:0}});
+            fSlide.addText('TRL '+f.trl_level, {x:1.16,y:fy+0.06,w:0.55,h:0.18,fontSize:7,fontFace:FONT,color:trlTxt,bold:true,align:'center',margin:0});
+          }
+          fSlide.addText(safe(f.headline,180), {x:0.32,y:fy+0.26,w:9.30,h:0.22,fontSize:9,fontFace:FONT,color:FB.charcoal,bold:true,margin:0});
+          if (f.body) fSlide.addText(safe(f.body,280), {x:0.32,y:fy+0.48,w:7.20,h:0.18,fontSize:8,fontFace:FONT,color:FB.grey1,margin:0});
+          if (f.client_implication) fSlide.addText('\u2192 '+safe(f.client_implication,180), {x:0.32,y:fy+0.66,w:7.50,h:0.16,fontSize:8,fontFace:FONT,color:FB.red,margin:0});
+          if (f.source_name||f.source_url) fSlide.addText(safe(f.source_name,50), {x:7.90,y:fy+0.66,w:1.80,h:0.16,fontSize:7,fontFace:FONT,color:FB.grey2,align:'right',italic:true,margin:0});
+        });
+        addFooter(fSlide, ++pg, docName);
+      }
+    }
+
+    // ── E: DISRUPTION SIGNALS + DECISION FRAME ────────────
+    if (disruption.length || df) {
+      var disSlide = pres.addSlide();
+      addNav(disSlide);
+      disSlide.addText(bqLabel + ' — Disruption Signals', {x:0.17,y:0.30,w:6.00,h:0.45,fontSize:14,fontFace:FONT,color:FB.charcoal,bold:true,margin:0});
+      disSlide.addShape('line',{x:0.17,y:0.80,w:5.80,h:0,line:{color:FB.border,width:0.5}});
+      disruption.slice(0,4).forEach(function(ds, i) {
+        var dy = 0.90 + i * 1.00;
+        disSlide.addShape('rect',{x:0.17,y:dy,w:5.80,h:0.88,fill:{color:'FAFAFA'},line:{color:FB.border,width:0.5}});
+        disSlide.addShape('rect',{x:0.17,y:dy,w:0.06,h:0.88,fill:{color:FB.orange},line:{color:FB.orange,width:0}});
+        if (ds.company) disSlide.addText(safe(ds.company,40), {x:0.32,y:dy+0.06,w:2.00,h:0.18,fontSize:8,fontFace:FONT,color:FB.charcoal,bold:true,margin:0});
+        if (ds.date) disSlide.addText(safe(ds.date,20), {x:2.40,y:dy+0.06,w:0.90,h:0.18,fontSize:8,fontFace:FONT,color:FB.grey2,margin:0});
+        if (ds.type) {
+          disSlide.addShape('rect',{x:3.40,y:dy+0.06,w:0.90,h:0.18,fill:{color:'FEF5E4'},line:{color:'FAC775',width:0.5}});
+          disSlide.addText(safe(ds.type,20), {x:3.40,y:dy+0.06,w:0.90,h:0.18,fontSize:7,fontFace:FONT,color:'633806',align:'center',margin:0});
+        }
+        disSlide.addText(safe(ds.signal,200), {x:0.32,y:dy+0.26,w:5.50,h:0.36,fontSize:9,fontFace:FONT,color:FB.charcoal,margin:0});
+        if (ds.client_implication) disSlide.addText('\u2192 '+safe(ds.client_implication,150), {x:0.32,y:dy+0.65,w:5.50,h:0.18,fontSize:8,fontFace:FONT,color:FB.red,margin:0});
+      });
+      // Decision frame right panel
+      if (df) {
+        disSlide.addShape('rect',{x:6.20,y:0.90,w:3.60,h:4.20,fill:{color:FB.charcoal},line:{color:FB.charcoal,width:0}});
+        disSlide.addText('Client Decision Frame', {x:6.35,y:1.00,w:3.30,h:0.30,fontSize:10,fontFace:FONT,color:FB.white,bold:true,margin:0});
+        disSlide.addShape('line',{x:6.35,y:1.35,w:3.15,h:0,line:{color:FB.grey2,width:0.5}});
+        disSlide.addText('Option A', {x:6.35,y:1.45,w:3.30,h:0.22,fontSize:8,fontFace:FONT,color:FB.orange,bold:true,margin:0});
+        disSlide.addText(safe(df.option_a,200), {x:6.35,y:1.68,w:3.30,h:0.70,fontSize:8,fontFace:FONT,color:FB.white,margin:0});
+        disSlide.addText('Option B', {x:6.35,y:2.50,w:3.30,h:0.22,fontSize:8,fontFace:FONT,color:FB.teal,bold:true,margin:0});
+        disSlide.addText(safe(df.option_b,200), {x:6.35,y:2.73,w:3.30,h:0.70,fontSize:8,fontFace:FONT,color:FB.white,margin:0});
+        if (df.key_condition) {
+          disSlide.addShape('line',{x:6.35,y:3.60,w:3.15,h:0,line:{color:FB.grey2,width:0.5}});
+          disSlide.addText('Key condition', {x:6.35,y:3.68,w:3.30,h:0.22,fontSize:8,fontFace:FONT,color:FB.grey3,bold:true,margin:0});
+          disSlide.addText(safe(df.key_condition,200), {x:6.35,y:3.90,w:3.30,h:0.60,fontSize:8,fontFace:FONT,color:FB.white,italic:true,margin:0});
+        }
+      }
+      addFooter(disSlide, ++pg, docName);
+    }
+
+    // ── F: PROFILES TABLE ─────────────────────────────────
+    if (profiles.length) {
+      var profS = pres.addSlide();
+      addNav(profS);
+      addTitle(profS, bqLabel + ' — Player Landscape', 'Competitors · Startups · Suppliers');
+      var tblData = [[
+        {text:'Company',options:{bold:true,color:FB.white,fill:{color:FB.charcoal},fontSize:8,border:{pt:0.5,color:FB.charcoal}}},
+        {text:'Type',options:{bold:true,color:FB.white,fill:{color:FB.charcoal},fontSize:8,border:{pt:0.5,color:FB.charcoal}}},
+        {text:'HQ',options:{bold:true,color:FB.white,fill:{color:FB.charcoal},fontSize:8,border:{pt:0.5,color:FB.charcoal}}},
+        {text:'Key Product',options:{bold:true,color:FB.white,fill:{color:FB.charcoal},fontSize:8,border:{pt:0.5,color:FB.charcoal}}},
+        {text:'Key Fact',options:{bold:true,color:FB.white,fill:{color:FB.charcoal},fontSize:8,border:{pt:0.5,color:FB.charcoal}}},
+        {text:'Relevance to Client',options:{bold:true,color:FB.white,fill:{color:FB.charcoal},fontSize:8,border:{pt:0.5,color:FB.charcoal}}},
+      ]];
+      profiles.slice(0,8).forEach(function(pr, i) {
+        var bg = i%2===0?'F8F8F8':'FFFFFF';
+        var ptype = (pr.type||'').toUpperCase();
+        tblData.push([
+          {text:safe(pr.name,40),options:{bold:true,color:FB.charcoal,fontSize:9,fill:{color:bg},border:{pt:0.5,color:FB.border}}},
+          {text:ptype,options:{bold:true,color:TYPE_COLORS[ptype]||FB.grey1,fontSize:8,fill:{color:bg},border:{pt:0.5,color:FB.border}}},
+          {text:safe(pr.hq,20),options:{color:FB.grey1,fontSize:8,fill:{color:bg},border:{pt:0.5,color:FB.border}}},
+          {text:safe(pr.key_product||pr.role,60),options:{color:FB.charcoal,fontSize:8,fill:{color:bg},border:{pt:0.5,color:FB.border}}},
+          {text:safe(pr.key_fact,120),options:{color:FB.charcoal,fontSize:8,fill:{color:bg},border:{pt:0.5,color:FB.border}}},
+          {text:safe(pr.client_relevance,120),options:{color:FB.grey1,fontSize:8,italic:true,fill:{color:bg},border:{pt:0.5,color:FB.border}}},
+        ]);
+      });
+      profS.addTable(tblData, {x:0.17,y:1.18,w:9.66,colW:[1.4,0.9,0.75,1.4,2.21,3.00],rowH:0.46,border:{pt:0.5,color:FB.border}});
+      addFooter(profS, ++pg, docName);
+    }
+
+    // ── G: ADJACENT INTELLIGENCE ──────────────────────────
+    if (analogies.length) {
+      var adjSlide = pres.addSlide();
+      addNav(adjSlide);
+      addTitle(adjSlide, bqLabel + ' — Adjacent Intelligence', 'Cross-sector signals — industries that solved the same structural problem first');
+      analogies.slice(0,3).forEach(function(a, i) {
+        var ax = 0.17 + i * 3.22, aw = 3.10;
+        adjSlide.addShape('rect',{x:ax,y:1.20,w:aw,h:3.80,fill:{color:FB.purpleLight},line:{color:'AFA9EC',width:0.5}});
+        adjSlide.addShape('rect',{x:ax,y:1.20,w:aw,h:0.06,fill:{color:'7F77DD'},line:{color:'7F77DD',width:0}});
+        adjSlide.addText(safe(a.parallel_industry||a.angle_title,60), {x:ax+0.12,y:1.28,w:aw-0.24,h:0.25,fontSize:9,fontFace:FONT,color:FB.purple,bold:true,margin:0});
+        adjSlide.addText(safe(a.angle_title||a.insight,100), {x:ax+0.12,y:1.58,w:aw-0.24,h:0.35,fontSize:10,fontFace:FONT,color:'26215C',bold:true,margin:0});
+        adjSlide.addText(safe(a.insight||'',400), {x:ax+0.12,y:2.00,w:aw-0.24,h:1.80,fontSize:9,fontFace:FONT,color:'3C3489',margin:3});
+        if (a.why_relevant_to_client) {
+          adjSlide.addShape('rect',{x:ax,y:4.70,w:aw,h:0.30,fill:{color:'AFA9EC'},line:{color:'AFA9EC',width:0}});
+          adjSlide.addText('\u2192 '+safe(a.why_relevant_to_client,120), {x:ax+0.10,y:4.70,w:aw-0.20,h:0.30,fontSize:8,fontFace:FONT,color:'26215C',margin:3});
+        }
+      });
+      addFooter(adjSlide, ++pg, docName);
+    }
+
+    // ── H: PRIMARY RESEARCH GAPS ──────────────────────────
+    if (gaps.length || paid.length) {
+      var gapS = pres.addSlide();
+      addNav(gapS);
+      addTitle(gapS, bqLabel + ' — Primary Research Gaps', 'What web research cannot answer — requires expert interview or paid database');
+      gaps.slice(0,3).forEach(function(g, i) {
+        var gy = 1.20 + i * 1.28;
+        var pri = (g.priority||'MEDIUM').toUpperCase();
+        var gc = PRIORITY_COLORS[pri] || PRIORITY_COLORS.MEDIUM;
+        gapS.addShape('rect',{x:0.17,y:gy,w:9.66,h:1.18,fill:{color:'FAFAFA'},line:{color:FB.border,width:0.5}});
+        gapS.addShape('rect',{x:0.17,y:gy,w:0.06,h:1.18,fill:{color:gc.border},line:{color:gc.border,width:0}});
+        gapS.addShape('rect',{x:0.32,y:gy+0.07,w:0.60,h:0.18,fill:{color:gc.bg},line:{color:gc.border,width:0.5}});
+        gapS.addText(pri, {x:0.32,y:gy+0.07,w:0.60,h:0.18,fontSize:7,fontFace:FONT,color:gc.txt,bold:true,align:'center',margin:0});
+        gapS.addText(safe(g.gap,200), {x:1.00,y:gy+0.07,w:8.60,h:0.22,fontSize:9,fontFace:FONT,color:FB.charcoal,bold:true,margin:0});
+        if (g.why_impossible) gapS.addText('Why web fails: '+safe(g.why_impossible,200), {x:0.32,y:gy+0.32,w:9.20,h:0.28,fontSize:8,fontFace:FONT,color:FB.grey1,margin:0});
+        if (g.expert_profile) gapS.addText('Expert: '+safe(g.expert_profile,150), {x:0.32,y:gy+0.62,w:9.20,h:0.18,fontSize:8,fontFace:FONT,color:FB.charcoal,bold:true,margin:0});
+        if (g.questions) gapS.addText('Ask: '+safe(g.questions,200), {x:0.32,y:gy+0.82,w:9.20,h:0.28,fontSize:8,fontFace:FONT,color:FB.charcoal,italic:true,margin:0});
+      });
+      // Paid source banner
+      if (paid.length) {
+        var paidStr = paid.map(function(p){return (p.source||'')+(p.what_it_unlocks?' ('+p.what_it_unlocks+')':'');}).join(' · ');
+        gapS.addShape('rect',{x:0.17,y:5.00,w:9.66,h:0.28,fill:{color:'FFF2F0'},line:{color:'FCA5A5',width:0.5}});
+        gapS.addText('PAID SOURCE: '+safe(paidStr,300), {x:0.32,y:5.00,w:9.40,h:0.28,fontSize:8,fontFace:FONT,color:'A32D2D',margin:3});
+      }
+      addFooter(gapS, ++pg, docName);
+    }
+  }); // end bqs.forEach
+
+  // ── WRITE FILE ──────────────────────────────────────────
+  var fileName = (client + '_' + title + '_Research_Intelligence.pptx').replace(/[^a-zA-Z0-9_\- ]/g,'_').replace(/\s+/g,'_').slice(0,80) + '.pptx';
+  await pres.writeFile({fileName: fileName});
+}
+
+
 
 </script>
 </body>
