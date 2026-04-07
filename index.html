@@ -1015,9 +1015,10 @@ async function researchBQ(bq, p, onLog){
 
     async function callAPI(body){
       var resp,lastErr;
-      for(var attempt=1;attempt<=3;attempt++){
+      var maxAttempts=5;
+      for(var attempt=1;attempt<=maxAttempts;attempt++){
         try{
-          onLog('info','API call attempt '+attempt+'...');
+          onLog('info','API call attempt '+attempt+'/'+maxAttempts+'...');
           var _fp=fetch(window.FB_PROXY_URL||'https://api.anthropic.com/v1/messages',{
             method:'POST',
             headers:{'Content-Type':'application/json','anthropic-version':'2023-06-01','x-api-key':getApiKey()},
@@ -1027,18 +1028,34 @@ async function researchBQ(bq, p, onLog){
           resp=await Promise.race([_fp,_to]);
           if(resp.ok) break;
           var et=await resp.text();
-          if(resp.status===529||et.indexOf('credit balance')>=0){
+          // 529 = Anthropic overloaded — wait and retry, NOT a credit error
+          if(resp.status===529){
+            onLog('info','API overloaded (529) — waiting '+((attempt*15))+'s before retry '+attempt+'/'+maxAttempts+'...');
+            if(attempt<maxAttempts) await new Promise(function(r){setTimeout(r,attempt*15000);});
+            lastErr=new Error('API overloaded (529) — Anthropic servers busy. Retrying...');
+            continue;
+          }
+          // Credit balance exhausted
+          if(resp.status===402||et.indexOf('credit balance')>=0||et.indexOf('billing')>=0){
             throw new Error('MONTHLY_CAP: Credit balance too low. Add credit at console.anthropic.com');
           }
-          lastErr=new Error('API '+resp.status+' - '+et.slice(0,100));
-          if(attempt<3) await new Promise(function(r){setTimeout(r,attempt*2000);});
+          // Rate limit (429) — wait and retry
+          if(resp.status===429){
+            var wait=attempt*10000;
+            onLog('info','Rate limited (429) — waiting '+(wait/1000)+'s...');
+            if(attempt<maxAttempts) await new Promise(function(r){setTimeout(r,wait);});
+            lastErr=new Error('Rate limited — retrying...');
+            continue;
+          }
+          lastErr=new Error('API '+resp.status+' - '+et.slice(0,120));
+          if(attempt<maxAttempts) await new Promise(function(r){setTimeout(r,attempt*3000);});
         }catch(e){
           if(e.message.indexOf('MONTHLY_CAP')>=0) throw e;
           lastErr=e;
-          if(attempt<3) await new Promise(function(r){setTimeout(r,attempt*2000);});
+          if(attempt<maxAttempts) await new Promise(function(r){setTimeout(r,attempt*3000);});
         }
       }
-      if(!resp||!resp.ok) throw(lastErr||new Error('API failed after 3 attempts'));
+      if(!resp||!resp.ok) throw(lastErr||new Error('API failed after '+maxAttempts+' attempts'));
       var _jt=new Promise(function(_,rej){setTimeout(function(){rej(new Error('JSON parse timeout'));},60000);});
       return await Promise.race([resp.json(),_jt]);
     }
