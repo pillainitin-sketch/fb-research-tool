@@ -1640,7 +1640,7 @@ function renderResults(){
     if(!hyps.length){
       html+='<div style="font-size:11px;color:var(--mgray);padding:8px 0;font-style:italic">No hypotheses identified for this BQ.</div>';
     } else {
-      html+=hyps.map(function(f){
+      html+=hyps.map(function(f,fi){
         return '<div class="hypothesis-card">'+
           '<div class="hypothesis-q">'+escH(f.headline||'')+'</div>'+
           (f.body?'<div style="font-size:11px;color:var(--dark);line-height:1.55;margin-bottom:6px">'+escH(f.body)+'</div>':'')+
