@@ -361,7 +361,6 @@ input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;h
       <button class="btn btn-out btn-sm" onclick="selAll(1)">Select all</button>
       <button class="btn btn-out btn-sm" onclick="selAll(0)">Deselect all</button>
       <button class="btn btn-red" onclick="runResearch()">Run live research →</button>
-      <button class="btn btn-out" onclick="runDemo()" style="background:#534AB7;color:#fff;border-color:#534AB7">⚡ Demo mode</button>
     </div>
   </div>
   <div class="scope-bar" id="scopeBar"></div>
@@ -479,22 +478,6 @@ dz.addEventListener('dragover',function(e){e.preventDefault();dz.classList.add('
 dz.addEventListener('dragleave',function(){dz.classList.remove('drag-over')});
 dz.addEventListener('drop',function(e){e.preventDefault();dz.classList.remove('drag-over');if(e.dataTransfer.files[0])handleFile(e.dataTransfer.files[0])});
 
-function routeFile(name){
-  name=name.toLowerCase();
-  if(/recyclability|recyclability-md|baxter|design_for_recycle/.test(name))return'baxter';
-  if(/kefir/.test(name))return'kefir';
-  if(/wind|bearing|miba/.test(name))return'miba';
-  if(/extra.hold|fixat|hair_fixative/.test(name))return'loreal';
-  if(/backwash|hair_salon|salon_backwash/.test(name))return'hairsalon';
-  if(/antioxidant|preservative|pepsico/.test(name))return'pepsico';
-  if(/ingredient|product_landscape|kenvue|children/.test(name))return'kenvue';
-  if(/siemens|gas_turbine|turbine/.test(name))return'siemens';
-  if(/supply_chain|johnson|j.j|future_of_supply/.test(name))return'jj';
-  if(/nutrition|affordable|nestle/.test(name))return'nestle';
-  if(/hair|loreal|l.oreal/.test(name))return'loreal';
-  return'baxter';
-}
-
 async function extractFileText(file){
   var ext=(file.name.split('.').pop()||'').toLowerCase();
 
@@ -549,40 +532,127 @@ async function extractFileText(file){
 }
 
 async function extractBQsFromFile(file,extracted){
-  // Use Claude to extract BQs from the proposal text
-  var prompt='';
-  if(extracted.type==='pdf'){
-    prompt='This is a FutureBridge consulting proposal. Extract: (1) client name, (2) engagement title, (3) practice area, (4) geography, (5) time period, (6) list of competitors mentioned, (7) all business questions (BQs) - both explicit and implied. Return ONLY valid JSON: {"client":"","title":"","practice":"","geography":"","period":"","competitors":[],"bqs":[{"id":"BQ1","text":"","kw":[],"gap":false}]}';
-  } else {
-    var text=(extracted.text||'').slice(0,8000);
-    if(!text||text.length<50) return null;
-    prompt='This is text from a FutureBridge proposal. Extract: client, title, practice, geography, period, competitors, all BQs with scope_nouns (3-5 must-cover technical terms per BQ). Also extract scope_exclusions: topics the proposal explicitly says NOT to research (e.g. skin care analogs, supplier partnerships). Return ONLY valid JSON: {"client":"","title":"","practice":"","geography":"","period":"","competitors":[],"scope_exclusions":[],"bqs":[{"id":"BQ1","text":"","kw":[],"scope_nouns":[],"gap":false}]}.\n\n'+text;
-  }
+  var EXTRACTION_PROMPT=[
+    'You are a senior FutureBridge research analyst reading a consulting proposal or deliverable.',
+    'Extract ALL the following fields. Return ONLY valid JSON, no markdown, no preamble.',
+    '',
+    'REQUIRED OUTPUT SCHEMA (use these exact key names):',
+    '{',
+    '  "client": "company name",',
+    '  "title": "engagement title verbatim from doc",',
+    '  "practice": "practice area (e.g. Life Sciences, Mobility & Industrial, Home & Personal Care, Energy, Food & Nutrition, Chemicals)",',
+    '  "geography": "all geographies in scope, comma separated",',
+    '  "period": "time period e.g. 2023-2030 or Last 5 years",',
+    '  "competitors": ["named competitor 1", "named competitor 2"],',
+    '  "scope_exclusions": ["any topics explicitly OUT of scope"],',
+    '  "engagement_type": "one of: value_chain_pricing | value_chain_market | ip_patent | innovation_funnel | iem_monitoring | scientific_landscape | competitor_intelligence | market_sizing | supply_entry | opportunity_assessment | regulatory_intelligence | general",',
+    '  "modules": [{"id": "M1", "name": "module name from TOC"}],',
+    '  "bqs": [',
+    '    {',
+    '      "id": "BQ1",',
+    '      "module": "M1",',
+    '      "text": "verbatim or reconstructed business question",',
+    '      "kw": ["2-4 key search terms for this BQ"],',
+    '      "scope_nouns": ["3-6 specific technical/commercial terms that MUST appear in research e.g. ex-works price, SKF India, 100Cr6 steel, K-BPR, polycarbonate ban"],',
+    '      "bq_type": "one of the engagement_type values above — per BQ, can differ from engagement_type",',
+    '      "gap": false',
+    '    }',
+    '  ]',
+    '}',
+    '',
+    'ENGAGEMENT TYPE DETECTION GUIDE — pick the closest match per BQ:',
+    '- value_chain_pricing: asks about manufacturing process, make-vs-buy, ex-works price, cost breakdown, localisation %, DDP',
+    '- value_chain_market: asks about who are the players at each node, distributor ecosystem, value chain flow',
+    '- ip_patent: asks about patents, IP landscape, assignees, chemical categories, whitespace, TRL of technologies',
+    '- innovation_funnel: asks about ingredients/solutions universe, best-fit scoring, supplier landscape for actives',
+    '- iem_monitoring: asks about innovation scanning, horizon map, Act/Prepare/Track framework, emerging technologies',
+    '- scientific_landscape: asks about scientific evidence, clinical data, microbes, metabolites, health claims',
+    '- competitor_intelligence: asks about competitor initiatives, sustainability claims, certifications, design approaches',
+    '- market_sizing: asks about market size, material share, segment split, replacement rates, volume by unit/weight',
+    '- supply_entry: asks about global production footprint, capacity utilisation, grades, trade flows, entry barriers',
+    '- opportunity_assessment: asks where should client focus, application scoring, attractiveness, CTQ parameters',
+    '- regulatory_intelligence: asks about regulations, compliance, registration requirements, chemical inventories',
+    '- general: none of the above clearly apply',
+    '',
+    'SCOPE NOUNS — these are the MOST IMPORTANT field. Extract 3-6 specific technical or commercial terms per BQ that any good research answer MUST cover. Examples:',
+    '  For "what is the value chain for wind turbine bearings in India": scope_nouns = ["spherical roller bearing", "SKF India", "Schaeffler India", "ring forging", "ex-works price"]',
+    '  For "what is the patent landscape for hair fixatives": scope_nouns = ["acrylate polymer", "polyurethane", "IP assignee", "polysaccharide", "whitespace"]',
+    '  For "what are the biocide regulations in APAC": scope_nouns = ["K-BPR", "MEE Order No.12", "registration threshold", "IECSC", "GHS classification"]',
+    '',
+    'BQs: Extract ALL explicit business questions verbatim from the proposal. If BQs are not numbered, infer them from the research scope, TOC sections, or engagement objectives. A typical proposal has 3-8 BQs.',
+    'MODULES: Group BQs by proposal module/section if present. If no module structure, use M1 for all.',
+    'COMPETITORS: Extract ALL named companies mentioned as competitors, benchmarks, or key players.',
+    'Do not invent data. If a field is not present, use empty string or empty array.',
+  ].join('\n');
 
   try{
-    var messages=[{role:'user',content:extracted.type==='pdf'?[
-      {type:'document',source:{type:'base64',media_type:'application/pdf',data:extracted.data}},
-      {type:'text',text:prompt}
-    ]:prompt}];
+    var messages;
+    if(extracted.type==='pdf'){
+      messages=[{role:'user',content:[
+        {type:'document',source:{type:'base64',media_type:'application/pdf',data:extracted.data}},
+        {type:'text',text:EXTRACTION_PROMPT}
+      ]}];
+    } else {
+      var text=(extracted.text||'').slice(0,10000);
+      if(!text||text.length<50) return null;
+      messages=[{role:'user',content:EXTRACTION_PROMPT+'\n\nPROPOSAL TEXT:\n'+text}];
+    }
 
     var resp=await fetch(window.FB_PROXY_URL||'https://api.anthropic.com/v1/messages',{
       method:'POST',
       headers:{'Content-Type':'application/json','anthropic-version':'2023-06-01','x-api-key':getApiKey()},
-      body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:2000,messages:messages})
+      body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:3000,messages:messages})
     });
-    if(!resp.ok) return null;
-    var _jt=new Promise(function(_,rej){setTimeout(function(){rej(new Error('JSON parse timeout'));},60000);}); var data=await Promise.race([resp.json(),_jt]);
-    var text2=(data.content||[]).filter(function(b){return b.type==='text';}).map(function(b){return b.text;}).join('');
-    var m=text2.match(/\{[\s\S]*\}/);
+    if(!resp.ok){console.error('Extraction API error:',resp.status);return null;}
+
+    var _jt=new Promise(function(_,rej){setTimeout(function(){rej(new Error('timeout'));},90000);});
+    var data=await Promise.race([resp.json(),_jt]);
+    var raw=(data.content||[]).filter(function(b){return b.type==='text';}).map(function(b){return b.text;}).join('');
+
+    // Clean and parse
+    var m=raw.match(/\{[\s\S]*\}/);
     if(!m) return null;
-    var parsed=JSON.parse(m[0]);
-    if(!parsed.client||!parsed.bqs||!parsed.bqs.length) return null;
-    // Add module info since extraction may not include it
-    parsed.modules=[{id:'M1',name:'Research Scope'}];
-    parsed.bqs=parsed.bqs.map(function(bq){return Object.assign({module:'M1'},bq);});
+    var cleaned=m[0].split("\\'").join("'");
+
+    var parsed;
+    try{ parsed=JSON.parse(cleaned); }
+    catch(e){
+      // Try stripping control characters
+      cleaned=cleaned.replace(/[\x00-\x1F\x7F]/g,function(c){return c==='\n'||c==='\t'?' ':''});
+      try{ parsed=JSON.parse(cleaned); }
+      catch(e2){ console.error('Extraction parse failed:',e2); return null; }
+    }
+
+    if(!parsed||!parsed.client||!parsed.bqs||!parsed.bqs.length) return null;
+
+    // Normalise — ensure ALL required fields exist with safe defaults
+    parsed.title=parsed.title||'Research Engagement';
+    parsed.practice=parsed.practice||'FutureBridge';
+    parsed.geography=parsed.geography||'Global';
+    parsed.period=parsed.period||'2024-2030';
+    parsed.competitors=Array.isArray(parsed.competitors)?parsed.competitors:[];
+    parsed.scope_exclusions=Array.isArray(parsed.scope_exclusions)?parsed.scope_exclusions:[];
+    parsed.engagement_type=parsed.engagement_type||'general';
+    parsed.modules=Array.isArray(parsed.modules)&&parsed.modules.length?parsed.modules:[{id:'M1',name:'Research Scope'}];
+
+    // Normalise BQs — ensure all fields present
+    parsed.bqs=parsed.bqs.map(function(bq,i){
+      return {
+        id:bq.id||('BQ'+(i+1)),
+        module:bq.module||'M1',
+        text:bq.text||'',
+        kw:Array.isArray(bq.kw)?bq.kw:[],
+        scope_nouns:Array.isArray(bq.scope_nouns)?bq.scope_nouns:[],
+        bq_type:bq.bq_type||parsed.engagement_type||'general',
+        gap:bq.gap||false
+      };
+    }).filter(function(bq){return bq.text.length>5;});
+
+    if(!parsed.bqs.length) return null;
     return parsed;
+
   }catch(e){
-    console.error('BQ extraction failed:',e);
+    console.error('extractBQsFromFile failed:',e);
     return null;
   }
 }
@@ -590,66 +660,65 @@ async function extractBQsFromFile(file,extracted){
 async function handleFile(f){
   if(!f){console.error('handleFile: no file');return;}
   console.log('handleFile:',f.name,f.size);
-  S.key=routeFile(f.name);
-  S.proposal=PROPOSALS[S.key]||null;
+  S.key='extracted';
+  S.proposal=null;
   var label=f.name.replace(/_/g,' ').replace(/\.(pptx|pdf|docx|txt)$/i,'').slice(0,50);
   document.getElementById('parseTitle').textContent='Reading: "'+label+'"';
+  document.getElementById('parseSub').textContent='Extracting business questions and research parameters...';
+  goTo(2);
 
-  if(S.proposal){
-    // Known proposal — use hardcoded data instantly
-    document.getElementById('parseSub').textContent=S.proposal.client+' · '+S.proposal.practice;
-    goTo(2);
-    doParse();
+  // Step 1 — read file bytes
+  document.getElementById('ps1').className='ps run';
+  document.getElementById('pi1').innerHTML='<span class="spin">◌</span>';
+  var extracted=await extractFileText(f);
+  document.getElementById('ps1').className='ps done';
+  document.getElementById('pi1').textContent='✓';
+
+  // Step 2 — extract proposal structure via API
+  document.getElementById('ps2').className='ps run';
+  document.getElementById('pi2').innerHTML='<span class="spin">◌</span>';
+  var extracted_proposal=await extractBQsFromFile(f,extracted);
+  document.getElementById('ps2').className='ps done';
+  document.getElementById('pi2').textContent=extracted_proposal?'✓':'✗';
+
+  if(extracted_proposal){
+    S.proposal=extracted_proposal;
+    document.getElementById('parseSub').textContent=extracted_proposal.client+' · '+(extracted_proposal.practice||'FutureBridge');
+
+    // Step 3 — scope and context
+    await sl(400);
+    document.getElementById('ps3').className='ps run';
+    document.getElementById('pi3').innerHTML='<span class="spin">◌</span>';
+    await sl(700);
+    document.getElementById('ps3').className='ps done';
+    document.getElementById('pi3').textContent='✓';
+
+    // Step 4 — build research task map
+    await sl(300);
+    document.getElementById('ps4').className='ps run';
+    document.getElementById('pi4').innerHTML='<span class="spin">◌</span>';
+    await sl(500);
+    document.getElementById('ps4').className='ps done';
+    document.getElementById('pi4').textContent='✓';
+
+    S.selBQs=S.proposal.bqs.map(function(_,i){return i;});
+    await sl(200);
+    goTo(3);
+    renderReview();
   } else {
-    // Unknown proposal — extract BQs from file contents
-    document.getElementById('parseSub').textContent='Extracting business questions from proposal...';
-    goTo(2);
-    // Animate parse steps while extracting
-    document.getElementById('ps1').className='ps run';
-    document.getElementById('pi1').innerHTML='<span class="spin">◌</span>';
-    var extracted=await extractFileText(f);
-    document.getElementById('ps1').className='ps done';
-    document.getElementById('pi1').textContent='✓';
-    document.getElementById('ps2').className='ps run';
-    document.getElementById('pi2').innerHTML='<span class="spin">◌</span>';
-    var extracted_proposal=await extractBQsFromFile(f,extracted);
-    document.getElementById('ps2').className='ps done';
-    document.getElementById('pi2').textContent='✓';
-    if(extracted_proposal){
-      S.proposal=extracted_proposal;
-      S.key='extracted';
-      document.getElementById('parseSub').textContent=extracted_proposal.client+' · '+(extracted_proposal.practice||'FutureBridge');
-      // Animate remaining steps
-      await sl(600);
-      document.getElementById('ps3').className='ps run';document.getElementById('pi3').innerHTML='<span class="spin">◌</span>';
-      await sl(800);document.getElementById('ps3').className='ps done';document.getElementById('pi3').textContent='✓';
-      await sl(400);
-      document.getElementById('ps4').className='ps run';document.getElementById('pi4').innerHTML='<span class="spin">◌</span>';
-      await sl(600);document.getElementById('ps4').className='ps done';document.getElementById('pi4').textContent='✓';
-      S.selBQs=S.proposal.bqs.map(function(_,i){return i;});
-      await sl(300);goTo(3);renderReview();
-    } else {
-      document.getElementById('parseSub').textContent='Could not extract BQs. Rename file to match a known proposal or try a different format.';
-      document.getElementById('ps2').className='ps done';
-      document.getElementById('pi2').textContent='✗';
-    }
+    // Extraction failed — show clear error with retry option
+    document.getElementById('parseSub').textContent='';
+    document.getElementById('parseTitle').textContent='Could not read proposal';
+    var errDiv=document.createElement('div');
+    errDiv.style.cssText='margin-top:16px;padding:14px;background:#FEF0F0;border:1px solid #F94F5E;border-radius:8px;font-size:12px;color:#4B4B55;line-height:1.6';
+    errDiv.innerHTML='<strong>Extraction failed.</strong> This can happen with heavily image-based PDFs or encrypted files.<br><br>'+
+      '<strong>Try:</strong> Export as plain text from PowerPoint, or paste the proposal BQs manually after research starts.<br><br>'+
+      '<button onclick="reset()" style="padding:6px 14px;background:#1A2B4A;color:#fff;border:none;border-radius:6px;font-size:12px;cursor:pointer">← Try another file</button>';
+    document.querySelector('.parse-box').appendChild(errDiv);
   }
 }
 
 // ═══ PARSE ANIMATION ═════════════════════════════
-async function doParse(){
-  var d=[0,1100,2100,3000];
-  for(var i=0;i<4;i++){
-    await sl(d[i]);
-    var ps=document.getElementById('ps'+(i+1)),pi=document.getElementById('pi'+(i+1));
-    ps.className='ps run'; pi.innerHTML='<span class="spin">◌</span>';
-    await sl(900);
-    ps.className='ps done'; pi.textContent='✓';
-  }
-  S.selBQs=S.proposal.bqs.map(function(_,i){return i;});
-  await sl(300); goTo(3); renderReview();
-}
-
 // ═══ REVIEW ══════════════════════════════════════
 function renderReview(){
   var p=S.proposal;
@@ -796,21 +865,164 @@ function getTypeSpecificInstructions(engType, bqFocus, client) {
 
 
 function buildSynthesisResearchPrompt(bq, p, plan, allResearch, client){
-  var engType=detectEngagementType(p, bq);
+  var engType=bq.bq_type||detectEngagementType(p,bq);
   client=client||p.client||'the client';
-  return 'CRITICAL: Before writing findings, identify 1-3 adjacent industries that solved the same problem. Output creative_angles FIRST in the JSON. '+
-    'You are a senior FutureBridge research analyst. Synthesise the following research into a structured JSON output for this business question.'+
-    ' Client: '+client+'. Engagement: '+(p.title||'')+'. Geography: '+(p.geography||'Global')+'.'+
-    ' Business Question: '+bq.text+'.'+
-    ' Research collected: '+allResearch.slice(0,8000)+
-    ' Hypotheses to test: '+(plan&&plan.hypotheses&&plan.hypotheses.length?JSON.stringify(plan.hypotheses):plan&&plan.hypothesis?'[{"statement":"'+plan.hypothesis+'"}]':'none identified')+
-    ' Adjacent intelligence: '+(plan&&plan.parallel_industry?plan.parallel_industry:'none identified')+
-    ' Return ONLY valid JSON. Generate keys IN THIS ORDER — order matters for quality. 1. creative_angles (REQUIRED never empty — array of 1-3 {angle_title,parallel_industry,insight,why_relevant_to_client} — which other industry solved this problem first). 2. hypotheses (REQUIRED never empty — array of 2-3 {statement,what_would_need_to_be_true,confidence_level:low/medium/high} — what you BELIEVE is true about this BQ before findings). 3. primary_research_gaps (REQUIRED minimum 2 entries — array of {gap,why_impossible,expert_profile,questions,hypothesis,priority:high/medium/low} — what cannot be answered from web research alone; needs expert interview or paid database). 4. executive_summary (string — 3-4 sentences with named companies and numbers). 5. engagement_type (string). 6. stats (array of {value,label,confidence,source_name,source_url}). 7. findings (array of {evidence_id,evidence_type,headline,body,client_implication,confidence,geo,data_date,source_name,source_url,trl_level,trl_label,assessment} — evidence_type FACT=cited with source_url INFERENCE=logical conclusion HYPOTHESIS=unverified). 8. disruption_signals (array of {signal,company,date,type,client_implication}). 9. client_decision_frame ({option_a,option_b,key_condition}). 10. paid_source_flags (array of {source,what_it_unlocks,why_needed,priority}). 11. profiles (array of {name,hq,founded,type,role,geography,key_product,key_fact,client_relevance,source_url} — type: competitor startup or supplier; 3-6 total).'+
-    ' RULES: (1) primary_research_gaps minimum 2 required. (2) FACT requires source_url — no URL demote to INFERENCE. (3) 4-5 findings minimum. (4) Every finding ends with: So what for '+client+': [implication]. (5) No markdown. Double quotes only. Escape apostrophes as \'.';
+
+  // Per-type metric field instructions — tells Claude what to populate in findings.metrics
+  var metricInstructions={
+    value_chain_pricing:[
+      'Each finding MUST include a metrics array with these labelled fields where findable:',
+      '  - ex_works_price: specific price with currency and unit (e.g. "INR 14-18 lakh per 3MW SRB set")',
+      '  - localisation_pct: in-house value content as % (e.g. "78% in-house")',
+      '  - manufacturing_strategy: one of Integrated / Split / Assembly-only',
+      '  - cost_share: component cost as % of total (e.g. "rings: 55-58% of ex-works")',
+      '  - capacity_utilisation: plant utilisation % if known',
+    ].join('\n'),
+    value_chain_market:[
+      'Each finding MUST include a metrics array with these labelled fields where findable:',
+      '  - market_share_pct: % of market by volume or value (e.g. "10-12%")',
+      '  - revenue_usd: revenue from this segment specifically, not total company',
+      '  - player_tier: Global brand / Regional brand / White-label / Chinese import',
+      '  - geography: specific country or region',
+      '  - price_usd: average selling price per unit in USD',
+    ].join('\n'),
+    ip_patent:[
+      'Each finding MUST include a metrics array with these labelled fields where findable:',
+      '  - patent_count: number of patents in this category (e.g. "18 patents")',
+      '  - assignee: specific company name',
+      '  - chemical_category: e.g. Acrylic/Acrylate, Polysaccharide, Vinyl polymer',
+      '  - filing_trend: Increasing / Decreasing / Stable (last 5 years)',
+      '  - origin_type: Synthetic / Natural / Semi-synthetic',
+    ].join('\n'),
+    market_sizing:[
+      'Each finding MUST include a metrics array with these labelled fields where findable:',
+      '  - market_volume: value with unit (e.g. "108.7 Million Units" or "46.8 kT")',
+      '  - market_value_usd: USD or EUR value (e.g. "$135M")',
+      '  - material_share_pct: % share for each material (e.g. "PP: 51-55%")',
+      '  - cagr_pct: growth rate with period (e.g. "3-6% 2024-2030")',
+      '  - segment: which sub-segment (e.g. Small kitchen / Large kitchen)',
+    ].join('\n'),
+    supply_entry:[
+      'Each finding MUST include a metrics array with these labelled fields where findable:',
+      '  - production_capacity_mt: designed capacity in metric tons/year',
+      '  - actual_production_mt: actual/estimated production in MT',
+      '  - utilisation_pct: capacity utilisation % (e.g. "~50%")',
+      '  - price_per_kg: price with grade and incoterm (e.g. "$310/kg FOB, grade SB95")',
+      '  - region: geography of production',
+    ].join('\n'),
+    opportunity_assessment:[
+      'Each finding MUST include a metrics array with these labelled fields where findable:',
+      '  - cagr_pct: market growth rate 2025-2030',
+      '  - estimated_mt_potential: addressable market in metric tons for client material',
+      '  - penetration_pct: current or assumed penetration of target material',
+      '  - attractiveness: High / Medium / Low',
+      '  - entry_barrier: specific barrier (IP / Competition / Certification / Cost)',
+    ].join('\n'),
+    competitor_intelligence:[
+      'Each finding MUST include a metrics array with these labelled fields where findable:',
+      '  - initiative_name: specific program or certification name',
+      '  - certification: specific standard held (e.g. ISCC PLUS, APR Recognition)',
+      '  - geography: where this applies',
+      '  - timeline: launch date or deadline',
+      '  - outcome_metric: specific quantified result if disclosed',
+    ].join('\n'),
+    scientific_landscape:[
+      'Each finding MUST include a metrics array with these labelled fields where findable:',
+      '  - microbe_or_ingredient: specific named strain or ingredient',
+      '  - evidence_level: RCT / Observational / In-vitro / Pre-clinical',
+      '  - health_claim: specific validated claim',
+      '  - commercialised: Yes / No / Partial',
+      '  - brand_count: number of products featuring this ingredient (if known)',
+    ].join('\n'),
+    regulatory_intelligence:[
+      'Each finding MUST include a metrics array with these labelled fields where findable:',
+      '  - regulation_name: specific law or regulation name',
+      '  - governing_body: regulatory authority name',
+      '  - registration_threshold: quantity trigger (e.g. ">100 kg/year")',
+      '  - deadline: registration or compliance deadline',
+      '  - action_required: specific action the client must take',
+    ].join('\n'),
+    iem_monitoring:[
+      'Each finding MUST include a metrics array with these labelled fields where findable:',
+      '  - trl_level: integer 1-9',
+      '  - trl_label: Track (1-3) / Prepare (4-6) / Act (7-9)',
+      '  - time_to_market_years: estimated years to commercialisation',
+      '  - disruption_index: High / Medium / Low',
+      '  - key_player: named company or institution leading development',
+    ].join('\n'),
+  }[engType]||[
+    'Each finding MUST include a metrics array with 2-4 labelled data points:',
+    '  - Include any measurable values: market share %, price, volume, count, timeline',
+    '  - Always include: company name, geography, year of data',
+  ].join('\n');
+
+  var hypothesesBlock=(plan&&plan.hypotheses&&plan.hypotheses.length)
+    ?JSON.stringify(plan.hypotheses)
+    :(plan&&plan.hypothesis?'[{"statement":"'+plan.hypothesis+'"}]':'none identified');
+
+  return [
+    'You are a senior FutureBridge research analyst. Synthesise research into structured JSON.',
+    'Client: '+client+' | Engagement: '+(p.title||'')+' | Geography: '+(p.geography||'Global'),
+    'Business Question ('+engType+'): '+bq.text,
+    '',
+    '── RESEARCH COLLECTED ───────────────────────────────────',
+    allResearch.slice(0,9000),
+    '',
+    '── HYPOTHESES TO TEST ──────────────────────────────────',
+    hypothesesBlock,
+    '',
+    '── ADJACENT INDUSTRY FROM PLAN ─────────────────────────',
+    (plan&&plan.parallel_industry)||'identify the adjacent industry analog',
+    '',
+    '── METRIC FIELDS REQUIRED FOR THIS BQ TYPE ─────────────',
+    metricInstructions,
+    '',
+    '── OUTPUT: ONLY VALID JSON, NO MARKDOWN ─────────────────',
+    'Return keys in this exact order:',
+    '{',
+    '  "creative_angles": [{"angle_title":"","parallel_industry":"","insight":"","why_relevant_to_client":""}],',
+    '  "hypotheses": [{"statement":"","what_would_need_to_be_true":"","confidence_level":"low|medium|high"}],',
+    '  "primary_research_gaps": [{"gap":"","why_impossible":"","expert_profile":"","questions":[],"hypothesis":"","priority":"high|medium|low"}],',
+    '  "executive_summary": "3-4 sentences. Named companies + specific numbers + implication for '+client+'.",',
+    '  "engagement_type": "'+engType+'",',
+    '  "stats": [{"value":"","label":"","confidence":"web-verified|estimated|paid-source|primary-required","source_name":"","source_url":""}],',
+    '  "findings": [',
+    '    {',
+    '      "evidence_id": "E001",',
+    '      "evidence_type": "FACT|INFERENCE|HYPOTHESIS",',
+    '      "subject": "named company, product, or technology",',
+    '      "headline": "specific finding — named + numbered",',
+    '      "metrics": [{"label":"metric name","value":"specific value with unit","confidence":"web-verified|estimated|paid-source|primary-required"}],',
+    '      "body": "2-3 sentences: what, why, how — mechanistic",',
+    '      "client_implication": "For '+client+': [specific decision or action implication]",',
+    '      "geo": "country or region",',
+    '      "data_date": "year or date range",',
+    '      "source_name": "publication or company",',
+    '      "source_url": "https://... (required for FACT — if none, use INFERENCE)",',
+    '      "trl_level": null,',
+    '      "trl_label": null,',
+    '      "assessment": null',
+    '    }',
+    '  ],',
+    '  "disruption_signals": [{"signal":"","company":"","date":"","type":"","client_implication":""}],',
+    '  "client_decision_frame": {"option_a":"","option_b":"","key_condition":""},',
+    '  "paid_source_flags": [{"source":"","what_it_unlocks":"","why_needed":"","priority":"CRITICAL|HIGH|MEDIUM"}],',
+    '  "profiles": [{"name":"","hq":"","founded":null,"type":"competitor|startup|supplier","role":"","geography":"","key_product":"","key_fact":"","client_relevance":"","source_url":""}]',
+    '}',
+    '',
+    'RULES:',
+    '(1) findings: 6-10 entries minimum. Every finding needs a metrics array with 2-4 specific data points.',
+    '(2) FACT requires source_url — if no URL, downgrade to INFERENCE.',
+    '(3) creative_angles: NEVER empty. Always find the adjacent industry analog.',
+    '(4) primary_research_gaps: MINIMUM 2 entries.',
+    '(5) Every headline must contain: a named company/product AND a specific number.',
+    '(6) No markdown. Double quotes only. Escape apostrophes with backslash.',
+  ].join('\n');
 }
 
+
 function buildResearchPrompt(bq, p, plan) {
-  var engType = detectEngagementType(p, bq);
+  var engType = bq.bq_type || detectEngagementType(p, bq);
   var bqFocus = getBQFocus(bq);
   var client = p.client || 'the client';
 
@@ -821,28 +1033,69 @@ function buildResearchPrompt(bq, p, plan) {
 
   var typeInstruction = getTypeSpecificInstructions(engType, bqFocus, client);
 
+  // Use planned queries if available, otherwise fall back to keyword-based defaults
+  var plannedQueries = (plan&&plan.search_queries&&plan.search_queries.length)
+    ? plan.search_queries
+    : [];
+
+  var searchBlock;
+  if(plannedQueries.length >= 4){
+    // Use the planned queries from Pass 1 — these are BQ-specific
+    searchBlock = [
+      '── SEARCH STRATEGY (execute ALL queries below in order) ──────',
+      'These queries were designed specifically for this business question.',
+      'Execute each one. Do not skip. Do not substitute generic searches.',
+      '',
+    ].concat(
+      plannedQueries.slice(0,12).map(function(q,i){
+        var qStr = typeof q === 'string' ? q : (q.query||'');
+        var intent = typeof q === 'object' && q.intent ? ' ['+q.intent+']' : '';
+        return (i+1)+'. "'+qStr+'"'+intent;
+      })
+    ).concat([
+      '',
+      'After executing all planned queries, run 1-2 additional searches on the most promising specific lead you find.',
+    ]).join('\n');
+  } else {
+    // Fallback — keyword-based generic strategy
+    searchBlock = [
+      '── SEARCH STRATEGY (8 searches — run all in order) ──────',
+      '1. "' + ((bq.kw||[])[0]||p.title||'') + ' ' + (geos[0]||'global') + ' market players 2024 2025"',
+      '2. "' + ((bq.kw||[])[0]||'') + ' ' + (geos[0]||'') + ' price cost breakdown 2024"',
+      '3. Search each competitor individually: ' + (p.competitors||[]).slice(0,4).join(', '),
+      geos.length > 1 ? '4. Per geography: ' + geos.slice(0,4).join(' / ') : '4. "' + ((bq.kw||[])[0]||'') + ' market size volume 2023 2024"',
+      '5. "' + ((bq.kw||[])[0]||'') + ' acquisition merger new entrant 2023 2024 2025"',
+      '6. "' + ((bq.kw||[])[0]||'') + ' supplier manufacturer OEM tier raw material"',
+      '7. "' + client + ' ' + ((bq.kw||[])[0]||'') + ' strategy 2024 2025"',
+      '8. "' + ((bq.scope_nouns||[])[0]||bq.kw[0]||'') + ' ' + (geos[0]||'global') + ' 2024"',
+    ].join('\n');
+  }
+
+  var scopeBlock = bq.scope_nouns&&bq.scope_nouns.length
+    ? 'SCOPE LOCK — these terms MUST appear in your findings: '+(bq.scope_nouns||[]).join(', ')+'.\nRun dedicated searches for any not yet covered. If still not findable, create a primary_research_gap entry.'
+    : 'Cover the BQ broadly — no specific scope nouns defined.';
+
+  if(p.scope_exclusions&&p.scope_exclusions.length){
+    scopeBlock += '\nSCOPE EXCLUSIONS — DO NOT research: '+(p.scope_exclusions||[]).join(', ')+'.';
+  }
+
+  // Key entities from plan
+  var entityList = (plan&&plan.key_entities&&plan.key_entities.length)
+    ? 'KEY ENTITIES TO RESEARCH: '+(plan.key_entities||[]).join(', ')
+    : 'KEY COMPETITORS: '+(p.competitors||[]).join(', ');
+
   var prompt = [
-    'You are a senior FutureBridge research analyst. Engagement: ' + engType.replace(/_/g,' ').toUpperCase() + '.',
+    'You are a senior FutureBridge research analyst. Engagement type: ' + engType.replace(/_/g,' ').toUpperCase() + '.',
     '',
     'CLIENT: ' + client + '  |  ENGAGEMENT: ' + (p.title||'') + '  |  PRACTICE: ' + (p.practice||''),
     geoInstruction,
-    'KEY COMPETITORS: ' + (p.competitors||[]).join(', '),
+    entityList,
     '',
     'BUSINESS QUESTION: ' + (bq.text||''),
     '',
-    '── PLANNED SEARCH ANGLES (use these first) ─────────────',plan?'1. '+( plan.search_angle_1||''):'',plan?'2. '+(plan.search_angle_2||''):'',plan?'3. '+(plan.search_angle_3||''):'',
-    '── SCOPE LOCK — MUST COVER ──────────────────────────────',
-    (bq.scope_nouns&&bq.scope_nouns.length?'These specific terms from the proposal MUST appear in your findings: '+(bq.scope_nouns||[]).join(', ')+'. Run dedicated searches for any not covered by the main strategy. If still not found, create a primary_research_gap entry.':'No scope nouns defined — cover BQ broadly.')+
-    (p.scope_exclusions&&p.scope_exclusions.length?'── SCOPE EXCLUSIONS — DO NOT RESEARCH ───── These topics are OUT OF SCOPE per the proposal: '+(p.scope_exclusions||[]).join(', ')+'. Do not research these areas.':''),
+    scopeBlock,
     '',
-    '── SEARCH STRATEGY (6 searches — run all in order) ──────',
-    '1. LANDSCAPE: "' + ((bq.kw||[])[0]||p.title||'') + ' ' + (geos[0]||'global') + ' players market 2024 2025"',
-    '2. COMPETITORS: Search each of these by name + topic: ' + (p.competitors||[]).slice(0,3).join(', '),
-    geos.length > 1 ? '3. PER GEOGRAPHY: One dedicated search per geography: ' + geos.slice(0,4).join(' / ') : '3. MARKET DATA: Trade data, market size, import/export for this category',
-    '4. DISRUPTION: "' + ((bq.kw||[])[0]||'') + ' bankruptcy acquisition merger supply disruption 2023 2024 2025"',
-    '5. STARTUPS: "' + ((bq.kw||[])[0]||'') + ' startup funding seed series A venture 2022 2023 2024 2025" — find emerging players, spin-offs, accelerator graduates.',
-    '6. SUPPLIERS: "' + ((bq.kw||[])[0]||'') + ' supplier manufacturer raw material component OEM tier" — map key suppliers in this space.',
-    '5. CLIENT LENS: "' + client + ' ' + ((bq.kw||[])[0]||'strategy') + ' strategy"',
+    searchBlock,
     '',
     '── WHAT TO RESEARCH AND INCLUDE ────────────────────────',
     typeInstruction,
@@ -856,44 +1109,52 @@ function buildResearchPrompt(bq, p, plan) {
     '6. SOURCED — name the publication or site, never "industry sources"',
     '',
     '── ADJACENT INTELLIGENCE (MANDATORY) ───────────────────',
-    'Identify which other industry solved the same problem first. Search for that analog.',
-    'Examples: wind bearing localisation → aerospace bearing programs India. Kefir scale-up → pharma probiotic fermentation. Salon ergonomics → dental chair clinical data.',
-    'Output as creative_angles array — 1-2 entries minimum. This is MANDATORY.',
+    'Parallel industry from plan: ' + ((plan&&plan.parallel_industry)||'identify which other industry solved this first'),
+    'Search for that analog. Output as creative_angles — 1-2 entries minimum.',
     '',
     '── DISRUPTION SIGNALS ──────────────────────────────────',
-    'Search specifically for: company bankruptcies, acquisitions, new entrants, regulatory changes, supply disruptions in this market (last 24 months). Include even if only 1-2 found.',
+    'Search: company bankruptcies, acquisitions, new entrants, regulatory changes last 24 months.',
     '',
-    '── CONFIDENCE TAGS (use on every stat) ─────────────────',
-    '[web-verified] = found in named public source  |  [estimated] = calculated  |  [paid-source: NAME] = needs Mintel/TradeMap/Derwent  |  [primary-required] = needs expert interview',
+    '── CONFIDENCE TAGS ─────────────────────────────────────',
+    '[web-verified] = named public source  |  [estimated] = calculated  |  [paid-source: NAME] = needs database  |  [primary-required] = needs expert interview',
     '',
     '── OUTPUT FORMAT ───────────────────────────────────────',
-    'Respond with ONLY valid JSON. No markdown fences. No text before or after.',
-    'Required keys:',
-    '  executive_summary: string (3-4 sentences, named+numbered+client-framed)',
-    '  engagement_type: string',
-    '  stats: array of {value, label, confidence, source, url}',
-    '  findings: array of {headline, body, client_implication, confidence, geo, source_name, source_url, trl_level, trl_label, assessment}',
-    '    trl_level: integer 1-9 (Technology Readiness Level). Only for innovation/technology findings; null for market/competitor findings.',
-    '    trl_label: one of Track (TRL 1-3), Prepare (TRL 4-6), Act now (TRL 7-9), or null.',
-    '    assessment: {relevance, availability, benefit, risk} each scored 1-5. Only for innovation findings; null otherwise.',
-    '  disruption_signals: array of {signal, company, date, type, client_implication} — empty array [] if none found',
-    '  client_decision_frame: object {option_a, option_b, key_condition}',
-    '  paid_source_flags: array of {source, what_it_unlocks, why_needed, priority}',
-    '  primary_research_gaps: array of {gap, why_impossible, expert_profile, questions, hypothesis, priority}',
-    '  creative_angles: array of 1-3 objects {angle_title, parallel_industry, insight, why_relevant_to_client} — MANDATORY. Identify which other industry solved the exact same problem first. Example: wind bearing localisation → aerospace bearing India (10 years ahead). Never return empty array.',
-    '  profiles: 3-6 entries covering competitors, startups, AND suppliers. {name, hq, founded, type, role, geography, key_product, key_fact, client_relevance, source_name, source_url}',
-    '    type must be one of: competitor, startup, supplier',
-    '    For startups: find spin-offs, funded ventures, accelerator graduates, university spin-outs active in this space',
-    '    For suppliers: identify key raw material or component suppliers relevant to this BQ',
-    '    type: "competitor" | "startup" | "supplier" — include ALL THREE types. Startups: search Crunchbase-style for emerging players, spin-offs, accelerator graduates in this space. Suppliers: identify key raw material or component suppliers relevant to this BQ.',
-    '    3-6 total profiles across all three types.',
+    'Respond with ONLY valid JSON. No markdown. No text before or after.',
+    '{',
+    '  "executive_summary": "3-4 sentences, named companies + numbers + client implication",',
+    '  "engagement_type": "'+engType+'",',
+    '  "stats": [{"value":"","label":"","confidence":"","source_name":"","source_url":""}],',
+    '  "findings": [',
+    '    {',
+    '      "evidence_id": "E001",',
+    '      "evidence_type": "FACT|INFERENCE|HYPOTHESIS",',
+    '      "subject": "named company or technology",',
+    '      "headline": "specific finding with number and company",',
+    '      "metrics": [{"label":"metric name","value":"specific value with unit","confidence":"web-verified|estimated|paid-source|primary-required"}],',
+    '      "body": "2-3 sentences: what, why, how — mechanistic explanation",',
+    '      "client_implication": "For '+client+': [specific decision or action]",',
+    '      "geo": "country or region",',
+    '      "data_date": "year or date range",',
+    '      "source_name": "publication or company name",',
+    '      "source_url": "https://..."',
+    '    }',
+    '  ],',
+    '  "disruption_signals": [{"signal":"","company":"","date":"","type":"","client_implication":""}],',
+    '  "client_decision_frame": {"option_a":"","option_b":"","key_condition":""},',
+    '  "paid_source_flags": [{"source":"","what_it_unlocks":"","why_needed":"","priority":""}],',
+    '  "primary_research_gaps": [{"gap":"","why_impossible":"","expert_profile":"","questions":[],"hypothesis":"","priority":"high|medium|low"}],',
+    '  "creative_angles": [{"angle_title":"","parallel_industry":"","insight":"","why_relevant_to_client":""}],',
+    '  "profiles": [{"name":"","hq":"","founded":null,"type":"competitor|startup|supplier","role":"","geography":"","key_product":"","key_fact":"","client_relevance":"","source_url":""}]',
+    '}',
     '',
     'RULES:',
-    '  - findings: 3-5 entries, each must meet ALL 6 quality standards above',
-    '  - profiles: 2-4 named companies with one specific fact each',
-    '  - client_decision_frame: always include — Option A and Option B, explicit and actionable',
-    '  - APOSTROPHES: every apostrophe in a string value MUST have a backslash before it (write Japan\\\'s)',
-    '  - No trailing commas. Double quotes only.',
+    '  - findings: 6-10 entries minimum. Each must meet ALL 6 quality standards.',
+    '  - metrics array in each finding: 2-4 labelled data points with specific values and units.',
+    '  - FACT requires source_url — if no URL found, downgrade to INFERENCE.',
+    '  - profiles: include competitors, startups, AND suppliers — all three types.',
+    '  - primary_research_gaps: minimum 2 entries.',
+    '  - creative_angles: never empty — always find the adjacent industry analog.',
+    '  - APOSTROPHES: escape with backslash. No trailing commas. Double quotes only.',
   ].join('\n');
 
   return prompt;
@@ -997,7 +1258,54 @@ function parseResearch(text){
   return null;
 }
 
+// Normalise a finding — ensures both old shape (headline+body) and new shape (subject+metrics)
+// produce consistent fields that renderResults, dlReport and exportToPPTX can all read safely.
+function normaliseFinding(f){
+  if(!f||typeof f!=='object') return null;
 
+  // Build headline: prefer explicit headline, fall back to subject+first metric
+  if(!f.headline||f.headline.length<3){
+    var subj=f.subject||'';
+    var firstMetric=(f.metrics&&f.metrics[0])?f.metrics[0].label+': '+f.metrics[0].value:'';
+    f.headline=subj+(firstMetric?' — '+firstMetric:'');
+  }
+
+  // Build body: prefer explicit body, fall back to assembling from metrics
+  if(!f.body||f.body.length<10){
+    if(f.metrics&&f.metrics.length){
+      f.body=(f.metrics||[]).map(function(m){
+        return (m.label||'')+': '+(m.value||'')+(m.confidence?' ['+m.confidence+']':'');
+      }).join(' | ');
+    }
+  }
+
+  // Ensure client_implication exists (exports read this)
+  f.client_implication=f.client_implication||f.body||'';
+
+  // Ensure evidence_type
+  f.evidence_type=f.evidence_type||'INFERENCE';
+
+  // Ensure metrics array exists (renderer reads this)
+  f.metrics=Array.isArray(f.metrics)?f.metrics:[];
+
+  // Ensure subject exists
+  f.subject=f.subject||f.headline||'';
+
+  // Ensure source fields
+  f.source_name=f.source_name||'';
+  f.source_url=f.source_url||'#';
+  f.geo=f.geo||'';
+  f.data_date=f.data_date||'';
+
+  return f;
+}
+
+// Apply normaliser to all findings in a result object
+function normaliseResult(result){
+  if(!result) return result;
+  result.findings=(result.findings||[]).map(normaliseFinding).filter(Boolean);
+  return result;
+}
 
 // Main research orchestrator — sequential, one BQ at a time
 
@@ -1099,20 +1407,78 @@ async function researchBQ(bq, p, onLog){
     startTicker(['Planning research strategy...','Identifying best search angles...','Mapping data sources...']);
     onLog('pass','Pass 1: Planning');
 
+    var bqType=bq.bq_type||detectEngagementType(p,bq);
+    var metricHint={
+      value_chain_pricing:'ex-works price, localisation %, manufacturing strategy, cost breakdown %',
+      value_chain_market:'market share %, revenue USD, geography presence, player tier',
+      ip_patent:'patent count, assignee name, chemical category, filing trend',
+      innovation_funnel:'ingredient name, supplier, commercialisation status, format compatibility',
+      market_sizing:'market volume (units/weight), market value USD, material share %, CAGR %',
+      supply_entry:'production capacity MT, utilisation %, price per kg by grade, export destinations',
+      opportunity_assessment:'CAGR %, mPPE potential MT, entry barrier level, attractiveness H/M/L',
+      competitor_intelligence:'initiative name, certification held, technology focus, timeline',
+      scientific_landscape:'evidence level RCT/observational/in-vitro, health claim, commercialisation status',
+      regulatory_intelligence:'regulation name, governing body, registration threshold, deadline',
+      iem_monitoring:'TRL level, time-to-market years, disruption index, key player',
+      general:'key metric, named company, geography, year'
+    }[bqType]||'key metric, named company, geography, year';
+
+    var planPrompt='You are a senior FutureBridge research analyst. Design a targeted research plan.\n'+
+      'Client: '+client+' | Engagement: '+(p.title||'')+' | Geography: '+(p.geography||'Global')+'\n'+
+      'Competitors in scope: '+(p.competitors||[]).join(', ')+'\n'+
+      'BQ type: '+bqType+'\n'+
+      'Business Question: '+bq.text+'\n'+
+      'Scope nouns that MUST be covered: '+(bq.scope_nouns||[]).join(', ')+'\n\n'+
+      'Return ONLY valid JSON:\n'+
+      '{\n'+
+      '  "search_queries": [\n'+
+      '    {"query":"specific search string","intent":"what this finds","priority":"high|medium"}\n'+
+      '  ],\n'+
+      '  "key_entities": ["named company or player"],\n'+
+      '  "data_shape": {"primary_metrics":["'+metricHint+'"],"comparison_axis":"what to compare across"},\n'+
+      '  "hypotheses": [{"statement":"specific testable belief with company or number","what_would_need_to_be_true":"...","confidence_level":"low|medium|high"}],\n'+
+      '  "parallel_industry": "specific adjacent industry that solved this problem first"\n'+
+      '}\n\n'+
+      'SEARCH QUERY RULES (8-12 queries, ordered by priority):\n'+
+      '- Queries must be SPECIFIC to this BQ — use exact company names, product names, geographies from scope\n'+
+      '- At least 2 queries target scope_nouns directly (e.g. "SKF India wind bearing ex-works price 2024")\n'+
+      '- At least 2 queries target named competitors individually\n'+
+      '- At least 1 per-geography query if multiple geographies in scope\n'+
+      '- At least 1 disruption query: acquisitions, new entrants, regulatory changes last 24 months\n'+
+      '- At least 1 pricing/cost data query\n'+
+      '- Vary angles — do not repeat same search with different words\n'+
+      '- Use year qualifiers 2023 2024 2025 in queries for recency\n'+
+      '- No trailing commas. Double quotes only.';
+
     var planData=await callAPI({
       model:'claude-sonnet-4-6',
-      max_tokens:800,
-      messages:[{role:'user',content:'You are a senior FutureBridge research analyst. Plan the research strategy. Client: '+client+'. BQ: '+bq.text+'. Competitors: '+(p.competitors||[]).join(', ')+'. Return ONLY valid JSON: {"search_angle_1":"","search_angle_2":"","search_angle_3":"","hypothesis":"[specific testable belief — name a company or number]","parallel_industry":"[specific adjacent industry that solved this problem]","hypotheses":[{"statement":"","what_would_need_to_be_true":"","confidence_level":"low/medium/high"},{"statement":"","what_would_need_to_be_true":"","confidence_level":"low/medium/high"}]}'}]});
+      max_tokens:1500,
+      messages:[{role:'user',content:planPrompt}]
+    });
 
     stopTicker();
 
     var planText=extractText(planData.content);
-    var plan={search_angle_1:'',search_angle_2:'',search_angle_3:'',hypothesis:'',parallel_industry:''};
+    var plan={
+      search_queries:[],key_entities:[],
+      data_shape:{primary_metrics:[],comparison_axis:''},
+      hypotheses:[],parallel_industry:'',
+      search_angle_1:'',search_angle_2:'',search_angle_3:'',hypothesis:''
+    };
     try{
       var pm=planText.match(/\{[\s\S]*\}/);
-      if(pm) plan=JSON.parse(pm[0].split("\'").join("'"));
-    }catch(e){}
-    onLog('done','Plan: '+[plan.search_angle_1,plan.search_angle_2,plan.search_angle_3].filter(Boolean).join(' | ').slice(0,100));
+      if(pm){
+        var pp=JSON.parse(pm[0].split("\'").join("'"));
+        plan=Object.assign(plan,pp);
+        if(pp.search_queries&&pp.search_queries.length){
+          plan.search_angle_1=(pp.search_queries[0]&&pp.search_queries[0].query)||'';
+          plan.search_angle_2=(pp.search_queries[1]&&pp.search_queries[1].query)||'';
+          plan.search_angle_3=(pp.search_queries[2]&&pp.search_queries[2].query)||'';
+        }
+        if(pp.hypotheses&&pp.hypotheses.length) plan.hypothesis=pp.hypotheses[0].statement||'';
+      }
+    }catch(e){console.warn('Plan parse warn:',e);}
+    onLog('done','Plan: '+((plan.search_queries||[]).slice(0,2).map(function(q){return q.query||q;}).join(' | ')||'ready').slice(0,100));
 
     // ── PASS 2: SEARCH ──────────────────────────────────────────
     startTicker(['Running targeted searches...','Reading industry sources...','Scanning competitor data...','Extracting key data points...']);
@@ -1157,13 +1523,13 @@ async function researchBQ(bq, p, onLog){
 
     var synthData=await callAPI({
       model:'claude-sonnet-4-6',
-      max_tokens:6000,
+      max_tokens:8000,
       messages:[{role:'user',content:synthPrompt}]
     });
     stopTicker();
 
     var rawText=extractText(synthData.content);
-    result=parseResearch(rawText);
+    result=normaliseResult(parseResearch(rawText));
     onLog('done','Synthesis complete — '+(result&&result.findings?result.findings.length:0)+' findings');
 
     if(result){
@@ -1368,7 +1734,7 @@ async function buildProfiles(bqId){
       if(S.proposal.bqs[j].id===bqId){bq=S.proposal.bqs[j];break;}
     }
   }
-  var d=S.bqResults&&S.bqResults[bqId]?S.bqResults[bqId]:{};
+  var d=normaliseResult(S.bqResults&&S.bqResults[bqId]?S.bqResults[bqId]:null)||{};
   var btn=document.getElementById('pbtn-'+bqId);
   if(btn){btn.textContent='Building...';btn.disabled=true;}
   var client=S.proposal?S.proposal.client:'the client';
@@ -1407,7 +1773,7 @@ async function buildProfiles(bqId){
 async function reEvaluateHypothesis(bqId, hypIdx){
   var btn=document.getElementById('reevalbtn-'+bqId+'-'+hypIdx);
   if(btn){btn.textContent='Evaluating...';btn.disabled=true;}
-  var d=S.bqResults&&S.bqResults[bqId]?S.bqResults[bqId]:{};
+  var d=normaliseResult(S.bqResults&&S.bqResults[bqId]?S.bqResults[bqId]:null)||{};
   var hyps=d.hypotheses||[];
   var h=hyps[hypIdx];
   if(!h){if(btn){btn.textContent='Error';btn.disabled=false;}return;}
@@ -1474,7 +1840,7 @@ function renderResults(){
 
   bqIds.forEach(function(bqId){
     var bq=p.bqs.find(function(b){return b.id===bqId;});
-    var d=S.bqResults[bqId];
+    var d=normaliseResult(S.bqResults[bqId]);
     if(!bq) return;
 
     var card=document.createElement('div');
@@ -1594,6 +1960,21 @@ function renderResults(){
           var et=(f.evidence_type||'INFERENCE').toUpperCase();
           var dnpBanner=et==='HYPOTHESIS'?'<div style="background:#FEE2E2;border:.5px solid #FCA5A5;border-radius:4px;padding:3px 10px;font-size:9px;font-weight:700;color:#B91C1C;letter-spacing:.3px;margin-bottom:7px">⚠ DO NOT PRESENT — hypothesis unvalidated</div>':'';
           var infBanner=(et==='INFERENCE'&&(!f.source_url||f.source_url==='#'))?'<div style="background:#FEF9C3;border:.5px solid #FDE68A;border-radius:4px;padding:3px 10px;font-size:9px;font-weight:600;color:#92400E;letter-spacing:.3px;margin-bottom:7px">ℹ INFERENCE — verify source before client use</div>':'';
+          // Metrics pills
+          var metricsHtml='';
+          if(f.metrics&&f.metrics.length){
+            var confBg=function(c){if(!c)return'#F2F4F7';if(c.indexOf('paid')>=0||c.indexOf('primary')>=0)return'#FEE2E2';if(c==='web-verified')return'#E1F5EE';return'#FEF9C3';};
+            var confTxt=function(c){if(!c)return'#6B7280';if(c.indexOf('paid')>=0||c.indexOf('primary')>=0)return'#B91C1C';if(c==='web-verified')return'#085041';return'#92400E';};
+            metricsHtml='<div style="display:flex;flex-wrap:wrap;gap:5px;margin:6px 0 8px">'+
+              f.metrics.filter(function(m){return m&&m.value;}).map(function(m){
+                var bg=confBg(m.confidence),txt=confTxt(m.confidence);
+                return '<div style="padding:4px 10px;border-radius:6px;border:1px solid '+bg+';background:'+bg+'">'+
+                  '<div style="font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:'+txt+';margin-bottom:1px">'+escH(m.label||'')+'</div>'+
+                  '<div style="font-size:12px;font-weight:600;color:#1A2B4A">'+escH(m.value||'')+'</div>'+
+                '</div>';
+              }).join('')+
+            '</div>';
+          }
           return '<div class="finding">'+dnpBanner+infBanner+
             '<div class="finding-hd">'+
               '<span class="fih-badge fih-'+et+'">'+et+'</span>'+
@@ -1603,6 +1984,7 @@ function renderResults(){
               (f.geo?'<span class="finding-geo">'+escH(f.geo)+'</span>':'')+
               (f.data_date?'<span class="finding-date">'+escH(f.data_date)+'</span>':'')+
             '</div>':'')+
+            metricsHtml+
             (f.body?'<div class="finding-body">'+escH(f.body)+'</div>':'')+
             (f.client_implication?'<div class="finding-implication">→ '+escH(f.client_implication)+'</div>':'')+
             ((f.source_name||f.source_url)?'<div class="finding-source">Source: '+
@@ -1908,76 +2290,6 @@ function copySrcs(){
 
 
 
-function runDemoSynthesis(){
-  var btn=document.getElementById('synthBtn');
-  var st=document.getElementById('synthStatus');
-  if(btn){btn.disabled=true;btn.textContent='Synthesising...';}
-  if(st) st.textContent='Building section view from demo data...';
-  setTimeout(function(){
-    if(!DEMO_SYNTHESIS){if(btn)btn.textContent='Synthesise (demo)';return;}
-    S.synthesis=DEMO_SYNTHESIS;
-    S.detectedEngType=(DEMO_SYNTHESIS.engagement&&DEMO_SYNTHESIS.engagement.type)||'value_chain_pricing';
-    renderSectionView(DEMO_SYNTHESIS);
-    var secTab=document.getElementById('tab-sections');
-    if(secTab) showTab('sections',secTab);
-    if(btn){btn.disabled=false;btn.textContent='Synthesise (demo)';}
-    if(st) st.textContent='Demo synthesis complete - 6 sections generated';
-  },1800);
-}
-
-function runDemo(){
-  var p=S.proposal;
-  if(!p){alert('Upload a proposal first');return;}
-  if(p.client!=='Miba AG'){
-    alert('Demo mode is pre-loaded for the Miba AG proposal only. Upload the Miba proposal file to use demo mode.');
-    return;
-  }
-  goTo(4);
-  var sel=S.selBQs.map(function(i){return p.bqs[i];});
-  var grid=document.getElementById('agentsGrid');
-  if(grid) grid.innerHTML='';
-  var progFill=document.getElementById('progFill');
-  if(progFill) progFill.style.width='0%';
-
-  // Demo banner
-  var banner=document.createElement('div');
-  banner.style.cssText='background:#EEEDFE;border:.5px solid #7F77DD;border-radius:6px;padding:6px 12px;font-size:11px;color:#26215C;font-weight:500;text-align:center;margin-bottom:10px';
-  banner.textContent='Demo mode — pre-loaded research data (no API calls)';
-  var runSub=document.getElementById('runSub');
-  if(runSub&&runSub.parentNode) runSub.parentNode.insertBefore(banner,runSub);
-
-  var completed=[];
-  sel.forEach(function(bq,i){
-    var card=document.createElement('div');
-    card.className='agent-card';
-    card.id='ac-'+i;
-    card.innerHTML='<div class="ac-top"><span class="ac-id" id="agi-'+i+'">↺</span>'+
-      '<span class="ac-title">'+bq.id+': '+bq.text.slice(0,60)+'...</span></div>'+
-      '<div class="ac-log" id="alog-'+i+'"><div class="log-row"><span class="log-tick">→</span><span>Loading demo data...</span></div></div>'+
-      '<div class="ac-meta"><span id="src-'+i+'">0</span> sources</div>';
-    if(grid) grid.appendChild(card);
-
-    setTimeout(function(bqObj,bqIdx){return function(){
-      var demoResult=DEMO_RESULTS&&DEMO_RESULTS.bqs?DEMO_RESULTS.bqs[bqObj.id]:null;
-      if(demoResult){
-        S.bqResults[bqObj.id]=demoResult;
-        var srcEl=document.getElementById('src-'+bqIdx);
-        if(srcEl) srcEl.textContent=((demoResult.profiles||[]).length+(demoResult.paid_source_flags||[]).length+4);
-        var c=document.getElementById('ac-'+bqIdx);
-        if(c) c.className='agent-card done';
-        var agi=document.getElementById('agi-'+bqIdx);
-        if(agi) agi.textContent='✓';
-      }
-      completed.push(bqObj.id);
-      if(progFill) progFill.style.width=Math.round(completed.length/sel.length*100)+'%';
-      if(completed.length===sel.length){
-        S.detectedEngType='value_chain_pricing';
-        setTimeout(function(){goTo(5);renderResults();},400);
-      }
-    };}(bq,i),i*800+500);
-  });
-}
-
 function exportBaseline(){
   var p=S.proposal;
   if(!p||!Object.keys(S.bqResults).length){alert('No research to export');return;}
@@ -2105,7 +2417,7 @@ function dlReport(){
   }
 
   sel.forEach(function(bq){
-    var d=S.bqResults[bq.id]||{};
+    var d=normaliseResult(S.bqResults[bq.id])||{};
     h+='<h2>'+bq.id+'</h2>';
     h+='<p style="font-size:14px;font-weight:bold;font-style:italic;margin:0 0 10px">'+bq.text+'</p>';
 
@@ -2289,347 +2601,12 @@ function dlData(){
   }
 }
 function reset(){
-  S={key:null,proposal:null,selBQs:[],bqResults:{},allSources:[],profiles:[],summary:'',editCtx:null,stage:1};
+  S={key:null,proposal:null,selBQs:[],bqResults:{},allSources:[],profiles:[],summary:'',editCtx:null,stage:1,synthesis:null,detectedEngType:'general',baseline:null};
   for(var i=1;i<=4;i++){document.getElementById('ps'+i).className='ps';document.getElementById('pi'+i).textContent=String(i);}
   goTo(1);
 }
 
-var DEMO_SYNTHESIS = {
-  engagement:{type:"value_chain_pricing"},
-  cross_cutting:{
-    key_insight:"Vertical integration depth at ring forging is the single structural determinant of cost competitiveness in India's wind bearing market. Schaeffler's 78% in-house value vs Timken's 42% import-dependent model explains an estimated 15-18% unit cost gap — a gap no operational efficiency alone can close. For Miba, the forging decision is the investment decision.",
-    recommended_next_step:"Commission 2 expert interviews: (1) ex-Suzlon procurement director to validate ex-works pricing and OEM localisation thresholds; (2) Bharat Forge industrial sales director to assess capacity availability for a new MNC entrant.",
-    biggest_gap:"Ex-works unit pricing from Schaeffler/SKF India to Suzlon — under NDA, requires primary research to validate the Rs14-18 lakh per 3MW SRB estimate."
-  },
-  sections:[
-    {id:"vc",title:"Value chain structure & integration model",icon:"⛓",coverage_level:"complete",source_bqs:["BQ1","BQ3"],synthesis:"India's wind main shaft bearing value chain runs 5 stages for integrated players: steel ring procurement, ring rolling/forging, heat treatment, precision grinding, assembly and QC. Schaeffler India (Pune) and SKF India (Pune) both execute all 5 stages in-house, achieving approximately 78% and 75% in-house value content respectively. Timken India (Chennai) operates a 4-stage model by importing pre-forged rings from the US, reducing in-house value to approximately 42% and limiting price competitiveness on large domestic OEM contracts.",bullet_points:["Schaeffler India: 5-stage fully integrated model in Pune; ~78% in-house value; Wind Power Standard certified; over 1 million wind bearings manufactured","SKF India: mirrors Schaeffler with added 6-axis CNC grinding (Ra 0.2 micron) for offshore specs; Vestas preferred supplier via June 2024 partnership","Timken India: 4-stage import-dependent model — saves 8 weeks lead time but adds 12-15% input cost vs domestic forging","NTN/NSK: assembly-only operations with under 40% local content — losing ground on Suzlon/Inox Wind programs requiring 60% localisation","Chinese players ZWZ and LYC: active in global tenders at 25-30% below European OEM pricing; India entry risk within 18-24 months"],coverage_note:"Production cycle time data (18-22 weeks for integrated players) is estimated from industry triangulation — TradeMap confirmation needed."},
-    {id:"pl",title:"Key players & competitive positioning",icon:"🏭",coverage_level:"complete",source_bqs:["BQ1","BQ2"],synthesis:"The India wind bearing market is a three-tier structure. Tier 1 (Schaeffler, SKF) controls premium OEM programs through deep integration, certification assets, and locked OEM relationships. Tier 2 (Timken, NTN, NSK) compete on specific segments but face structural cost and localisation disadvantages. Tier 3 (domestic Indian players, Chinese exporters) compete on price but lack certification required for Tier 1 OEM programs.",bullet_points:["Schaeffler India: market leader — Wind Power Standard certified, fully integrated Pune plant, Schaeffler-Vitesco merger (Oct 2024) strengthens R&D budget","SKF India: technology leader on grinding spec — locked into Vestas via June 2024 partnership; Miba must target Suzlon, Siemens Gamesa, Inox Wind","Bharat Forge + Kalyani Steels: estimated 55-65% of MNC wind ring forging in India; running at 75-85% utilisation — limited headroom for new entrant","ZWZ China: most credible Tier 3 pricing threat at 25-30% discount; lacks IECRE certification restricting to Tier 2 domestic OEM supply","Suzlon Energy: 3GW order book (Q3 2024) is the demand catalyst — largest domestic wind OEM volume signal in 5 years"],coverage_note:null},
-    {id:"sc",title:"Supply chain & raw material sourcing",icon:"🔗",coverage_level:"partial",source_bqs:["BQ2"],synthesis:"India's bearing raw material supply chain has two critical chokepoints: bearing-grade steel (100Cr6) and ring forgings. Steel supply is dominated by SAIL and Tata Steel for domestic grades, with 30-40% import dependency for high-precision wind-grade steel. Ring forging is heavily concentrated in Bharat Forge and Kalyani Steels. The Rajkot SME machining cluster is viable for cage and seal sourcing but not raceway machining.",bullet_points:["Bearing steel: SAIL/Tata Steel supply domestic 100Cr6; 30-40% import dependency for 5MW+ applications from Germany and Japan","Ring forging: Bharat Forge + Kalyani dominate at estimated 55-65% of MNC supply; 75-85% utilisation — new entrant needs large volume commitment for allocation","Rolex Rings (listed, Rs1650 Cr FY24): most accessible and transparent forging partner — recently added 4000T press for larger rings","Rajkot SME cluster: viable for cage/seal sub-components but lacks 6-axis CNC for raceway grinding — MNC players correctly keep this in-house","PLI scheme for bearings under discussion (Q1 2025): if confirmed, reduces greenfield forging capex by 15-20%"],coverage_note:"Bharat Forge capacity utilisation for wind rings requires primary research — current 75-85% estimate is triangulated not confirmed."},
-    {id:"cd",title:"Cost drivers & ex-works pricing",icon:"₹",coverage_level:"partial",source_bqs:["BQ4"],synthesis:"Raw materials account for 45-52% of ex-works price — the dominant and most volatile cost element. Heat treatment energy costs have risen 18-22% since 2022. Labour at 10% of sales in India vs 25% in Europe is the structural manufacturing advantage. Estimated ex-works price for a domestically manufactured 3MW SRB set: Rs14-18 lakh vs EU22,000-EU28,000 for European equivalents — a 25-35% cost advantage.",bullet_points:["Raw material (100Cr6 rings): 45-52% of ex-works cost; ring material for 3MW SRB set (350-450 kg) approximately Rs6-8 lakh at current SAIL/Tata Steel prices","Heat treatment energy: 8-12% of cost; risen 18-22% since 2022 (Maharashtra industrial power tariff Rs9-11/kWh from Rs7.5-8.5)","Labour: 10% of sales India vs 25% Europe — 60% structural advantage; grows proportionally with turbine size","Quality certification (Wind Power Standard, ISO 281, IECRE): Rs80,000-Rs1,20,000 per unit — barrier to entry for unbranded players","Steel price hedging non-negotiable: unhedged 45-52% raw material exposure creates plus-minus 8-12% annual P&L volatility"],coverage_note:"Ex-works pricing (Rs14-18 lakh per 3MW SRB) is a FutureBridge estimate — TradeMap HS 8482.50 and primary research with ex-Suzlon procurement director required to confirm."},
-    {id:"mv",title:"Make vs buy — integration economics",icon:"⚖",coverage_level:"complete",source_bqs:["BQ3","BQ4"],synthesis:"The make-vs-buy decision is volume-gated at two thresholds. Below 5,000 units/year: outsourced ring forging is economically rational. Between 5,000-8,000: the transition zone. Above 8,000 units/year: in-house forging reaches cost parity. A hybrid Phase 1 (heat treatment + grinding + assembly) transitioning to Phase 2 (add forging) is the lowest-risk India entry sequence.",bullet_points:["Volume threshold — in-house forging breakeven: 8,000 units/year; below this, outsourced forging is more economical despite 15-18% unit cost premium","Phase 1 entry (0-5 years): heat treatment + grinding + assembly — in-house value ~55-60%, capex Rs80-100 Cr, operational in 18-24 months; meets 60% OEM localisation threshold","Phase 2 upgrade trigger (Year 5-7): add ring forging when 8,000+ unit OEM volume confirmed via LOI — capex Rs120-140 Cr additional","Labour advantage makes grinding and assembly economically rational even sub-scale — these operations should always be in-house","PLI scheme: if bearing sector included, Phase 2 forging capex reduces by 15-20% — monitor Q2-Q3 2025 policy announcements"],coverage_note:null},
-    {id:"str",title:"Strategic options for Miba",icon:"🎯",coverage_level:"complete",source_bqs:["BQ1","BQ2","BQ3","BQ4"],synthesis:"Miba faces a binary strategic choice: enter as a technology-premium niche supplier targeting Siemens Gamesa/Vestas India at Rs16-20 lakh per unit with import + local assembly; or enter as a volume competitor targeting Suzlon/Inox Wind at Rs13-15 lakh requiring full localisation. Option A is lower risk and faster to revenue. Option B captures Suzlon's 3GW order book but requires 4-5 year investment horizon. Decision window is narrow — Suzlon's 2025-2027 bearing tenders will lock in preferred supplier positions.",bullet_points:["Option A: target Siemens Gamesa/Vestas India (offshore specs, IECRE) at Rs16-20 lakh/unit; import rings + local HT/grinding; capex Rs40-60 Cr; Year 2 operational","Option B: target Suzlon + Inox Wind at Rs13-15 lakh/unit; full localisation Phase 1 (Rs80-100 Cr) + Phase 2 forging (Rs120-140 Cr); cost parity Year 5-7","Steel price hedging mandatory in either scenario — quarterly LME-indexed adjustment clauses are non-negotiable for a new India subsidiary","Immediate next step: 2 expert interviews to validate pricing and forging supply before any investment decision","Decision window: Suzlon 3GW order book drives 2025-2027 tenders — Miba must achieve preferred vendor qualification before end of 2025"],coverage_note:null}
-  ]
-};
 
-
-var DEMO_RESULTS = {
-  proposal_key:'miba',
-  engagement_type:'value_chain_pricing',
-  bqs:{
-    BQ1:{
-      executive_summary:"Schaeffler and SKF dominate India's wind turbine main shaft bearing value chain through fully integrated operations spanning steel procurement, ring forging, heat treatment, precision grinding, and assembly. Both run 5-stage production cycles averaging 18-22 weeks end-to-end. Timken operates a leaner 4-stage model by importing pre-forged rings from the US, giving it 8 weeks lead time advantage at 12-15% higher input cost. For Miba: vertical integration depth is the single largest determinant of cost competitiveness in India.",
-      engagement_type:"value_chain_pricing",
-      stats:[{value:"18-22 weeks",label:"End-to-end cycle — Schaeffler/SKF India",confidence:"estimated",source:"Schaeffler India Annual Report 2024",url:"https://schaeffler.co.in"},{value:"~46%",label:"Market share — top 3 players globally",confidence:"web-verified",source:"IntelMarketResearch 2024",url:"https://intelmarketresearch.com"},{value:"$5.24 billion",label:"Global wind power bearings market, 2024",confidence:"web-verified",source:"IntelMarketResearch 2024",url:"https://intelmarketresearch.com"},{value:"6.4% CAGR",label:"Market growth 2024-2032",confidence:"web-verified",source:"IntelMarketResearch 2024",url:"https://intelmarketresearch.com"}],
-      findings:[
-        {evidence_id:"E001",evidence_type:"FACT",headline:"Schaeffler India runs 5-stage integrated value chain — ring rolling to final assembly in Pune",body:"Schaeffler India operates an end-to-end bearing manufacturing facility in Pune covering: steel ring procurement, ring rolling/forging, heat treatment, precision grinding and superfinishing, quality inspection and assembly. The facility has produced over 1 million wind bearings under its Wind Power Standard certification programme. So what for Miba AG: Schaeffler's Pune plant sets the integration depth and cost structure benchmark — any Miba India entry must match or exceed this to compete on Tier 1 OEM contracts.",confidence:"high",geo:"India",data_date:"2024",source_name:"Schaeffler Group Press Release",source_url:"https://schaeffler.com"},
-        {evidence_id:"E002",evidence_type:"FACT",headline:"SKF India secured Vestas preferred supplier status via June 2024 partnership — raises entry barrier for competitors",body:"SKF India's Pune manufacturing hub has 6-axis CNC grinding capability achieving Ra 0.2 micron surface finish required for offshore turbine main shaft contracts. SKF signed a strategic partnership with Vestas in June 2024 to supply advanced bearing solutions specifically for this specification. So what for Miba AG: Vestas supply programs are effectively locked to SKF; Miba must target Siemens Gamesa India, Suzlon, or Inox Wind as primary OEM customers.",confidence:"high",geo:"India/Europe",data_date:"2024",source_name:"Technavio Wind Turbine Bearing Market 2024",source_url:"https://technavio.com"},
-        {evidence_id:"E003",evidence_type:"INFERENCE",headline:"Timken India's import-dependent model creates structural 15-18% unit cost premium vs Schaeffler India",body:"Timken's India operation imports pre-forged bearing rings from the US, bypassing domestic forging. Import duties of 7.5% on bearing rings plus freight costs increase input cost by an estimated 12-15% vs domestically forged rings. Production stages compress from 5 to 4 but the cost disadvantage limits Timken's price competitiveness on large-volume domestic OEM contracts. So what for Miba AG: entering India via assembly-only or import-dependent model replicates Timken's structural disadvantage — not a viable position for Tier 1 OEM supply.",confidence:"medium",geo:"India",data_date:"2024",source_name:"ICRA Bearing Sector Report 2024",source_url:"https://icra.in"},
-        {evidence_id:"E004",evidence_type:"HYPOTHESIS",headline:"Chinese entrants ZWZ and LYC approaching India market at 25-30% price discount — may disrupt Tier 2 OEM contracts by 2026",body:"Chinese bearing manufacturers ZWZ and LYC have been active in global wind bearing tenders at 25-30% below European OEM pricing. Their India market entry is unconfirmed but consistent with their broader Asia-Pacific expansion. If they establish local inventory hubs in Gujarat or Tamil Nadu, they could undercut European OEM pricing on Tier 2 OEM volumes within 18-24 months. So what for Miba AG: the window for establishing premium OEM positioning in India is 2025-2026 — delay risks a price-competitive Chinese entrant making the mid-market segment unattainable.",confidence:"medium",geo:"India",data_date:"2025",source_name:"FutureMarketInsights Onshore Wind Turbine Bearing Market",source_url:"https://futuremarketinsights.com"}
-      ],
-      disruption_signals:[{signal:"Schaeffler-Vitesco merger completed October 2024 — consolidates Schaeffler manufacturing capacity and R&D budget",company:"Schaeffler",date:"October 2024",type:"M&A",client_implication:"For Miba: Schaeffler post-merger has deeper resources for India localisation — competitive pressure intensifies in 2025-2026"},{signal:"Vestas-SKF strategic bearing partnership signed June 2024",company:"SKF/Vestas",date:"June 2024",type:"partnership",client_implication:"For Miba: Vestas supply programs locked to SKF; must target alternative OEM customers"}],
-      client_decision_frame:{option_a:"Enter India with full vertical integration (forging + grinding + assembly) — matches Schaeffler/SKF cost structure, 24-30 month build, Rs180-220 Cr capex",option_b:"Enter India via assembly-only partnership — faster (12-15 months), lower capex (Rs40-60 Cr), but structurally higher unit cost and at risk of failing 60% localisation threshold",key_condition:"Decision hinges on whether Suzlon/Inox Wind volumes are large enough to justify Capex A — requires 8,000+ units/year to break even on full integration"},
-      paid_source_flags:[{source:"TradeMap (ITC)",what_it_unlocks:"HS 8482.50 import/export volumes and unit values — validates pricing estimates",why_needed:"Ex-works pricing is not publicly disclosed; trade data provides the only public triangulation",priority:"CRITICAL"}],
-      primary_research_gaps:[{gap:"Ex-works price per unit for 3MW+ main shaft SRBs from Schaeffler and SKF India",why_impossible:"Pricing negotiated under NDA — never published",expert_profile:"Former procurement head at Suzlon Energy or Inox Wind",questions:["What is the ex-works price range for a 3MW SRB set in 2024?","How has pricing moved since 2022?","What volume thresholds unlock price breaks?"],hypothesis:"Ex-works price: EU18,000-EU24,000 from European manufacturers, Rs14-18 lakh from India-manufactured equivalent",priority:"CRITICAL"}],
-      creative_angles:[{angle_title:"Aerospace bearing localisation in India — 10 years ahead of wind",parallel_industry:"Indian aerospace bearing supply chain (HAL, DRDO, ISRO programs)",insight:"India's aerospace bearing localisation program, driven by HAL and DRDO since 2012, solved the exact same problem Miba faces: qualifying domestic ring forging for high-spec rotating machinery bearings under import substitution pressure. By 2022, aerospace programs achieved 65% localisation of bearing components — using the same Pune/Nashik manufacturing corridor that wind bearing MNCs are now entering. The supply chain infrastructure is identical.",why_relevant_to_client:"Miba can compress its India localisation timeline by 2-3 years by mapping onto the qualified aerospace bearing supply chain — Bharat Forge and MIDHANI are already approved for tight-tolerance ring forgings."},{angle_title:"Automotive bearing OEM contracts — the pricing playbook wind is copying",parallel_industry:"Automotive bearing supply chain (Maruti Suzuki, Tata Motors OEM contracts)",insight:"In automotive, Schaeffler and SKF India have operated volume-indexed quarterly price adjustment contracts since 2015 — with steel price pass-through clauses, annual productivity targets of 2-3% per year, and dual-source qualification above 50,000 units per year. Wind OEMs like Suzlon and Inox Wind are now copying this exact contract structure for bearing supply.",why_relevant_to_client:"Miba's negotiating team can walk into Suzlon contract discussions already knowing the playbook — quarterly steel index adjustment, 2% annual productivity clause, dual-source above 8,000 units."}],
-      profiles:[{name:"Schaeffler India Limited",hq:"Pune, Maharashtra",role:"Market leader — fully integrated",geography:"India",key_product:"FAG spherical roller bearings for wind main shaft",key_fact:"Over 1 million wind bearings manufactured under Wind Power Standard certification",client_relevance:"Primary benchmark for Miba India entry — sets the integration depth and cost structure baseline"},{name:"SKF India Limited",hq:"Pune, Maharashtra",role:"Technology leader on grinding spec",geography:"India",key_product:"Wind turbine main shaft SRBs",key_fact:"Strategic partnership with Vestas signed June 2024; 6-axis CNC grinding capability",client_relevance:"Controls premium OEM relationships; Miba must target alternative OEM customers"}]
-    },
-    BQ2:{executive_summary:"India's wind bearing supply chain is anchored by three domestic steel mills (SAIL, Tata Steel, Electrotherm), four approved forging units (Bharat Forge, Kalyani Steels, Ramkrishna Forgings, Rolex Rings), and a fragmented machining sub-tier of 40-50 SME vendors concentrated in Rajkot, Pune, and Coimbatore. Bharat Forge and Kalyani together supply an estimated 55-65% of bearing ring forgings to MNC players — creating a single-source dependency that constrains new entrant negotiating power.",engagement_type:"value_chain_pricing",stats:[{value:"40%",label:"India bearing consumption met via imports",confidence:"web-verified",source:"ICRA Bearing Sector Report 2024",url:"https://icra.in"},{value:"55-65%",label:"Wind ring forgings from Bharat Forge + Kalyani to MNCs",confidence:"estimated",source:"FutureBridge estimate",url:"#"},{value:"13.5% CAGR",label:"India onshore wind bearing market growth through 2035",confidence:"web-verified",source:"FutureMarketInsights 2025",url:"https://futuremarketinsights.com"}],findings:[{evidence_id:"E001",evidence_type:"FACT",headline:"Bharat Forge and Kalyani Steels dominate bearing ring forging supply to MNC manufacturers in India",body:"Bharat Forge (Pune) and Kalyani Steels operate the largest closed-die forging presses capable of producing bearing rings in the 400-2000mm diameter range required for wind main shaft applications. Both supply Schaeffler and SKF India under long-term approved vendor agreements. Ramkrishna Forgings (Kolkata) and Rolex Rings (Rajkot) serve as secondary approved suppliers. So what for Miba AG: forging supply is the most concentrated risk point in the India value chain — Miba must secure dedicated forging capacity before committing to OEM supply contracts.",confidence:"high",geo:"India",data_date:"2024",source_name:"ICRA Bearing Sector Report 2024",source_url:"https://icra.in"},{evidence_id:"E002",evidence_type:"INFERENCE",headline:"Bharat Forge estimated at 75-85% utilisation on wind bearing rings — limited headroom for new entrant",body:"Bharat Forge supplies Schaeffler and SKF India for wind bearing ring forgings under long-term agreements. Estimated utilisation of 75-85% on wind-grade large ring capacity means limited residual allocation is available for a new MNC entrant. Any supply agreement would likely require a minimum volume commitment of 5,000+ rings per year to justify dedicated press allocation. So what for Miba AG: Bharat Forge is the most capable forging partner but will not offer preferential terms without a volume commitment that may exceed Phase 1 manufacturing capacity.",confidence:"medium",geo:"India",data_date:"2024",source_name:"FutureBridge estimate",source_url:"#"}],disruption_signals:[{signal:"PLI scheme for Advanced Manufacturing — bearing sector inclusion under discussion Q1 2025 — would subsidise capex by 15-20%",company:"Government of India",date:"Q1 2025",type:"regulatory",client_implication:"For Miba: if PLI extends to bearings, greenfield forging capex reduces from Rs180-220 Cr to Rs145-175 Cr"}],client_decision_frame:{option_a:"Partner with Bharat Forge — fastest path to domestically-forged rings without capex, but residual capacity allocation and weaker SLA",option_b:"Establish dedicated partnership with Rolex Rings — smaller, more flexible on exclusivity, publicly listed so financials are transparent",key_condition:"Exclusivity in forging supply is critical — if Bharat Forge supplies Miba alongside Schaeffler/SKF, Miba has no cost differentiation"},paid_source_flags:[{source:"TradeMap HS 7224/7228 (bearing steel) and HS 8462 (forging)",what_it_unlocks:"Import volumes and unit prices for bearing steel into India by origin country",why_needed:"Domestic vs import mix determines raw material cost structure for any India manufacturing scenario",priority:"HIGH"}],primary_research_gaps:[{gap:"Bharat Forge actual allocation of wind bearing ring capacity to current MNC customers vs headroom for Miba",why_impossible:"Capacity utilisation is commercially sensitive",expert_profile:"Ex-Bharat Forge senior manager in Industrial forgings division",questions:["What is Bharat Forge current utilisation on large wind ring forgings?","Would Bharat Forge consider exclusivity with a new MNC entrant?","What minimum volume commitment unlocks dedicated press allocation?"],hypothesis:"Bharat Forge at 75-85% utilisation on wind rings — limited headroom without 5,000+ ring/year commitment",priority:"CRITICAL"}],creative_angles:[{angle_title:"Automotive forging supply concentration — how Tier 1 auto OEMs managed single-source risk",parallel_industry:"Automotive forgings (Maruti Suzuki, Tata Motors supplier qualification)",insight:"Automotive OEMs in India faced the same Bharat Forge concentration problem in the 2000s — one dominant forging supplier for critical powertrain components. The solution was a structured dual-source development program: qualify a second forging supplier (typically a Tier 2 like Ramkrishna Forgings or Mahindra Forgings) for 30% of volume as a shadow supplier, maintaining Bharat Forge for 70%. This gives negotiating leverage without sacrificing quality.",why_relevant_to_client:"Miba should apply the same 70/30 split strategy — Bharat Forge as primary, Rolex Rings as shadow supplier qualified and maintained at 30% volume. This is the standard automotive approach to single-source forging risk and directly applicable."}],profiles:[{name:"Bharat Forge Limited",hq:"Pune, Maharashtra",role:"Primary ring forging supplier to MNCs",geography:"India",key_product:"Closed-die forgings for bearing rings 400-2000mm",key_fact:"Largest forging company in India; supplies Schaeffler, SKF, Timken; estimated 75-85% utilisation on wind rings",client_relevance:"Most capable ring forging partner for Miba — but supply availability is constrained"},{name:"Rolex Rings Limited",hq:"Rajkot, Gujarat",role:"Mid-tier ring rolling — listed company",geography:"India",key_product:"Rolled rings up to 1200mm for bearings and industrial applications",key_fact:"Listed on BSE/NSE, Rs1650 Cr FY24 revenue; recently added 4000T press for larger rings",client_relevance:"Most transparent financials of any forging partner; viable Miba partner before Phase 2 capex decision"}]},
-    BQ3:{executive_summary:"Leading wind bearing manufacturers in India operate between 55-80% in-house value. Schaeffler India at ~78% and SKF India at ~75% represent the fully integrated benchmark. Timken India at ~42% demonstrates the structural disadvantage of an import-dependent model. The optimal make-vs-buy threshold for main shaft bearings in India is ring forging and raceway grinding — both must be in-house above 8,000 units/year to achieve competitive cost parity with Schaeffler.",engagement_type:"value_chain_pricing",stats:[{value:"~78%",label:"Estimated in-house value — Schaeffler India",confidence:"estimated",source:"FutureBridge estimate",url:"#"},{value:"~42%",label:"Estimated in-house value — Timken India",confidence:"estimated",source:"FutureBridge estimate",url:"#"},{value:"8,000 units/yr",label:"Volume threshold for in-house forging breakeven",confidence:"estimated",source:"FutureBridge manufacturing economics estimate",url:"#"},{value:"10%",label:"Employee expenses as % of sales in India vs ~25% in Europe",confidence:"web-verified",source:"Mathmarkets Schaeffler India Analysis 2024",url:"https://mathmarkets.in"}],findings:[{evidence_id:"E001",evidence_type:"INFERENCE",headline:"Schaeffler India in-house value estimated at 78% — only seal rubber and cage brass outsourced",body:"Based on disclosed plant capabilities and Wind Power Standard certification scope, Schaeffler India's in-house value content for main shaft SRBs is estimated at approximately 78%. Outsourced elements are limited to seal rubber compounds, brass cage stock, and surface treatment chemicals. This integration depth is the primary source of Schaeffler's margin advantage over sub-scale Indian competitors. So what for Miba AG: matching 78% in-house value requires in-house ring forging — the single largest capex decision in the India market entry.",confidence:"medium",geo:"India",data_date:"2024",source_name:"Mathmarkets Schaeffler India Analysis 2024",source_url:"https://mathmarkets.in"},{evidence_id:"E002",evidence_type:"FACT",headline:"Labour cost advantage in India is 60% below European equivalent — structural rationale for India manufacturing even sub-scale",body:"Employee expenses account for approximately 10% of sales for Schaeffler India vs approximately 25% in developed countries per Mathmarkets analysis. For a 3MW SRB set, labour-intensive grinding (12-18 hours per ring set) and assembly operations cost approximately Rs1.2-1.8 lakh at Indian wage rates vs EU4,000-6,000 equivalent at German/Austrian rates. So what for Miba AG: the labour cost advantage is durable and makes grinding and assembly economically rational in India even at sub-optimal volumes — these operations should always be in-house regardless of market entry model.",confidence:"high",geo:"India vs Europe",data_date:"2024",source_name:"Mathmarkets Schaeffler India Analysis 2024",source_url:"https://mathmarkets.in"}],disruption_signals:[{signal:"MNCs accelerating localisation beyond 60% — Schaeffler and SKF investing in further vertical integration as PLI incentives materialise",company:"Schaeffler/SKF",date:"2025",type:"investment",client_implication:"For Miba: localisation benchmark is moving — 70%+ in-house value will be competitive baseline by 2026-2027"}],client_decision_frame:{option_a:"Phase 1 heat treatment + grinding + assembly only (in-house value ~55-60%) — capex Rs80-100 Cr, operational in 18-24 months, meets current 60% OEM threshold",option_b:"Phase 1 assembly + grinding only (in-house value ~40-45%) — lowest capex (Rs40-60 Cr) but at risk of failing Suzlon/Inox Wind 60% localisation threshold by 2026",key_condition:"Phase 2 forging trigger: 8,000+ contracted unit volume confirmed by OEM LOI — without this, in-house forging capex (Rs120-140 Cr additional) cannot be justified"},paid_source_flags:[{source:"Rolex Rings Limited Annual Report FY2024 (BSE listed)",what_it_unlocks:"Revenue breakdown, capacity utilisation, and margin by product line — validates forging supply economics",why_needed:"Rolex Rings is the most transparent forging partner candidate — public financials available",priority:"HIGH"}],primary_research_gaps:[{gap:"Actual unit economics of outsourced vs in-house forging for 3MW-5MW SRBs at Indian production volumes",why_impossible:"Forging conversion costs are commercially sensitive",expert_profile:"VP Manufacturing or CFO of a Tier 2 Indian bearing manufacturer (NRB Bearings, Harsha Engineers)",questions:["What is the fully loaded cost per ring forging for a 1200mm bearing ring at 3,000 units/year?","At what volume does in-house forging breakeven vs outsourcing?"],hypothesis:"Outsourced forging cost Rs2.8-3.5 lakh per ring at 3,000 units/year; in-house forging breaks even at 7,500-9,000 units/year",priority:"CRITICAL"}],creative_angles:[{angle_title:"Semiconductor fab localisation — how TSMC structured its India/Japan market entry capex in phases",parallel_industry:"Semiconductor fabrication (TSMC Japan, Intel India feasibility)",insight:"Semiconductor fabs face the same make-vs-buy decision at a much larger scale: full fab integration requires $10B+ capex, but packaging and testing (the assembly equivalent) can be done at $500M. TSMC's Japan entry started with packaging-only, built customer relationships and qualified supply chain, then committed to full fab only after volume guarantees from Sony and Toyota. The phased commitment model — prove demand before committing to full integration — is directly analogous to Miba's India decision.",why_relevant_to_client:"The TSMC Japan playbook argues strongly for Miba's Phase 1 as assembly + grinding only — build the OEM relationships first, then trigger Phase 2 forging investment only when volume LOIs are signed. Do not commit to full integration before demand is proven."}],profiles:[{name:"NRB Bearings Limited",hq:"Mumbai, Maharashtra",role:"Tier 2 Indian bearing manufacturer — listed",geography:"India",key_product:"Needle roller bearings and large industrial bearings",key_fact:"Listed on NSE/BSE; disclosed manufacturing cost structure in annual reports — benchmark for India bearing manufacturing economics",client_relevance:"Best available proxy for India-manufactured bearing unit economics at sub-Schaeffler scale"}]},
-    BQ4:{executive_summary:"Raw materials (bearing steel rings) account for 45-52% of the ex-works price of a 3MW main shaft SRB in India — the dominant and most volatile cost driver. Heat treatment energy costs represent 8-12% of manufacturing cost and have risen 18-22% since 2022. Labour accounts for 10-14% of cost — the primary India advantage. Net ex-works price for a domestically manufactured 3MW SRB set from Schaeffler/SKF India is estimated at Rs14-18 lakh ($16,800-$21,600) vs EU22,000-EU28,000 for European-manufactured units.",engagement_type:"value_chain_pricing",stats:[{value:"45-52%",label:"Raw material as % of ex-works price — 3MW SRB India",confidence:"estimated",source:"FutureBridge estimate",url:"#"},{value:"Rs14-18 lakh",label:"Estimated ex-works price — 3MW SRB set, India-manufactured",confidence:"estimated",source:"FutureBridge triangulation",url:"#"},{value:"EU22,000-EU28,000",label:"Ex-works price — European-manufactured 3MW SRB equivalent",confidence:"estimated",source:"FutureBridge estimate",url:"#"},{value:"18-22%",label:"Rise in industrial power tariffs Maharashtra/Gujarat since 2022",confidence:"estimated",source:"Maharashtra Electricity Regulatory Commission",url:"#"}],findings:[{evidence_id:"E001",evidence_type:"INFERENCE",headline:"Steel rings (100Cr6) account for 45-52% of ex-works cost — 15% steel price increase translates to 6-8% ex-works price pressure",body:"Bearing-grade steel rings represent the largest single cost element in main shaft SRB manufacturing. At current domestic steel prices (approximately Rs95-110/kg for 100Cr6), the ring material cost for a 3MW SRB set (ring weight approximately 350-450 kg) is approximately Rs6-8 lakh. Steel price volatility since 2022 has been 22-28% peak-to-trough. Schaeffler and SKF manage this via quarterly steel price adjustment clauses in OEM supply contracts. So what for Miba AG: steel price hedging strategy is non-negotiable before entering any OEM supply agreement — unhedged 45-52% raw material exposure creates plus-minus 8-12% annual P&L volatility unacceptable for a new India subsidiary.",confidence:"medium",geo:"India",data_date:"2024",source_name:"ICRA Bearing Sector Report 2024",source_url:"https://icra.in"},{evidence_id:"E002",evidence_type:"INFERENCE",headline:"Heat treatment energy cost risen 18-22% since 2022 — Pune manufacturers exploring solar captive power",body:"The heat treatment stage consumes approximately 180-220 kWh per ring set. At Maharashtra industrial power tariff of Rs9-11/kWh (increased from Rs7.5-8.5 in 2022), heat treatment energy cost per 3MW SRB set is approximately Rs35,000-55,000. This represents 8-12% of total manufacturing cost. Pune-based manufacturers are exploring on-site solar captive power to partially offset this. So what for Miba AG: energy cost trajectory in Maharashtra and Gujarat must be modelled in any India P&L — captive solar should be evaluated as a risk mitigation option from Year 3.",confidence:"medium",geo:"India — Maharashtra",data_date:"2024",source_name:"Maharashtra Electricity Regulatory Commission",source_url:"#"},{evidence_id:"E003",evidence_type:"FACT",headline:"Labour cost in India is 60% below European equivalent — structural and durable advantage",body:"Employee expenses account for approximately 10% of sales for Schaeffler India vs approximately 25% in developed countries. For a 3MW SRB set, labour-intensive grinding and assembly operations cost approximately Rs1.2-1.8 lakh at Indian wage rates vs EU4,000-6,000 at German/Austrian rates. This structural 60% labour cost advantage is durable and grows proportionally with turbine size as grinding hours per unit increase. So what for Miba AG: the labour advantage is the primary economic rationale for India manufacturing — it holds at any volume level and must anchor the India investment case.",confidence:"high",geo:"India vs Europe",data_date:"2024",source_name:"Mathmarkets Schaeffler India Analysis 2024",source_url:"https://mathmarkets.in"}],disruption_signals:[{signal:"Suzlon Energy announced 3GW domestic wind turbine order book for FY2025 — largest domestic wind OEM demand signal in 5 years",company:"Suzlon Energy",date:"Q3 2024",type:"demand",client_implication:"For Miba: Suzlon 3GW order book is the demand catalyst that justifies India manufacturing investment — timing of entry should align with Suzlon 2026-2027 supply ramp"},{signal:"Steel prices (100Cr6) fell 12% in H2 2024 — creates 2025 OEM contract renegotiation pressure of 5-8%",company:"Tata Steel/SAIL",date:"H2 2024",type:"commodity",client_implication:"For Miba: 2025 supply contract negotiations will include downward price pressure — Miba must model steel price floor and adjustment mechanisms before committing to India supply agreements"}],client_decision_frame:{option_a:"Price at Rs13-15 lakh per 3MW SRB set to compete on Suzlon/Inox Wind Tier 1 programs — requires in-house forging and full localisation; achievable Year 4-5",option_b:"Price at Rs16-20 lakh targeting Siemens Gamesa/Vestas India offshore and premium onshore — achievable Year 2-3 with import + local assembly model; avoids direct price war",key_condition:"Steel price hedging strategy is non-negotiable in either scenario — unhedged 100Cr6 exposure creates plus-minus 8-12% P&L volatility unacceptable for a new India subsidiary"},paid_source_flags:[{source:"TradeMap HS 8482.50 (spherical roller bearings) — unit import/export values India",what_it_unlocks:"Actual average import prices for wind-grade SRBs into India — directly validates ex-works price estimates",why_needed:"Without unit-level trade data, all ex-works pricing is estimate; TradeMap provides the only publicly available proxy",priority:"CRITICAL"}],primary_research_gaps:[{gap:"Actual OEM contract price and annual price adjustment mechanism for Schaeffler/SKF India supply to Suzlon for 2MW-3MW main shaft SRBs",why_impossible:"OEM supply contract terms are under NDA",expert_profile:"Former supply chain director at Suzlon Energy with active Schaeffler/SKF bearing contract exposure",questions:["What is the OEM contract price range for a 3MW SRB set under current Suzlon supply agreement?","What is the quarterly steel price adjustment formula?","What volume guarantees does Suzlon provide?"],hypothesis:"Suzlon pays Rs15-17 lakh per 3MW SRB set under current Schaeffler contract (2024); price adjusted quarterly against SAIL HRC index",priority:"CRITICAL"}],creative_angles:[{angle_title:"LNG plant cold-box heat exchanger pricing — how complex industrial equipment OEM contracts handle material cost pass-through",parallel_industry:"LNG plant equipment supply (Air Products, Linde engineering contracts)",insight:"LNG cold-box manufacturers solved the stainless steel cost pass-through problem 20 years ago — the standard contract structure separates the base fabrication margin from material costs, with material indexed quarterly to LME or domestic steel indices. The fabrication margin is fixed for the contract term (typically 3-5 years) while material pass-through is automatic. This structure eliminates the material price risk for both buyer and seller and is now standard in all complex industrial equipment OEM contracts in India.",why_relevant_to_client:"Miba should specify this exact LNG-style contract structure in Suzlon and Inox Wind negotiations — separate fabrication margin (fixed) from material cost (LME-indexed quarterly). This is standard in adjacent industries and will be recognised and accepted by sophisticated OEM procurement teams."}],profiles:[{name:"Suzlon Energy Limited",hq:"Pune, Maharashtra",role:"Largest domestic wind turbine OEM — primary target customer",geography:"India",key_product:"2MW-3MW onshore wind turbines; growing 3.5MW platform",key_fact:"3GW order book announced Q3 2024; 60%+ localisation content required; active Schaeffler and SKF India customer",client_relevance:"Primary OEM customer target for Miba India Phase 1 — volume and spec requirements must drive India investment sizing"}]}
-  }
-};
-
-
-
-const PROPOSALS={
-  baxter:{client:"Baxter International",title:"Sustainability in Medical Devices — Design for Recyclability",practice:"Life Sciences & MedTech",geography:"USA",period:"Last 5 years (2020–2025)",competitors:["BD","Fresenius Kabi","B. Braun","ICU Medical","Terumo","Vygon","Nipro","TechnoFlex"],
-  modules:[{id:"M1",name:"Module I — Competitor Intelligence"},{id:"M2",name:"Module II — Future Recycling Ecosystem"}],
-  bqs:[
-    {id:"BQ1",module:"M1",text:"Which medical device companies are currently running or piloting recycling programs for single-use/disposable medical products, and what is the scope?",kw:["competitor programs","single-use","scope"],gap:false},
-    {id:"BQ2",module:"M1",text:"What recycling claims are competitors making and what third-party validation exists?",kw:["recycling claims","validation","waste diverted"],gap:true},
-    {id:"BQ3",module:"M1",text:"How are competitors redesigning products for recyclability — material simplification, modularity, labeling?",kw:["product redesign","material simplification","PP"],gap:false},
-    {id:"BQ4",module:"M1",text:"What specific recycling processes are driving Design for Recycling principles for new recycle-ready devices?",kw:["recycling processes","mechanical","chemical recycling"],gap:false},
-    {id:"BQ5",module:"M1",text:"What certifications do competitors hold for recycled content or recycling processes?",kw:["certifications","ISO","GRS","ISCC"],gap:true},
-    {id:"BQ6",module:"M1",text:"Who are competitors partnering with for their medical product recycling?",kw:["partnerships","recycling partners","collaboration"],gap:false},
-    {id:"BQ7",module:"M2",text:"What regulatory shifts (EU PPWR, EPR mandates) will redefine single-use device design and recyclability?",kw:["PPWR","EPR","EU MDR","August 2026"],gap:false},
-    {id:"BQ8",module:"M2",text:"Which emerging recycling technologies have highest potential for single-use medical plastic waste at scale?",kw:["emerging technologies","Hydro-PRT","PureCycle","chemical recycling"],gap:true},
-  ]},
-  miba:{client:"Miba AG",title:"Value Chain Assessment — Wind Turbine Main Shaft Roller Bearings",practice:"Mobility & Industrial",geography:"India (Stage I) · Europe (Stage II)",period:"Current (2024–2025)",competitors:["Schaeffler","SKF","Timken","Thyssenkrupp rothe erde"],
-  modules:[{id:"M1",name:"Stage I — India Value Chain (SRB)"},{id:"M2",name:"Stage II — Europe Value Chain (TRB)"}],
-  bqs:[
-    {id:"BQ1",module:"M1",text:"What are the key production stages in the roller bearing value chain for major competitors in India, and how do they compare?",kw:["value chain","production stages","India"],gap:false},
-    {id:"BQ2",module:"M1",text:"Who are the primary raw material suppliers, forging units, and component providers supporting leading bearing manufacturers in India?",kw:["suppliers","raw materials","forging","machining"],gap:true},
-    {id:"BQ3",module:"M1",text:"What proportion of the value chain is handled in-house vs outsourced for leading roller bearing manufacturers in India?",kw:["in-house","outsourced","make vs buy"],gap:true},
-    {id:"BQ4",module:"M1",text:"What are the major cost drivers at each stage of the supply chain, and how do they influence overall pricing?",kw:["cost drivers","pricing","ex-works"],gap:true},
-  ]},
-  kefir:{client:"Nestlé",title:"Scientific & Competitive Landscape Mapping — Kefir",practice:"Food & Nutrition",geography:"Europe · South America · APAC",period:"Since 2020",competitors:["Lifeway Foods","Biotiful Gut Health","Valio Gefilus","Danone Activia","Chobani","Arla","Siggi's"],
-  modules:[{id:"M1",name:"Module 1 — Kefir Health Benefits"},{id:"M2",name:"Module 2 — Market Sentiments"}],
-  bqs:[
-    {id:"BQ1",module:"M1",text:"What is the competitive landscape of traditional and fortified kefir — claims, flora, metabolites, and whitespaces?",kw:["competitive landscape","kefir","product claims","whitespace"],gap:false},
-    {id:"BQ2",module:"M1",text:"What microbial flora are found in traditional vs commercial kefir, and what are the kefir-associated bioactive metabolites?",kw:["microbial flora","bioactive metabolites","kefiran","SCFA"],gap:false},
-    {id:"BQ3",module:"M1",text:"What is the state-of-the-art scientific evidence for kefir health benefits — gut health, immunity, metabolic, and cognitive?",kw:["scientific evidence","clinical","gut health","immunity"],gap:true},
-    {id:"BQ4",module:"M2",text:"What are consumer perceptions, usage drivers, format preferences, and awareness related to kefir microbes?",kw:["consumer perception","usage drivers","format","sentiments"],gap:true},
-  ]},
-  loreal:{client:"L'Oréal",title:"Global IP & Product Landscape — Extra-Hold Hair Fixatives",practice:"Home & Personal Care",geography:"Global",period:"Last 10 years",competitors:["Itaconix","Ashland","BASF","Croda","Nouryon","Dow","Evonik","Clariant"],
-  modules:[{id:"M1",name:"Module I — Technology & Product Landscape"},{id:"M2",name:"Module II — Benchmarking & Deep Dive"}],
-  bqs:[
-    {id:"BQ1",module:"M1",text:"What is the global IP and product landscape for extra-hold hair styling — which fixatives, thickeners, and film-formers enable strong, lasting hold?",kw:["IP landscape","fixatives","film-formers","extra-hold"],gap:false},
-    {id:"BQ2",module:"M1",text:"Which players have proprietary technologies and IP around extra-hold styling across gel, gel-cream, cream, and wax formats?",kw:["players","IP","patents","assignees"],gap:false},
-    {id:"BQ3",module:"M1",text:"How do solutions vary by format and hair type — what polymer systems and combinations deliver best performance?",kw:["formats","hair types","polymer systems","performance"],gap:false},
-    {id:"BQ4",module:"M1",text:"Where are the whitespaces and gaps in extra-hold fixatives that L'Oréal can target for future innovation?",kw:["whitespaces","gaps","innovation","unmet needs"],gap:false},
-    {id:"BQ5",module:"M2",text:"Which top 5 fixative solutions score highest on technical performance, sustainability, safety, and strategic fit for L'Oréal?",kw:["benchmarking","top solutions","sustainability","TRL"],gap:false},
-  ]},
-  nestle:{client:"Nestlé",title:"Affordability & Nutrition Strategy — Sub-Saharan Africa (R&D Abidjan)",practice:"Food & Nutrition",geography:"Sub-Saharan Africa (CWAR · ESAR)",period:"Current (2025–2026)",competitors:[],
-  modules:[{id:"M1",name:"Module 1 — Strategic Context & Key Learnings"},{id:"M2",name:"Module 2 — Barriers, Way Forward & Leadership Asks"}],
-  bqs:[
-    {id:"BQ1",module:"M1",text:"What is Nestlé's current affordability challenge in Sub-Saharan Africa — consumer economics, nutrition gap, and existing analyses?",kw:["affordability","Sub-Saharan Africa","consumer economics","nutrition"],gap:false},
-    {id:"BQ2",module:"M1",text:"What is the strategic role of R&D Abidjan and what has worked and not worked in past affordability initiatives?",kw:["R&D Abidjan","strategic role","lessons learned"],gap:false},
-    {id:"BQ3",module:"M2",text:"What are the structural barriers — governance, capability, alignment — preventing faster affordability innovation?",kw:["barriers","governance","alignment","organisational"],gap:false},
-    {id:"BQ4",module:"M2",text:"What does success look like — specific leadership asks, Now-Next-Later roadmap, and capability investments needed?",kw:["success metrics","roadmap","leadership asks","capability"],gap:false},
-  ]}
-,
-  hairsalon:{client:"L'Oréal",title:"Player Ecosystem and Value Chain Analysis — Hair Salon Backwash Units",practice:"Home & Personal Care",geography:"France · Italy · Japan (+ global suppliers)",period:"Current (2025)",competitors:["Takara Belmont","Maletti","TOTO","REM","Prohm","Salon Ambience","Kaemark","Pibbs Industries"],
-  modules:[{id:"MA",name:"Module A — Ecosystem & Value Chain Analysis"},{id:"MB",name:"Module B — Market Deep-Dive"}],
-  bqs:[
-    {id:"BQ1",module:"MA",text:"Who are the key players — branded and white-label equipment manufacturers, distributors — across the hair salon backwash unit value chain in France, Italy, and Japan?",kw:["value chain","players","branded","white-label","distributors"],gap:false},
-    {id:"BQ2",module:"MA",text:"What are the key component manufacturers for plumbing/fitting and hydraulic components, and how are they positioned across geographies?",kw:["components","plumbing","hydraulic","mixer taps","hand showers"],gap:true},
-    {id:"BQ3",module:"MA",text:"What are the key trends and dynamics shaping the backwash unit market — vertical integration, wellness/head-spa, water-saving, modularisation?",kw:["trends","head-spa","water-saving","modular","wellness"],gap:false},
-    {id:"BQ4",module:"MB",text:"What is the overall market size and segmentation by equipment manufacturer in each target country?",kw:["market size","segmentation","volume","value","market share"],gap:true},
-    {id:"BQ5",module:"MB",text:"What are the cost structures for key components — active and passive components and equipment manufacturer value-add?",kw:["cost","components","value-add","pricing","BOM"],gap:true},
-    {id:"BQ6",module:"MB",text:"What are the typical purchasing and after-sales processes for hair salons buying backwash units?",kw:["purchasing","after-sales","salon","distribution","warranty"],gap:false},
-  ]},
-  pepsico:{client:"PepsiCo",title:"Innovation Scanning & Opportunity Assessment — Natural Antioxidant Preservatives",practice:"Food & Nutrition",geography:"Global (ingredient scanning) · USA & Canada (suppliers)",period:"Current (2025)",competitors:["Kalsec","Naturex (Givaudan)","Camlin Fine Sciences","Kemin Industries","A&B Ingredients","Sabinsa","Archer Daniels Midland"],
-  modules:[{id:"M1",name:"Universe of Potential Solutions"},{id:"M2",name:"Prospective Categories"},{id:"M3",name:"Best-fit Solutions"},{id:"M4",name:"Category-specific Deep-dive"}],
-  bqs:[
-    {id:"BQ1",module:"M1",text:"What natural antioxidant preservatives are commercially available globally that can replace synthetic options such as BHA, BHT, TBHQ, and propyl gallate?",kw:["natural antioxidants","BHA","BHT","TBHQ","replace","clean-label"],gap:false},
-    {id:"BQ2",module:"M1",text:"How do natural antioxidant preservatives perform across key criteria — functional performance, sensory neutrality, temperature stability, regulatory approval, and clean-label status?",kw:["performance","sensory","regulatory","clean-label","thermal stability"],gap:false},
-    {id:"BQ3",module:"M2",text:"Which PepsiCo product categories — snacks, bars, bakery, oil blends — have the highest potential for natural antioxidant preservative adoption?",kw:["categories","snacks","bars","bakery","mapping","Quaker","Tropicana"],gap:false},
-    {id:"BQ4",module:"M3",text:"Which 3 best-fit natural antioxidant solutions should be prioritised per category based on technical fit, scalability, and regulatory status?",kw:["best-fit","prioritisation","technical","scalability","scoring"],gap:false},
-    {id:"BQ5",module:"M4",text:"What are the supplier capabilities, feasibility, and partnership potential for the top recommended natural antioxidant solutions?",kw:["suppliers","feasibility","partnership","supply capacity","global availability"],gap:true},
-    {id:"BQ6",module:"M4",text:"What tiered adoption pathway is recommended — drop-in replacements vs minor reformulation vs longer-term innovation?",kw:["drop-in","reformulation","adoption","pathway","tiered"],gap:false},
-  ]},
-  kenvue:{client:"Kenvue",title:"Ingredient and Product Landscape — Children's Health",practice:"Life Sciences & Consumer Health",geography:"Global",period:"Current (2025)",competitors:["Nature's Way","Hylands","Garden of Life","Nordic Naturals","Culturelle","Natrol","Solgar","Bayer Children's"],
-  modules:[{id:"P1",name:"Phase 1 — Ingredient Landscape"},{id:"P2",name:"Phase 2 — Product Landscape"}],
-  bqs:[
-    {id:"BQ1",module:"P1",text:"What non-Rx ingredients — botanicals, supplements, functional foods, vitamins and minerals — have undergone clinical testing in children aged 0–12 years for respiratory health, immune support, and digestive health?",kw:["ingredients","clinical testing","children","botanicals","respiratory","immune","digestive"],gap:false},
-    {id:"BQ2",module:"P1",text:"What is the clinical evidence base for each identified ingredient — study design, target population, endpoints, outcomes, and safety profile?",kw:["clinical evidence","studies","endpoints","safety","RCT"],gap:true},
-    {id:"BQ3",module:"P1",text:"What is the regulatory status of shortlisted ingredients across key markets — US OTC, EMEA Medical Device, and Food Supplement pathways?",kw:["regulatory","OTC","EMEA","food supplement","approval","novel food"],gap:false},
-    {id:"BQ4",module:"P2",text:"What new ingredient combinations or regimented approaches involving shortlisted ingredients show promise for children aged 0–12?",kw:["combinations","new approaches","formulation","regimen","synergy"],gap:false},
-    {id:"BQ5",module:"P2",text:"What is the competitive product landscape for children's health supplements addressing respiratory, immune, digestive, eye health, cognition, and sleep benefit areas?",kw:["competitive landscape","products","market","positioning","Zarbees"],gap:false},
-  ]},
-  siemens:{client:"Siemens Energy",title:"Innovation Scanning & Competitor Intelligence — Large Gas Turbines",practice:"Energy & Industrials",geography:"Global",period:"Current (2025)",competitors:["GE Vernova","Mitsubishi Power","Ansaldo Energia","Baker Hughes","Rolls-Royce Power","MAN Energy Solutions"],
-  modules:[{id:"M1",name:"Module 1 — Innovation Scanning: Large Gas Turbine Engine Integration"},{id:"M2",name:"Module 2 — Competitor Intelligence"}],
-  bqs:[
-    {id:"BQ1",module:"M1",text:"What innovations in clearance control, blade materials, coatings, and manufacturing are emerging across adjacent industries (aviation, automotive, nuclear) applicable to large gas turbine engine integration?",kw:["clearance control","materials","innovations","TRL","adjacent industries","coatings"],scope_nouns:["active clearance control","static sealings","ceramic matrix composites","thermal barrier coatings","abradable coatings"],gap:false},
-    {id:"BQ2",module:"M1",text:"What is the TRL maturity and commercial readiness of identified innovations — which should be tracked (TRL 1–3), prepared for (TRL 4–6), or acted on now (TRL 7–9)?",kw:["TRL","maturity","readiness","act","prepare","track","stage-gate"],scope_nouns:["TRL 1-3","TRL 4-6","TRL 7-9","commercial readiness","stage-gate assessment"],gap:false},
-    {id:"BQ3",module:"M1",text:"Who are the key patent assignees and what is the R&D activity level for priority innovation areas — clearance control, abradable coatings, non-contact sensors, ceramic components?",kw:["patents","R&D","assignees","innovation","IP","patent trend"],gap:false},
-    {id:"BQ4",module:"M2",text:"What is the competitive intelligence on major large gas turbine manufacturers — GE Vernova, Mitsubishi Power, Ansaldo — covering strategy, capacity expansion, new product launches, and OEM partnerships?",kw:["competitor","GE Vernova","Mitsubishi","strategy","capacity","new products"],gap:false},
-    {id:"BQ5",module:"M2",text:"What are the manufacturing and materials innovation strategies of key competitors for large gas turbines above 150MW, including ceramic roller adoption and advanced alloy use?",kw:["manufacturing","150MW","materials","strategy","competitors","superalloys","ceramics"],scope_nouns:["ceramic matrix composites","superalloys","additive manufacturing","static sealings","150MW turbines"],gap:true},
-  ]},
-  jj:{client:"Johnson & Johnson",title:"Future of Supply Chain: Life Science & Healthcare — IEM Program",practice:"Life Sciences & Healthcare",geography:"Global",period:"2024–2030 horizon",competitors:["IBM Watson","Microsoft Azure","SAP","Oracle","Palantir","Blue Yonder","Kinaxis","Veeva Systems"],
-  modules:[{id:"M1",name:"Module I — Identify: Emerging Trends & Technologies"},{id:"M2",name:"Module II — Evaluate: Deep-dive Assessment"},{id:"M3",name:"Module III — Monitor: Annual Update"}],
-  bqs:[
-    {id:"BQ1",module:"M1",text:"What are the emerging industry and external trends — AI, digital twins, blockchain, autonomous logistics, additive manufacturing — that will shape the future of life science and healthcare supply chains?",kw:["trends","supply chain","life sciences","healthcare","emerging","AI","digital twin"],gap:false},
-    {id:"BQ2",module:"M1",text:"Which enabling technologies will be critical for future supply chain operations — AI demand forecasting, IoT visibility, blockchain traceability, cloud platforms, robotics?",kw:["AI","IoT","blockchain","digital twin","enabling technologies","robotics"],gap:false},
-    {id:"BQ3",module:"M1",text:"What is the current maturity level and competitive landscape for key identified supply chain technologies — who are the leading solution providers and what is the time-to-market?",kw:["maturity","TRL","competitive","landscape","horizon","time-to-market"],gap:false},
-    {id:"BQ4",module:"M2",text:"How can emerging technologies be integrated into J&J's current supply chain operations across planning, procurement, manufacturing, warehousing, and logistics to create value?",kw:["integration","value","competitive advantage","operations","J&J"],gap:false},
-    {id:"BQ5",module:"M2",text:"What is the business potential, risk profile, disruption index, and competition intensity for each prioritised supply chain technology — and what is the strategic fit for J&J?",kw:["business potential","risk","competition","disruption index","strategic fit"],gap:false},
-    {id:"BQ6",module:"M3",text:"What new developments should J&J monitor annually across supply chain planning, sourcing, manufacturing, inventory management, and logistics and distribution?",kw:["monitoring","annual","new developments","supply chain nodes","watch"],gap:false},
-  ]}
-};
-
-const RESEARCH={
-  baxter:{
-    summary:`The single-use IV bag recyclability landscape is bifurcating rapidly: B. Braun and Fresenius Kabi have established structural material advantages through PVC-free PP designs, while Baxter pioneered the first U.S. hospital IV bag recycling pilot — diverting 12,000 lbs from landfill in December 2023. No competitor yet holds a product-level recycling certification (GRS, ISCC), creating a genuine first-mover window before EU PPWR (effective August 2026) forces industry-wide compliance. The 18–24 month window to establish credible, certified Design for Recyclability standards is open now — competitors that act first will own the sustainability narrative in hospital GPO conversations.`,
-    profiles:[
-      {name:"B. Braun Medical",role:"IV solutions — landfill-free USA sites",bqs:["BQ1","BQ3"],geography:"USA (landfill-free sites), Global",product:"EXCEL Plus IV Container (PP/PE blend, resin #7)",certs:"ISO 14001 · HPRC · APR · RecyClass · CEFLEX",initiative:"U.S. sites certified landfill-free. 5,000 tons recycled in 2023. EXCEL Plus uses welded ports — no adhesives — enabling mechanical recycling.",claim:"5,000 tons recycled USA 2023 · EXCEL Plus designed to be recycled",source:"Medical Design & Outsourcing, March 2025",url:"https://www.medicaldesignandoutsourcing.com/medtech-sustainability-tips-b-braun-christian-hutter-packaging/"},
-      {name:"Fresenius Kabi",role:"IV solutions & infusion therapy — global leader",bqs:["BQ1","BQ2"],geography:"Global — South Africa pilot, USA freeflex",product:"freeflex IV bag (multilayer polyolefin, PVC-free)",certs:"ISO 14001 · TÜV Rheinland",initiative:"e-Converter pilot: 177 tons collected since 2018. freeflex contains 60% less material than comparable PVC bag. 80% reduction in waste-to-landfill achieved.",claim:"80% waste-to-landfill reduction · 177 tons collected · 60% less material",source:"Fresenius Kabi sustainability story",url:"https://www.fresenius-kabi.com/inspiring-stories/joining-forces-to-fight-pollution"},
-      {name:"BD (Becton Dickinson)",role:"Medical technology — Sustainable Medical Technology Institute",bqs:["BQ1","BQ6"],geography:"USA, Brazil, Denmark, Australia, New Zealand",product:"BD SMTI — multi-geography recycling framework",certs:"SBTi-approved April 2024 · DJSI · ISO 14001",initiative:"BD SMTI launched 2022. Casella pilot diverted 40,000 lbs of sharps waste in H1 2023. Now active in 5 countries. Added Envetec for lab plastics in 2025.",claim:"40,000 lbs diverted (Casella pilot) · SBTi-approved · 5 countries",source:"BD FY2023 Corporate Sustainability Report",url:"https://news.bd.com/BD-issues-Together-We-Advance-FY-2023-Corporate-Sustainability-Report"},
-      {name:"Mura Technology",role:"Advanced recycling — Hydro-PRT supercritical water process",bqs:["BQ8"],geography:"UK (Teesside, 2024) — licensing globally",product:"Hydro-PRT (Hydrothermal Plastic Recycling)",certs:"Early commercial stage",initiative:"Uses supercritical water (374°C, 220 bar) to break down mixed contaminated plastic into hydrocarbon oil. Contamination-tolerant — relevant for PVC IV bags. First commercial plant operational 2024.",claim:"Mixed contaminated waste without pre-sorting · no chlorinated byproducts from PVC",source:"Mura Technology company website",url:"https://www.muratech.com/"},
-    ],
-    bqs:{
-      "BQ1":{
-        summary:`Baxter International holds first-mover status as the first company to run a hospital-based IV bag recycling pilot in the USA — completing Phase 1 with Northwestern Medicine in December 2023 (12,000 lbs, 170,000+ bags diverted). However, the more consequential shift is at the product design level: B. Braun and Fresenius Kabi have embedded recyclability into product architecture through PVC-free, adhesive-free, polypropylene designs that enter existing mechanical recycling streams without specialist collection programs. BD operates the most diversified recycling infrastructure across five geographies. The competitive landscape divides between companies redesigning products for inherent recyclability (B. Braun, Fresenius) and those building collection infrastructure for existing products (Baxter, BD) — both strategies require immediate investment to remain credible in hospital GPO conversations.`,
-        stats:[{value:"12,000 lbs",label:"PVC IV bags diverted — Baxter-Northwestern Medicine pilot (Dec 2023)",source:"Baxter PR, Dec 2023",url:"https://www.baxter.com/baxter-newsroom/baxter-advances-first-intravenous-iv-bag-recycling-pilot-us-hospitals"},{value:"5,000 tons",label:"Waste recycled by B. Braun USA manufacturing sites in 2023",source:"Medical Design & Outsourcing, Mar 2025",url:"https://www.medicaldesignandoutsourcing.com/medtech-sustainability-tips-b-braun-christian-hutter-packaging/"},{value:"40,000 lbs",label:"Medical device waste diverted — BD + Casella Waste Systems pilot (H1 2023)",source:"Healthcare Packaging, 2023",url:"https://www.healthcarepackaging.com/sustainability/sustainability/news/22877088/becton-dickinson-and-company-becton-dickinson-casella-complete-pilot-recycling-used-medical-devices"}],
-        findings:[
-          {type:"competitor program",confidence:"high",headline:"Baxter is first mover in U.S. hospital IV bag recycling — but lags competitors on product design",body:"Baxter completed Phase 1 with Northwestern Medicine in December 2023 — the first hospital-based IV bag recycling program in the USA. Over 170,000+ bags (12,000 lbs) were diverted from landfill into industrial floor mats. Phase 2 expansion announced January 2024. No competitor has run an equivalent hospital-based IV bag recycling program.",implication:"Baxter leads on hospital recycling programs but lags on material design — PVC bags require specialist recycling infrastructure while B. Braun and Fresenius products enter existing mechanical streams without collection programs.",source_name:"Baxter International Press Release, Dec 14 2023",source_url:"https://www.baxter.com/baxter-newsroom/baxter-advances-first-intravenous-iv-bag-recycling-pilot-us-hospitals"},
-          {type:"competitor program",confidence:"high",headline:"B. Braun: landfill-free U.S. sites, 5,000 tons recycled in 2023 — benchmark set for GPO conversations",body:"B. Braun's U.S. manufacturing sites are certified landfill-free and recycled 5,000 tons in 2023, following HPRC, APR, RecyClass, and CEFLEX guidelines. EXCEL Plus IV containers use PP (3rd most recycled plastic in USA) with welded ports eliminating adhesive contamination.",implication:"B. Braun's 5,000-ton figure sets a quantified benchmark that hospital GPOs will use to evaluate competitors. Baxter needs an equivalent landmark within 12 months.",source_name:"B. Braun — Medical Design & Outsourcing, March 2025",source_url:"https://www.medicaldesignandoutsourcing.com/medtech-sustainability-tips-b-braun-christian-hutter-packaging/"},
-          {type:"competitor program",confidence:"high",headline:"BD has the most geographically diverse recycling infrastructure — 5 countries, expanding annually",body:"BD's Sustainable Medical Technology Institute (launched 2022) expanded to USA (Casella, 40,000 lbs), Brazil, Denmark, Australia, New Zealand, and added Envetec for lab plastics in 2025. BD's framework addresses the full product lifecycle.",implication:"BD is building the global template for medical device circular economy infrastructure. Baxter's single-hospital pilot needs to scale to a named technology partner and multi-site program within 18 months.",source_name:"Healthcare Packaging — BD Casella Pilot, 2023",source_url:"https://www.healthcarepackaging.com/sustainability/sustainability/news/22877088/becton-dickinson-and-company-becton-dickinson-casella-complete-pilot-recycling-used-medical-devices"},
-        ],gaps:[]},
-      "BQ2":{
-        summary:`Recycling claims in the IV bag space remain unverified by any dominant third-party standard. The most credible claim is Fresenius Kabi's 80% waste-to-landfill reduction (e-Converter, 177 tonnes since 2018) — backed by a named technology partner and throughput data. No competitor holds GRS, ISCC, or product-level recycling certification for IV bags. This is Baxter's clearest competitive opening: the first company to achieve product-level certification holds a verifiable, audit-backed claim that no competitor currently has — and that will become a regulatory necessity under EU PPWR from 2030.`,
-        stats:[{value:"80%",label:"Waste-to-landfill reduction — Fresenius Kabi e-Converter (South Africa)",source:"Fresenius Kabi, 2023",url:"https://www.fresenius-kabi.com/inspiring-stories/joining-forces-to-fight-pollution"},{value:"0",label:"Competitors holding GRS or ISCC product-level IV bag certification in USA (as of 2025)",source:"Competitor sustainability pages",url:"https://www.bbraunusa.com/"}],
-        findings:[
-          {type:"recycling claim",confidence:"high",headline:"Fresenius Kabi e-Converter: 80% landfill reduction — only claim backed by named partner and throughput data",body:"e-Converter pilot sterilises, shreds, and dehydrates freeflex IV bag waste into energy-recovery pellets. Since 2018, 177 tonnes collected, achieving 80% reduction in landfill volume. Only claim in market backed by named technology partner and cumulative throughput.",implication:"Baxter needs an equivalent quantified claim — specific volume diverted, named recycler, independently verified outcome — to compete in hospital sustainability communications.",source_name:"Fresenius Kabi — Joining Forces to Fight Pollution",source_url:"https://www.fresenius-kabi.com/inspiring-stories/joining-forces-to-fight-pollution"},
-          {type:"certification gap",confidence:"medium",headline:"No competitor holds product-level GRS or ISCC certification for IV bags — field is entirely open",body:"Review of all competitor sustainability pages finds no company holds GRS, ISCC, RecyClass, or equivalent product-level certification for IV bags in the U.S. B. Braun references HPRC/APR design guidelines — but these are design frameworks, not product certifications with chain-of-custody requirements.",implication:"Pursuing GRS or ISCC product-level certification would be a genuine market first. The investment (6–12 months) creates a verifiable claim that will become a regulatory necessity under EU PPWR from 2030.",source_name:"B. Braun, Fresenius Kabi, BD sustainability pages (2024–25)",source_url:"https://www.bbraunusa.com/"},
-        ],
-        gaps:[{gap:"Actual cost structure and unit economics of competitor recycling programs",type:"Pricing / cost",why:"No company discloses unit economics in sustainability reports. Gate fees, logistics costs, and revenue from recovered material are commercially sensitive and absent from all public sources.",expert:"Sustainability or supply chain lead at Fresenius Kabi, B. Braun, or ICU Medical",questions:["What is the approximate cost per tonne of IV bags processed through your program?","What is your revenue model with the recycling partner — gate fee or revenue share?","At what volume threshold does the program become economically viable without manufacturer subsidy?","What proportion of cost is borne by manufacturer vs hospital?","How has cost structure changed from pilot to current scale?"],hypothesis:"Competitor programs operate at a net cost and are funded as sustainability marketing investments. Break-even volume has not been reached by any program as of 2025.",priority:"HIGH"}]},
-      "BQ3":{
-        summary:`The dominant design-for-recyclability shift is from PVC toward polypropylene mono-material construction with adhesive-free, welded-port designs. B. Braun's EXCEL Plus is the most mature example — PP/PE blend (resin #7) with welded ports eliminating adhesive contamination. Fresenius Kabi's freeflex achieves 60% less material than a comparable PVC bag. The design consensus, reinforced by HPRC, APR, RecyClass, and CEFLEX guidance, establishes four non-negotiable principles: mono-material construction, adhesive elimination, PVC/DEHP removal, and design-for-disassembly. These are becoming market minimum expectations — the competitive edge shifts to who can certify these claims credibly.`,
-        stats:[{value:"60%",label:"Less material in Fresenius freeflex vs comparable PVC bag",source:"freeflexivbags.com",url:"https://www.freeflexivbags.com/"},{value:"3rd",label:"Polypropylene's rank as most recycled plastic in USA — B. Braun's core design rationale",source:"B. Braun sustainability page",url:"https://www.bbraunusa.com/"}],
-        findings:[
-          {type:"design signal",confidence:"high",headline:"B. Braun EXCEL Plus: welded ports eliminate adhesives — the single most critical recyclability design decision",body:"EXCEL Plus uses PP/PE blend (resin #7) with welded ports. Adhesives are the primary contamination source that disqualifies IV bags from mechanical recycling. Choosing PP because it's the 3rd most recycled plastic in the USA gives EXCEL Plus access to existing mechanical recycling infrastructure.",implication:"Baxter's PVC bags face dual disadvantage — PVC requires specialist chemical recycling and adhesives contaminate feedstock. Transition to mono-material PP with welded ports would access existing infrastructure at substantially lower long-term cost.",source_name:"B. Braun EXCEL Plus FAQ — bbraunusa.com",source_url:"https://www.bbraunusa.com/content/dam/catalog/bbraun/bbraunProductCatalog/S/AEM2015/en-us/b3/excel-plus-iv-containerfaq.pdf"},
-          {type:"design signal",confidence:"high",headline:"Fresenius freeflex: 60% less material, adhesive-free — addresses recyclability and carbon footprint simultaneously",body:"freeflex multilayer polyolefin film is PVC-free, plasticizer-free, adhesive-free, and latex-free with welded break-off closures. 60% material reduction vs PVC bag addresses both recyclability (PP-based, no adhesives) and carbon footprint in one design move.",implication:"Material reduction and adhesive elimination — the two parameters most improving recyclability under HPRC and EU PPWR grading — are achievable simultaneously and should be hardcoded into Baxter's next-generation IV bag specification.",source_name:"Fresenius Kabi freeflex IV Bags",source_url:"https://www.freeflexivbags.com/"},
-        ],gaps:[]},
-      "BQ7":{
-        summary:`The EU PPWR (EU 2025/40), adopted December 2024, applies from August 12, 2026. All packaging must be recyclable by design. EPR eco-modulated fees (higher for non-recyclable packaging) activate from 2030. Medical device exemptions are narrower than manufacturers expect — IV bags may not be fully exempt. In the USA, pressure is indirect via hospital GPO sustainability requirements and California SB 54. The convergence creates an 18–24 month window to establish compliance posture. Companies that delay material transitions until enforcement are unlikely to complete them in time.`,
-        stats:[{value:"Aug 2026",label:"EU PPWR application date",source:"IPM Perspective, 2025",url:"https://www.ipmcinc.com/insights/medical-device-makers-gear-up-for-the-next-eu-regulation/"},{value:"10%",label:"Minimum post-consumer recycled content in contact-sensitive plastic packaging required by 2030 (EU PPWR)",source:"Oliver HCP, 2024",url:"https://www.oliverhcp.com/"},{value:"25%",label:"Minimum recycled content required by 2040 under EU PPWR",source:"Oliver HCP, 2024",url:"https://www.oliverhcp.com/"}],
-        findings:[
-          {type:"regulatory signal",confidence:"high",headline:"EU PPWR effective August 2026 — EPR eco-modulated fees make recyclability a direct cost line from 2030",body:"All packaging must be recyclable by design from August 2026. EPR fees — higher for non-recyclable packaging — become active from 2030. Medical devices receive partial but not full exemption. 10% post-consumer recycled content required by 2030, 25% by 2040.",implication:"Design for recyclability will be a compliance and cost requirement in Baxter's EU export markets within 36 months. Baxter faces quantifiable EPR fee exposure if PVC IV bags remain in the product line past 2030.",source_name:"IPM Perspective — EU PPWR Impact on Medical Devices, 2025",source_url:"https://www.ipmcinc.com/insights/medical-device-makers-gear-up-for-the-next-eu-regulation/"},
-          {type:"regulatory signal",confidence:"medium",headline:"EU PPWR medical device exemption is narrower than industry expects — IV bags may not be fully exempt",body:"PPWR exemption applies to packaging 'necessary to maintain sterility' — but IV bags serve as both primary container and drug delivery vehicle, creating ambiguity. DG SANTE has not published implementing guidance. EUCOMED has flagged this as priority issue for 2025.",implication:"Baxter should not rely on a blanket medical device exemption. Legal interpretation of the exemption scope should be obtained in Q2 2026 before major product development decisions.",source_name:"Oliver HCP — EU PPWR Healthcare Impact Analysis, 2024",source_url:"https://www.oliverhcp.com/"},
-        ],
-        gaps:[{gap:"Exact scope of EU PPWR medical device exemption and EPR fee calculation for IV bags",type:"Regulatory detail",why:"PPWR implementing regulations for medical device packaging are still being drafted. DG SANTE's interpretation has not been published — confirmed unresolved as of Q1 2026.",expert:"EU regulatory affairs specialist — medical devices and PPWR packaging compliance",questions:["Does the PPWR exemption apply to the IV bag itself or only secondary transport packaging?","What is DG SANTE's current draft interpretation for Class II drug delivery devices?","How will EPR eco-modulated fees be calculated for medical device manufacturers?","What enforcement timeline applies to non-compliant products post August 2026?","Which certification schemes (GRS, ISCC, RecyClass) will be accepted as evidence of recyclability?"],hypothesis:"The exemption is narrower than manufacturers assume. IV bags sold as primary drug delivery containers will face recyclability requirements within 36 months.",priority:"HIGH"}]},
-      "BQ8":{
-        summary:`For Baxter's current PVC bags, chemical recycling is the only viable route as PVC cannot enter standard mechanical PP/PE streams. For next-generation PP-based bags, mechanical recycling is the correct long-term destination. Mura Technology's Hydro-PRT (supercritical water, first commercial plant Teesside UK 2024) is the most contamination-tolerant and relevant technology for PVC-containing IV bags. PureCycle's UPRP solvent process produces near-virgin PP but requires clean PP feedstock. Neither has been validated specifically for contaminated IV bag material at commercial scale — which is the critical primary research gap.`,
-        stats:[{value:"2024",label:"Year Mura Technology's first commercial Hydro-PRT plant became operational (Teesside, UK)",source:"Mura Technology",url:"https://www.muratech.com/"}],
-        findings:[
-          {type:"technology",confidence:"high",headline:"Mechanical recycling of PP is lowest-cost long-term pathway — requires product material transition first",body:"BD's Casella pilot found mechanical PP recycling returns better economics than chemical pathways at pilot volumes — 60–75% yield, $50–120/tonne gate fees for clean PP. B. Braun's PP strategy was designed specifically to access this existing U.S. mechanical infrastructure.",implication:"Baxter's long-term strategy should transition to PP-based IV bags and access mechanical recycling. Chemical recycling of current PVC bags is a transitional cost, not a sustainable strategy.",source_name:"BD / Casella Waste Systems Pilot — Healthcare Packaging, 2023",source_url:"https://www.healthcarepackaging.com/sustainability/sustainability/news/22877088/becton-dickinson-and-company-becton-dickinson-casella-complete-pilot-recycling-used-medical-devices"},
-          {type:"technology",confidence:"medium",headline:"Mura Technology Hydro-PRT: best match for Baxter's current PVC bag challenge",body:"Hydro-PRT uses supercritical water (374°C, 220 bar) to break down mixed contaminated plastic — including multi-layer films and PVC-adjacent materials — without pre-sorting. Unlike pyrolysis, it handles contamination and does not produce chlorinated byproducts from PVC. First commercial plant operational Teesside UK 2024.",implication:"Mura Technology is the most credible technology partner candidate for Baxter's current PVC bag program. A partnership would provide a named recycler and validated processing capability to match Fresenius Kabi's 80% claim.",source_name:"Mura Technology — company website",source_url:"https://www.muratech.com/"},
-        ],
-        gaps:[{gap:"Real-world performance of chemical recycling for contaminated IV bag material at commercial scale",type:"Technical validation",why:"Published data covers generic mixed plastic feedstocks — not contaminated IV bag material specifically. Contamination tolerance for residual drug/saline content, PVC chlorine management, and yield rates are not publicly documented at commercial scale.",expert:"Plant operations lead at Mura Technology, PureCycle, or Renewlogy",questions:["What throughput capacity exists for mixed medical plastics in tonnes/month?","What contamination level can your process tolerate from IV bags with residual saline?","What is the gate fee and output grade for a PVC-heavy feedstock like IV bags?","Have you specifically processed IV bags — what were the main technical challenges?","What minimum volume makes your process viable for a single manufacturer?"],hypothesis:"Chemical recycling of PVC IV bag material is technically feasible for Hydro-PRT but gate fees ($200–400/tonne) make it economically unviable without subsidy or hospital volume aggregation.",priority:"HIGH"}]},
-      "BQ4":{summary:"Both mechanical and chemical recycling pathways have been demonstrated for medical plastics. BD's Casella pilot found mechanical recycling economically superior for clean PP feedstock, while chemical recycling is required for PVC-containing waste. HPRC and APR guidelines provide a clear design-for-recyclability framework that B. Braun has implemented fully. The key insight: the choice of recycling process is almost entirely determined by the product's material composition — change the material, change the available process options.",stats:[{value:"2",label:"Primary recycling pathways for medical plastics: mechanical (PP) and chemical (PVC/mixed)",source:"BD Casella Pilot, 2023",url:"https://www.healthcarepackaging.com/"}],findings:[{type:"technology",confidence:"high",headline:"Pathway choice is determined by material: PP enables mechanical, PVC requires chemical",body:"BD's Casella pilot confirmed mechanical recycling for clean PP medical plastics yields 60–75% at $50–120/tonne. For PVC-containing waste (Baxter's current bags), chemical recycling is the only viable route, with gate fees estimated at $200–400/tonne — 3–4x higher.",implication:"Baxter faces a strategic fork: invest in expensive chemical recycling for current PVC, or accelerate transition to PP and access low-cost mechanical infrastructure. The long-term economics strongly favour PP transition.",source_name:"BD Casella Pilot — Healthcare Packaging 2023",source_url:"https://www.healthcarepackaging.com/sustainability/sustainability/news/22877088/becton-dickinson-and-company-becton-dickinson-casella-complete-pilot-recycling-used-medical-devices"}],gaps:[]},
-      "BQ5":{summary:"No competitor holds GRS, ISCC, or equivalent product-level recycling certification for IV bags in the USA as of 2025. BD holds the strongest corporate ESG credential (SBTi-approved April 2024, DJSI, ISSB-aligned disclosures). B. Braun follows HPRC/APR/RecyClass design guidelines — these are frameworks, not certifications. The absence of any product-level certification in this market is Baxter's most immediate and actionable competitive opening.",stats:[{value:"April 2024",label:"BD's SBTi-approved science-based targets — strongest ESG credential in competitive set",source:"BD FY2024 Climate Disclosures",url:"https://www.bd.com/"}],findings:[{type:"certification",confidence:"high",headline:"BD holds SBTi-approved targets — but no competitor holds product-level IV bag recycling certification",body:"BD's SBTi-approved targets (April 2024) targeting 50% Scope 1+2 reduction by 2030 represent the strongest corporate ESG position. Yet no competitor including BD holds GRS, ISCC, or RecyClass product-level certification for IV bags.",implication:"SBTi is a growing GPO differentiator. Baxter needs certified time-bound targets AND the first product-level recycling certification — no competitor holds it, making this a genuine first-mover opportunity.",source_name:"BD FY2024 Climate-Related Disclosures",source_url:"https://www.bd.com/content/dam/bd-assets/bd-com/en-us/document/policy/corporate-policies-and-guidelines/report/bd-fy-2024-climate-related-disclosures.pdf"}],gaps:[{gap:"Third-party audit methodology for IV bag recycling certification — chain of custody and validation scope",type:"Validation methodology",why:"Certifications cited in competitor marketing have not produced published audit reports for IV bag programs. Chain-of-custody requirements for a recycled content claim on an IV bag are not publicly specified by any certification body.",expert:"GRS or ISCC certification body representative, or independent environmental auditor with medical device experience",questions:["What audit methodology does GRS apply to IV bag recycling claims?","What chain-of-custody is required for recycled content claims on IV bags?","Have any medical device manufacturers approached GRS/ISCC for product-level certification?","What is the typical certification timeline and cost?","Which EU EPR schemes accept GRS/ISCC as evidence of recyclability?"],hypothesis:"The path to certification is technically straightforward but operationally requires a named recycling partner with validated processing data — the certification body requirements are not the barrier, documenting the recycling chain is.",priority:"MEDIUM"}]},
-      "BQ6":{summary:"BD has the most diversified and geographically expansive recycling partnership portfolio — Casella Waste Systems (USA), Odense University Hospital (Denmark), and partnerships in Brazil, Australia, New Zealand plus Envetec for lab plastics in 2025. Fresenius Kabi's e-Converter in South Africa is the most technologically advanced partnership with validated performance data. Baxter's Northwestern Medicine pilot lacks a named technology partner — identifying one is the single most important next step to validate claims and scale the program.",stats:[],findings:[{type:"partnership",confidence:"high",headline:"BD + Casella: first large-scale medtech recycling partnership in USA, now 5 geographies",body:"BD partnered with Casella Waste Systems in H1 2023 to recycle 40,000 lbs of sharps waste — first large-scale feasibility test in USA. Since expanded to Brazil, Denmark, Australia, New Zealand, and added Envetec for lab plastics 2025.",implication:"Baxter's pilot lacks a named waste technology partner with validated data for PVC IV bags. Identifying a Casella equivalent is the critical next step to validate claims and build a scalable program.",source_name:"Healthcare Packaging — BD Casella Results, 2023",source_url:"https://www.healthcarepackaging.com/sustainability/sustainability/news/22877088/becton-dickinson-and-company-becton-dickinson-casella-complete-pilot-recycling-used-medical-devices"}],gaps:[]}
-    }
-  },
-  miba:{
-    summary:`The wind turbine main shaft bearing value chain in India is dominated by three global MNCs — Schaeffler, SKF, and Timken — which collectively hold a dominant share of India's industrial bearing market. The value chain runs from specialty steel (SAE 52100/8620, ~85% domestic) through forging, machining, heat treatment, precision assembly, and coating. Schaeffler and SKF have the most vertically integrated operations in India; Timken is more outsourcing-dependent. A critical trend since 2020: forging is increasingly outsourced to specialist Indian units while precision grinding and assembly remain universally in-house. Actual ex-works pricing and precise make-buy splits are not publicly available — primary research is the most important next step for this engagement.`,
-    profiles:[
-      {name:"Schaeffler India",role:"World's largest SRB manufacturer for wind turbines — strong India presence",bqs:["BQ1","BQ3"],geography:"India — Vadodara and Pune manufacturing",product:"FAG spherical roller bearings for wind turbine main shafts (Suzlon/Inox Wind supply)",certs:"ISO 9001 · ISO 14001 · IATF 16949",initiative:"30+ years supplying wind turbine bearings. Integrated manufacturing in India. Strong focus on SRBs for main shaft. Global revenue €16.3bn (2023), India revenue €860m.",claim:"India revenue €860m (2023) · SRBs for Suzlon/Inox Wind · 30+ years wind turbine bearings",source:"Schaeffler India Annual Report 2023",url:"https://www.schaeffler.co.in/"},
-      {name:"SKF India",role:"Global bearing leader — dominates wind turbine SRB portfolio",bqs:["BQ1","BQ2"],geography:"India — Pune manufacturing (primary)",product:"SKF spherical roller bearings · Nautilus non-locating bearing · CARB toroidal bearing",certs:"ISO 9001 · ISO 14001 · AS9100",initiative:"June 2024 strategic partnership with Vestas Wind Systems for advanced bearing solutions. CARB toroidal and Nautilus bearing are patented innovations for wind main shaft. India revenue €360m (2023).",claim:"India revenue €360m (2023) · SKF-Vestas partnership June 2024 · CARB and Nautilus innovations",source:"Technavio Wind Turbine Bearing Market 2025",url:"https://www.technavio.com/"},
-      {name:"Timken India",role:"Tapered roller bearing leader — secondary SRB presence in India",bqs:["BQ1","BQ4"],geography:"India — Jamshedpur and Bawal manufacturing",product:"Tapered roller bearings (primary); SRBs as secondary",certs:"ISO 9001 · TS16949 · ISO 14001",initiative:"India operation focuses primarily on TRBs. March 2024 secured major offshore wind bearing supply contract. More outsourcing-dependent than Schaeffler/SKF in India.",claim:"India revenue €346m (2023) · March 2024 major offshore wind contract",source:"ScienceDirect — Wind Turbine Main Shaft Bearing Review, 2024",url:"https://www.sciencedirect.com/science/article/pii/S1350630724005569"},
-    ],
-    bqs:{
-      "BQ1":{
-        summary:`The roller bearing value chain for wind turbine main shaft applications in India runs through six primary nodes: (1) raw materials — ~85% domestic steel (SAE 52100), 15% imported specialty grades (Ovako 825) for 5MW+ applications; (2) hot forging — trending toward outsourcing post-2020; (3) rough machining — CNC turning and centerless grinding; (4) heat treatment — gas carburizing and austempering; (5) precision grinding and assembly — universally in-house, the highest-value node; (6) coating and testing. Schaeffler and SKF have the most vertically integrated India operations. The June 2024 SKF-Vestas strategic partnership signals the market is moving from transactional supply toward OEM co-development — a significant strategic shift for new entrants.`,
-        stats:[{value:"$2.5bn",label:"Global wind power main shaft bearing market size (2024)",source:"Market Report Analytics",url:"https://www.marketreportanalytics.com/reports/wind-power-main-shaft-sliding-bearing-85064"},{value:"60%+",label:"Share of global market held by SKF, Schaeffler, and NTN collectively",source:"Market Report Analytics",url:"https://www.marketreportanalytics.com/reports/wind-power-main-shaft-sliding-bearing-85064"},{value:"11.3%",label:"India bearing market CAGR (2022–2027) vs global 8.5% — wind energy driving above-market growth",source:"Mathmarkets, 2024",url:"https://mathmarkets.in/2024/04/11/schaeffler/"}],
-        findings:[
-          {type:"value chain",confidence:"high",headline:"Schaeffler and SKF most vertically integrated — precision grinding and assembly always in-house",body:"Schaeffler India operates integrated manufacturing at Vadodara and Pune covering most value chain stages. SKF India's Pune facility similarly retains precision grinding and assembly in-house. Both source ~85% of standard steel domestically with 15% imported specialty grades for critical wind applications.",implication:"Miba's sliding bearing positioning must address not just ex-works price but total cost of ownership including the supply chain reliability and quality control advantages that Schaeffler/SKF's vertical integration provides.",source_name:"Schaeffler India — wind sector cluster page",source_url:"https://www.schaeffler.co.in/en/products-and-solutions/industrial/industry_solutions/wind_sector_cluster/wind/"},
-          {type:"competitive intelligence",confidence:"high",headline:"SKF-Vestas strategic partnership (June 2024) — bearing manufacturers moving toward OEM co-development",body:"In June 2024, Vestas Wind Systems formed a strategic partnership with SKF to co-develop advanced bearing solutions — beyond supply contracts to joint development, reliability testing, and long-term supply agreements. Similar OEM co-development partnerships expected to follow across the industry.",implication:"The competitive landscape is evolving from transactional supply to strategic co-development. Miba must evaluate whether a comparable OEM partnership is required to win meaningful share — pure cost competition may be insufficient.",source_name:"Technavio Wind Turbine Bearing Market Report 2025",source_url:"https://www.technavio.com/report/wind-turbine-bearing-market-industry-analysis"},
-        ],gaps:[]},
-      "BQ2":{
-        summary:`The supplier landscape for wind turbine bearing production in India involves domestic steel mills for standard SAE 52100 steel, European/Japanese importers for specialty grades (Ovako 825), domestic forging units, and global component suppliers. Key domestic forging suppliers are not publicly disclosed — this is commercially sensitive information actively protected by all major competitors. Secondary research confirms ~85% domestic steel sourcing with 15% imported specialty grades. The specific forging unit relationships require primary research to validate.`,
-        stats:[{value:"85%",label:"Approximate domestic steel sourcing by major India bearing manufacturers (illustrative)",source:"FutureBridge proposal preliminary research",url:"https://www.schaeffler.co.in/"}],
-        findings:[{type:"supply chain",confidence:"medium",headline:"Domestic steel dominates but specialty grades for 5MW+ bearings still imported",body:"Major bearing manufacturers source the majority of standard SAE 52100 from domestic Indian mills. However, specialty steel grades — particularly Ovako 825 required for large-diameter wind turbine bearings (5MW+) — continue to be imported from European/Japanese specialty steel producers.",implication:"Miba's supply chain assessment should map specialty steel import dependency — this is a cost driver and supply risk that could be key in cost benchmarking with OEMs.",source_name:"FutureBridge Proposal — Value Chain Assessment (preliminary)",source_url:"https://mathmarkets.in/2024/04/11/schaeffler/"}],
-        gaps:[{gap:"Identity and terms of domestic forging suppliers serving Schaeffler India and SKF India",type:"Operational detail",why:"Supplier relationships are commercially sensitive and never disclosed in annual reports. Competitor companies actively protect forging supplier networks as competitive advantage.",expert:"Strategic sourcing head or supply chain lead at Schaeffler India, SKF India, or major Indian forging unit serving the bearing industry",questions:["Who are the primary domestic forging units supplying rough-forged rings to Schaeffler and SKF India?","Do Schaeffler/SKF hold exclusive supply agreements with Indian forging units?","What technical specifications limit which forging units can serve the wind turbine bearing segment?","How has the forging supplier landscape changed since 2020?","What quality certifications are required of domestic forging suppliers?"],hypothesis:"Two to four large-scale domestic forging units in Maharashtra/Gujarat supply the majority of rough forged rings to both Schaeffler and SKF India. Exclusivity is limited but technical qualification is a genuine barrier.",priority:"HIGH"}]},
-      "BQ3":{
-        summary:`The make/buy boundary varies significantly by value chain node. Precision grinding, assembly, and testing are universally in-house at all major players — these are the IP-intensive, quality-critical operations. Heat treatment is primarily in-house for Schaeffler and SKF. Forging shows a clear trend toward outsourcing since 2020, driven by energy cost increases and capital intensity. Exact percentages by company require primary research.`,
-        stats:[],
-        findings:[{type:"operational strategy",confidence:"medium",headline:"Precision grinding and assembly universally in-house — forging trending to outsourcing post-2020",body:"All major India bearing manufacturers retain precision grinding, assembly, and final testing in-house. Forging is trending toward outsourcing since 2020, driven by energy cost increases and the economics of specialist forging units.",implication:"Miba's positioning should focus on nodes where competitors are investing in-house (precision machining, assembly) — these represent the value creation points. Cost comparison must reflect full in-house cost allocation.",source_name:"ScienceDirect — Wind Turbine Main Shaft Bearing Review, 2024",source_url:"https://www.sciencedirect.com/science/article/pii/S1350630724005569"}],
-        gaps:[{gap:"Exact in-house vs outsourced split for forging, heat treatment, and machining at Schaeffler and SKF India",type:"Operational detail",why:"Annual reports disclose manufacturing locations but never reveal process-level make-buy decisions. Manufacturing strategy is treated as competitive advantage.",expert:"Manufacturing or operations director at Schaeffler India, SKF India, or ex-employee with direct plant experience",questions:["What % of forged rings for wind turbine bearings does Schaeffler India produce in-house vs outsource?","Has the in-house/outsource balance shifted since 2020 — what drove changes?","Which value chain stages have seen most outsourcing in the last 3–5 years?","At what volume threshold is in-house forging economically viable for wind turbine bearings?","How does Timken's make/buy split compare to Schaeffler and SKF?"],hypothesis:"The make/buy boundary has shifted toward increased outsourcing of forging since 2020 at both Schaeffler and SKF India. Energy price increases and available qualified domestic forging units have made in-house forging economically difficult.",priority:"HIGH"}]},
-      "BQ4":{
-        summary:`Cost drivers divide into material cost (50–60% of total — dominated by bearing-grade steel) and conversion cost (40–50% — machining, heat treatment, assembly, coating). Energy is an increasingly important driver since 2020, particularly for heat treatment. India offers a 20–30% labour cost advantage vs European manufacturing at the conversion level. Ex-works pricing is never publicly disclosed — contract-negotiated by volume, specification, and relationship. The ex-works price range for a 2–4MW wind turbine main shaft SRB from India is a primary research data point that cannot be validated through secondary sources.`,
-        stats:[{value:"50–60%",label:"Estimated share of bearing steel cost in total ex-works price for wind turbine SRB",source:"Industry estimates",url:"https://www.marketreportanalytics.com/"}],
-        findings:[{type:"cost analysis",confidence:"medium",headline:"Steel (SAE 52100) is the dominant cost driver — 50–60% of ex-works price; specialty alloys add 15–25% premium",body:"Standard SAE 52100 represents an estimated 50–60% of total bearing ex-works price. For large-diameter wind turbine main shaft bearings requiring specialty alloys (Ovako 825), a 15–25% material cost premium applies. Chinese manufacturers use domestically produced specialty steel at lower cost — creating a price gap that Indian manufacturers offset with quality premiums.",implication:"Miba's sliding bearing cost modelling must explicitly account for material cost. If sliding bearings reduce material intensity vs comparable SRBs, this is a key advantage to quantify for the OEM pitch.",source_name:"Wind Power Main Shaft Sliding Bearing Market Report 2024",source_url:"https://www.marketreportanalytics.com/reports/wind-power-main-shaft-sliding-bearing-85064"}],
-        gaps:[{gap:"Actual ex-works price per bearing type (SRB 2–4MW main shaft) from Indian manufacturer",type:"Pricing / cost",why:"Bearing pricing is contract-negotiated and never published. No database, trade publication, or regulatory filing contains actual ex-works pricing data for wind turbine main shaft bearings.",expert:"Strategic sourcing head at Schaeffler India, SKF India, or wind turbine OEM procurement lead (Suzlon, Inox Wind)",questions:["What is the ex-works price range for a standard SRB for a 2–4MW wind turbine main shaft from India?","How does pricing differ between Schaeffler India and SKF India for comparable specifications?","What is the DDP price to a European wind turbine OEM — what logistics and duty costs apply?","How has bearing pricing in India changed since 2020?","What volume discount structure applies?"],hypothesis:"Ex-works pricing for a standard SRB (2–4MW) from India is in the range of $8,000–$18,000 depending on specification and volume — representing a 20–35% discount vs equivalent European manufacture.",priority:"HIGH"}]}
-    }
-  },
-  kefir:{
-    summary:`The kefir market is growing from $1.83 billion in 2025 to a projected $2.78 billion by 2030 (8.72% CAGR), driven by clinical evidence for gut health benefits and a halo effect from FDA's 2024 qualified health claim for yogurt. The competitive landscape divides between heritage brands and modern functional innovators (Lifeway Foods, Biotiful, Valio Gefilus) using science-backed strain-specific positioning. The scientific evidence is strongest for gut microbiome diversity benefits; cognitive and metabolic claims remain preclinical. Nestlé's opportunity: own a standardised, strain-specific kefir bridging traditional authenticity and modern clinical science — the "Actimel 2.0" positioning — with particular focus on Asia-Pacific where 9.78% CAGR growth is fastest.`,
-    profiles:[
-      {name:"Lifeway Foods",role:"Largest kefir brand in USA — science-backed positioning",bqs:["BQ1","BQ4"],geography:"USA (primary) · expanding to UK and APAC",product:"Lifeway Kefir — 12 live cultures, 99% lactose-free, up to 41bn CFUs per cup",certs:"NSF Certified · Non-GMO Project · USDA Organic",initiative:"Category leader in USA with 25%+ market share. 2024 expanded organic kefir lines. Named strains including L. acidophilus and B. bifidum. Active in research partnerships.",claim:"12 live cultures · 99% lactose-free · up to 41 billion CFUs per cup",source:"Figaro Shakes — Best Kefir Brands 2025",url:"https://figaroshakes.com/best-kefir-top-10-brands-how-to-make-your-own-2025-guide/"},
-      {name:"Valio Gefilus",role:"Finnish dairy leader — LGG® strain-specific clinical positioning",bqs:["BQ1","BQ2","BQ3"],geography:"Nordic markets (primary) · Eastern Europe",product:"Gefilus kefir with LGG® (Lacticaseibacillus rhamnosus GG)",certs:"Valio quality certifications · LGG® license",initiative:"Uses LGG® — the most clinically validated probiotic strain (1,000+ human clinical studies). Strain-specific immune and gut health claims. Strongest defensible scientific position in kefir market.",claim:"LGG® clinically proven strain · immune function and gut health benefits · 1,000+ clinical studies",source:"Frontiers in Food Science and Technology, 2025",url:"https://www.frontiersin.org/journals/food-science-and-technology/articles/10.3389/frfst.2025.1725280/full"},
-      {name:"Biotiful Gut Health",role:"UK's leading premium kefir brand",bqs:["BQ1","BQ4"],geography:"UK (primary) · expanding to select European markets",product:"Biotiful Kefir — milk kefir drinks with live cultures, flavoured variants",certs:"Vegetarian Society approved",initiative:"Premium positioning around gut health and live cultures. Blackcurrant and mango variants for accessibility. Expanding range into kefir-based yogurt alternatives.",claim:"Billions of live cultures · natural fermentation · gut health focused",source:"Mordor Intelligence Kefir Market Report 2025",url:"https://www.mordorintelligence.com/industry-reports/kefir-market"},
-    ],
-    bqs:{
-      "BQ1":{
-        summary:`The kefir competitive landscape divides into distinct archetypes: modern gut health innovators (Lifeway Foods USA, Biotiful UK, Valio Gefilus Finland) leading the premium science-backed segment; mass accessible functional brands (Danone, Chobani) in the middle; and cultural heritage brands (Arla filmjölk, Siggi's skyr) gaining share through authentic Nordic positioning. Key whitespaces: (1) strain-specific microbiome positioning for APAC; (2) clinical evidence for cognitive/mood benefits — underexplored vs gut health; (3) water kefir as a dairy-free segment (10.34% CAGR projected). Nestlé's positioning is fragmented — the opportunity is to own "modern science + traditional authenticity" that no competitor has fully claimed.`,
-        stats:[{value:"$1.83bn",label:"Global kefir market size in 2025",source:"Mordor Intelligence 2025",url:"https://www.mordorintelligence.com/industry-reports/kefir-market"},{value:"8.72%",label:"Kefir market CAGR (2025–2030)",source:"Mordor Intelligence 2025",url:"https://www.mordorintelligence.com/industry-reports/kefir-market"},{value:"9.78%",label:"Asia-Pacific kefir CAGR (2025–2030) — fastest growing region",source:"Mordor Intelligence 2025",url:"https://www.mordorintelligence.com/industry-reports/kefir-market"}],
-        findings:[
-          {type:"competitive landscape",confidence:"high",headline:"Valio Gefilus' LGG® strategy is the most defensible positioning — named strain specificity is the credibility moat",body:"Valio Gefilus uses LGG® (Lacticaseibacillus rhamnosus GG) with 1,000+ human clinical studies — uniquely defensible. Competitors using generic 'live cultures' cannot replicate this evidence base. Lifeway competes with 12 named strains and 41bn CFU positioning.",implication:"Nestlé's differentiation must be built on strain specificity. Generic 'kefir health benefits' positioning will not sustain a premium or defend against private label — named, clinically validated strains are the credible differentiator.",source_name:"Frontiers in Food Science and Technology — Kefir as Functional Probiotic, 2025",source_url:"https://www.frontiersin.org/journals/food-science-and-technology/articles/10.3389/frfst.2025.1725280/full"},
-          {type:"market signal",confidence:"high",headline:"APAC is fastest growing kefir market at 9.78% CAGR — Western brand penetration is minimal",body:"Asia-Pacific forecast to grow at 9.78% CAGR through 2030, driven by urbanisation and gut health awareness in Japan, South Korea, China, and urban India. Currently dominated by Yakult (everyday probiotic positioning), not premium kefir brands.",implication:"Nestlé's APAC infrastructure makes it best-positioned to capture kefir growth in Asia-Pacific. Key is format adaptation (shots, dual-serve) rather than direct translation of Western positioning.",source_name:"Mordor Intelligence — Kefir Market 2025–2030",source_url:"https://www.mordorintelligence.com/industry-reports/kefir-market"},
-        ],gaps:[]},
-      "BQ2":{
-        summary:`Traditional kefir contains 30–50+ microbial species — LAB (Lactobacillus kefiranofaciens, L. kefiri, Lactococcus lactis, Leuconostoc) and yeasts (Kluyveromyces marxianus, Saccharomyces cerevisiae) in a kefiran matrix. Commercial kefir uses 2–5 defined starter strains with minimal yeasts. Key bioactive metabolites: SCFAs (acetate, propionate, butyrate), kefiran (unique exopolysaccharide), bioactive peptides, and vitamins (B2, B12, K2). Kefiran is uniquely associated with kefir and has demonstrated antimicrobial and anti-inflammatory effects — it is the strongest differentiator from yogurt in scientific terms.`,
-        stats:[{value:"30–50+",label:"Microbial species in traditional kefir grains (vs 2–5 in commercial starters)",source:"Frontiers in Microbiology, 2025",url:"https://www.frontiersin.org/journals/microbiology/articles/10.3389/fmicb.2025.1587831/full"}],
-        findings:[
-          {type:"science signal",confidence:"high",headline:"Kefiran (unique exopolysaccharide) is kefir's scientific differentiator from yogurt — the 'moat'",body:"Kefiran — produced uniquely by Lactobacillus kefiranofaciens — demonstrates antimicrobial activity against foodborne pathogens, anti-inflammatory effects, and gut barrier protective properties. No other fermented dairy product contains kefiran.",implication:"Nestlé's science narrative should lead with kefiran as the unique bioactive that explains why kefir is fundamentally different from yogurt — not just 'more probiotics'. This is the strongest available scientific differentiator.",source_name:"Frontiers in Food Science and Technology — Kefir Functional Probiotic, 2025",source_url:"https://www.frontiersin.org/journals/food-science-and-technology/articles/10.3389/frfst.2025.1725280/full"},
-          {type:"science signal",confidence:"high",headline:"Commercial kefir loses yeast diversity but retains key LAB strains responsible for health benefits",body:"Commercial kefirs use 2–5 species vs 30–50+ in traditional kefir, reducing microbial diversity. However, the key LAB strains responsible for evidence-backed benefits — L. kefiranofaciens (kefiran), L. rhamnosus (gut health), Lactococcus lactis (antimicrobial) — are retained.",implication:"Nestlé's formula should maximise retention of key evidence-backed strains, especially kefiran-producing species, while meeting commercial requirements — and communicate specific strains transparently.",source_name:"Frontiers in Microbiology — Kefir Gut Microbiota Study, April 2025",source_url:"https://www.frontiersin.org/journals/microbiology/articles/10.3389/fmicb.2025.1587831/full"},
-        ],gaps:[]},
-      "BQ3":{
-        summary:`Clinical evidence is strongest for gut microbiome benefits (multiple 2020–2025 RCTs support increased beneficial bacteria — Bifidobacterium, Blautia, Leuconostoc — linked to SCFA production and gut barrier integrity). Evidence for cognitive/mood and metabolic health is largely preclinical. Only 9 human clinical studies met quality criteria from 126 results reviewed (Frontiers in Microbiology systematic review, Dec 2025). The gap between consumer expectations and EFSA-approvable evidence is significant — closing this gap for cognitive benefits would be the highest-value R&D investment available.`,
-        stats:[{value:"9",label:"Human clinical studies meeting quality criteria for gut microbiota effects from 126 reviewed",source:"Frontiers in Microbiology systematic review, Dec 2025",url:"https://www.mdpi.com/2072-6643/17/24/3861"}],
-        findings:[
-          {type:"clinical evidence",confidence:"high",headline:"Gut microbiome diversity is the strongest clinical claim — multiple 2020–2025 studies support it",body:"A 2025 Korean controlled study showed kefir consumption significantly increased Blautia wexlerae and B. luti (SCFA producers), Bifidobacterium breve, Weissella koreensis, and Leuconostoc mesenteroides. Consistent with earlier clinical studies.",implication:"Gut microbiome diversity is Nestlé's most defensible claim area. Evidence supports structure/function claims and a consumer narrative around 'supporting a healthy, diverse gut microbiome'.",source_name:"Frontiers in Microbiology — Kefir Gut Microbiota Study, April 2025",source_url:"https://www.frontiersin.org/journals/microbiology/articles/10.3389/fmicb.2025.1587831/full"},
-          {type:"evidence gap",confidence:"medium",headline:"Cognitive/mood benefits — highest-value emerging claim — but evidence remains preclinical only",body:"Gut-brain axis is the most commercially attractive kefir frontier, with rapidly growing consumer interest. However, current evidence is largely preclinical (animal studies on neuroinflammation, anxiety-like behaviour) with minimal human clinical data. EFSA would not currently accept this evidence base.",implication:"Nestlé's R&D should prioritise a well-designed RCT on cognitive/mood outcomes — this whitespace, if closed with credible clinical data, would create a genuinely defensible premium positioning that no competitor currently holds.",source_name:"Frontiers Food Science Technology — Kefir Functional Probiotic, 2025",source_url:"https://www.frontiersin.org/journals/food-science-and-technology/articles/10.3389/frfst.2025.1725280/full"},
-        ],
-        gaps:[{gap:"Unpublished clinical data from competitor kefir R&D programs and their EFSA claim pathway strategy",type:"Proprietary science",why:"Competitor clinical trial data is proprietary. Danone, Valio, and Lifeway are actively researching kefir-specific benefits but their clinical pipelines are not publicly disclosed.",expert:"Food scientist at fermented dairy company (Danone, Valio, Lifeway) or EFSA regulatory affairs specialist",questions:["What health benefit areas are leading companies prioritising for kefir clinical investment?","What are the main obstacles to EFSA-approvable claims for kefir-specific strains vs. LGG® individually?","How do commercial producers standardise kefir flora given grain variability?","What is the typical cost and timeline for a kefir-specific RCT for an EFSA claim?","Are there kefir-specific strains with strong emerging clinical evidence not yet in public literature?"],hypothesis:"Competitive differentiation in kefir is converging on strain specificity. Companies that name and validate specific strains (as Valio has done with LGG®) will own functional positioning. Generic 'kefir' claims are commercially fragile.",priority:"HIGH"}]},
-      "BQ4":{
-        summary:`Consumer sentiment toward kefir is positive and accelerating, driven by gut health awareness, influencer content, and format innovation. Key purchase drivers: live cultures/probiotics (primary), taste/flavour (second), organic credentials (third). Key barriers: sourness, price premium vs yogurt, limited awareness of kefir-specific benefits. The 2025 trend shows growing demand for named strains — not just 'live cultures'. Format innovation (shots, dual-serve, flavoured) significantly improves trial rates. APAC consumers are most receptive to science-backed positioning and show higher WTP for health-positioned products.`,
-        stats:[{value:"64.21%",label:"Kefir market revenue from flavoured variants (2024) — taste innovation is primary driver",source:"Mordor Intelligence 2025",url:"https://www.mordorintelligence.com/industry-reports/kefir-market"},{value:"10.71%",label:"CAGR for organic kefir variants (2025–2030)",source:"Mordor Intelligence 2025",url:"https://www.mordorintelligence.com/industry-reports/kefir-market"}],
-        findings:[
-          {type:"consumer insight",confidence:"high",headline:"Named strains and format innovation are the two most impactful premiumisation levers",body:"2020–2025 product launch analysis shows named strains significantly increase consumer trust and WTP vs generic 'live cultures'. Format innovation (dual-serve bottles 2025, shots) drives trial and on-the-go usage. Flavour variants reduce sourness barrier without diluting health credential.",implication:"Nestlé's SKU strategy should lead with named strains (minimum 2–3 with explained benefits), invest in format innovation for APAC (shots perform well), and use accessible flavours to recruit new users.",source_name:"Future Market Insights — Kefir Market 2025–2035",source_url:"https://www.futuremarketinsights.com/reports/kefir-market"},
-        ],
-        gaps:[{gap:"Consumer WTP for science-backed kefir with named strains in APAC markets",type:"Consumer insight",why:"Published market research lacks APAC granularity for kefir specifically. All major quantitative consumer studies cover European/US markets. APAC kefir WTP and claim hierarchy data does not exist in public secondary sources.",expert:"Consumer insights lead at FMCG or market research agency with APAC fermented dairy experience",questions:["What is consumer awareness of kefir vs yogurt vs probiotic shots in Japan, South Korea, India?","What premium do APAC consumers accept for a named-strain kefir vs generic probiotic yogurt?","Which benefit claims resonate most — gut health, immunity, metabolic, or cognitive?","What formats are most likely to succeed as a kefir entry format in APAC?","How do perceptions of fermented dairy differ between East and South Asian markets?"],hypothesis:"APAC consumers accept a 20–35% premium for science-backed kefir with named strains, particularly in Japan and South Korea. Primary barrier is format — liquid shots and small serves outperform larger bottles in initial trial.",priority:"MEDIUM"}]}
-    }
-  },
-  loreal:{
-    summary:`The global extra-hold hair fixative landscape has 2,500+ patents filed in the last 10 years, concentrated in acrylic copolymers, polyurethane systems, and VP/VA combinations — dominated by BASF, Ashland, Dow, Nouryon, and Clariant. The most significant trend: bio-based alternatives (natural polymers, polysaccharide modifications, chitosan systems) are growing at 3× the rate of synthetic systems, driven by clean beauty trends and EU VOC pressure. The key whitespace is a natural high-performance gel combining strong humidity-resistant hold with biodegradable ingredients — not yet credibly achieved commercially. L'Oréal's opportunity is at the intersection of bio-based polymer chemistry and clinical performance validation — with Itaconix VELASOFT® NE 100 as the most immediately deployable platform.`,
-    profiles:[
-      {name:"Itaconix",role:"Bio-based extra-hold specialist — VELASOFT® NE 100",bqs:["BQ1","BQ5"],geography:"New Hampshire, USA (founded 2008)",product:"VELASOFT® NE 100 — sodium polyitaconate, ~83% plant-based, 24h/85%RH hold validated",certs:"Plant-based claims · biodegradability validated",initiative:"First commercially viable plant-based ingredient meeting extra-hold performance benchmark (85% RH, 24h straight style hold). Patent coverage: EP3261614A1 and EP3087109B1. Water-soluble, anti-frizz, non-tacky.",claim:"Straight style hold at 85% humidity for 24 hours · non-tacky · 83% plant-based · anti-frizz",source:"FutureBridge engagement proposal — sample output",url:"https://www.itaconix.com/"},
-      {name:"Ashland (ISP)",role:"Specialty chemicals — n-hance™ plant-derived fixative",bqs:["BQ1","BQ2"],geography:"USA — global operations",product:"n-hance™ cationic guar (guar hydroxypropyltrimonium chloride)",certs:"Multiple cosmetics ingredient certifications",initiative:"Plant-derived polygalactomannan providing conditioning, thickening, and film-forming. Improved humidity hold and curl maintenance through coacervation mechanism.",claim:"Improved high humidity hold · curl maintenance · plant-derived · conditioning + fixation",source:"FutureBridge engagement proposal — sample output",url:"https://www.ashland.com/"},
-      {name:"BASF",role:"Largest chemical company — dominant hair fixative IP portfolio",bqs:["BQ1","BQ2"],geography:"Germany — global manufacturing",product:"Luviset® range (polyurethane, VP/VA copolymers) · Styromat® range",certs:"REACH compliant · INCI approved",initiative:"Largest patent portfolio in hair fixative polymers. Luviset® polyurethane systems provide strong hold with good humidity resistance. Strategic shift post-2022 toward licensing rather than own-brand product innovation.",claim:"Largest patent portfolio in category · strong hold formulations · licensing available",source:"BASF Personal Care",url:"https://www.basf.com/en/industries/personal-care.html"},
-    ],
-    bqs:{
-      "BQ1":{
-        summary:`The global IP and product landscape for extra-hold fixatives is dominated by synthetic polymer systems — acrylic copolymers, polyurethane systems, and VP/VA copolymers representing 70%+ of commercial extra-hold formulations. 2,500+ patents filed in 10 years with high activity in acrylic and polyurethane. The critical recent trend: bio-based alternatives are growing at 3× the rate of synthetic systems. The de facto clinical benchmark is 85% RH / 24h hold for straight styles. Only a limited number of both synthetic and natural ingredients currently meet this benchmark credibly — Itaconix VELASOFT® NE 100 is the first commercially available plant-based ingredient to do so.`,
-        stats:[{value:"2,500+",label:"Patent filings in extra-hold fixation technology (last 10 years)",source:"FutureBridge preliminary IP search",url:"https://patents.google.com/"},{value:"85% RH",label:"Industry benchmark for extra-hold validation — humidity resistance for 24h",source:"FutureBridge proposal sample output",url:"https://www.itaconix.com/"}],
-        findings:[
-          {type:"IP landscape",confidence:"high",headline:"Acrylic and polyurethane patents dominate — bio-based alternatives growing at 3× synthetic rate",body:"Patent density is highest in acrylic copolymer and polyurethane systems, with BASF, Ashland, Dow, Nouryon, and Clariant as dominant assignees. 2020–2024 shows a significant shift: natural polymer and bio-based fixative patents are growing at 3× the rate of synthetic systems, driven by clean beauty trends and EU regulatory pressure on non-biodegradable polymers.",implication:"L'Oréal's innovation investment should prioritise bio-based systems where patent density is lower and technical differentiation is higher — particularly natural-synthetic hybrid systems combining bio-based credentials with proven performance.",source_name:"FutureBridge Hair Fixative Engagement Proposal — Sample Output",source_url:"https://www.itaconix.com/"},
-          {type:"technology signal",confidence:"high",headline:"Itaconix VELASOFT® NE 100: first commercially viable plant-based ingredient meeting 24h/85% RH benchmark",body:"VELASOFT® NE 100 (sodium polyitaconate, ~83% plant-based) demonstrates straight style retention at 85% humidity for 24 hours — matching leading synthetic fixatives. First commercially available plant-based ingredient with credible extra-hold claims without sacrificing biodegradability. Patent coverage: EP3261614A1 and EP3087109B1.",implication:"VELASOFT® NE 100 is L'Oréal's most immediately deployable bio-based extra-hold platform. A partnership or licensing arrangement with Itaconix would give L'Oréal access to a patent-protected, plant-based platform ahead of competitors.",source_name:"FutureBridge Engagement Proposal — Itaconix VELASOFT Sample Output",source_url:"https://www.itaconix.com/"},
-        ],gaps:[]},
-      "BQ2":{
-        summary:`Top IP assignees are dominated by large specialty chemical companies: BASF (largest portfolio — Luviset® polyurethane and acrylic systems), Ashland (n-hance™ and VP-based), Dow (silicone-fixative hybrids), Nouryon (acrylic systems), Clariant (polyurethane). Among SMEs, Itaconix has the most commercially advanced bio-based IP position. Academic assignees include work on methylcellulose-chitosan smart gel systems (MIT and European universities) at PoC stage. BASF's strategic pivot toward licensing creates potential partnership opportunities.`,
-        stats:[{value:"5",label:"Top corporate IP assignees in extra-hold fixation: BASF, Ashland, Dow, Nouryon, Clariant",source:"FutureBridge IP landscape preliminary",url:"https://www.basf.com/"}],
-        findings:[{type:"IP landscape",confidence:"high",headline:"BASF holds the largest IP portfolio but is pivoting toward licensing — partnership opportunity for L'Oréal",body:"BASF's Luviset® range covers polyurethane, VP/VA, and acrylic systems with extensive patent coverage. BASF's strategic direction post-2022 shows a shift toward ingredient licensing rather than own-brand personal care innovation.",implication:"L'Oréal should evaluate BASF licensing options for specific polymer systems where BASF IP is blocking, particularly in polyurethane humidity-resistance where BASF patent density is highest.",source_name:"BASF Personal Care — Luviset® Fixatives",source_url:"https://www.basf.com/en/industries/personal-care.html"}],gaps:[]},
-      "BQ3":{
-        summary:`Performance requirements differ significantly by format and hair type. Gels and gel-creams require high polymer concentration (2–5%) with strong film-forming and non-flaking properties. Waxes require flexible, high-MW polymers. Curly/afro-textured hair requires elastic film formation allowing elongation without cracking — technically distinct from straight hair hold. The humidity resistance challenge (85% RH) primarily affects straight hair; curly hair applications face elongation, curl definition, and shrinkage control as primary challenges. Key whitespace: humidity-resistant natural polymer systems for gel-cream format specifically for curly and textured hair.`,
-        stats:[],
-        findings:[{type:"technology signal",confidence:"high",headline:"Methylcellulose-Chitosan smart gels: longest-lasting curl over 48h — academic PoC, no commercial player",body:"Academic research shows a methylcellulose-chitosan smart gel achieves longest-lasting curl over 48h in lab testing, outperforming all commercial gels. Chitosan (cationic) adheres to negatively-charged hair shaft; methylcellulose locks the style. Biodegradable, natural-origin, and not yet commercialised.",implication:"This academic technology represents a first-mover opportunity — IP landscape is relatively open, no commercial player has developed it, and performance data is compelling for curl and textured hair positioning.",source_name:"Methylcellulose-Chitosan Smart Gels for Hairstyling — academic publication",source_url:"https://scholar.google.com/"}],gaps:[]},
-      "BQ4":{
-        summary:`Whitespace analysis of the 10-year patent landscape reveals clear underexplored areas: (1) humidity-resistant gels using solely bio-based polymers — all current high-performing bio-based options are partial-synthetic hybrids; (2) natural polymer systems for textured/curly hair at extra-hold level — most IP focuses on straight hair; (3) multi-functional fixative-conditioning systems — the combination of strong hold with active hair care benefits (anti-breakage, moisturisation) has minimal IP coverage; (4) water-soluble bio-based polymers that build film strength without tackiness — VELASOFT® NE 100 is the only commercial entry. These whitespaces align with L'Oréal's sustainability commitments and growing demand for natural products.`,
-        stats:[{value:"4",label:"Primary whitespace areas identified in extra-hold fixative patent landscape",source:"FutureBridge engagement proposal whitespace heatmap",url:"https://www.itaconix.com/"}],
-        findings:[{type:"whitespace",confidence:"high",headline:"Purely bio-based extra-hold gel for curly/textured hair — largest whitespace in the 10-year IP landscape",body:"No commercial player has achieved extra-hold performance at 85% RH / 24h standard using solely bio-based polymer ingredients for curly/textured hair applications. All current high-performing natural options are partial-synthetic hybrids. Academic methylcellulose-chitosan research is the closest approach.",implication:"This whitespace is L'Oréal's highest-value innovation target — it combines the brand's sustainability commitment, the fastest-growing hair segment (textured/curly), and a genuine technical gap that no competitor has closed commercially.",source_name:"FutureBridge proposal — whitespace heatmap analysis",source_url:"https://www.itaconix.com/"}],gaps:[]},
-      "BQ5":{
-        summary:`Based on technical performance, sustainability profile, safety, and strategic fit, the top 5 fixative solutions for L'Oréal's next-gen extra-hold gel line are: (1) Itaconix VELASOFT® NE 100 — plant-based, 85%RH/24h validated, strongest combined score; (2) n-hance™ cationic guar (Ashland) — plant-derived, dual conditioning-fixation benefit; (3) Methylcellulose-Chitosan smart gel — academic PoC, highest technical performance for curly hair (but pre-commercial); (4) BASF Luviset® PUR — synthetic PU but strongest humidity resistance in synthetic class; (5) Dow silicone-acrylate hybrid — highest-performing but weakest on sustainability profile.`,
-        stats:[],
-        findings:[{type:"benchmarking",confidence:"high",headline:"Itaconix VELASOFT® NE 100 scores highest overall: technical performance + sustainability + TRL combination",body:"VELASOFT® NE 100 achieves the strongest combined score across the benchmarking KPIs: technical performance (85% RH 24h validated), mechanism novelty (sodium polyitaconate — unique chemistry), safety (clean profile), evidence strength (in vitro and stability validation), sustainability (83% bio-based, biodegradable), and TRL (commercialised).",implication:"VELASOFT® NE 100 is the recommended near-term priority for L'Oréal's extra-hold gel formulation — it is the only ingredient combining credible performance with a genuine sustainability story and commercial availability.",source_name:"FutureBridge proposal — Module II benchmarking sample output",source_url:"https://www.itaconix.com/"}],gaps:[]}
-    }
-  },
-  nestle:{
-    summary:`Nestlé's affordability challenge in Sub-Saharan Africa is structural: consumers in CWAR and ESAR markets face persistent price pressure, volatile macroeconomic environments, and a nutrition gap where affordable and nutritious options are underserved. R&D Abidjan is strategically well-placed to lead affordability innovation — it has the geographic proximity, consumer understanding, and technical capability — but lacks a compelling, leadership-ready narrative that integrates existing analyses, interviews, and strategic priorities into a coherent case for investment and decision. The engagement objective is clear: synthesise everything into a CTO-ready storyline that enables faster, higher-quality investment decisions and positions R&D Abidjan as the indispensable hub for affordability innovation in the region.`,
-    profiles:[],
-    bqs:{
-      "BQ1":{
-        summary:`Nestlé's affordability challenge in Sub-Saharan Africa centres on a persistent tension: the region represents one of the world's fastest-growing consumer markets with significant unmet nutrition needs, but extreme price sensitivity, fragmented retail infrastructure, and volatile purchasing power make profitable nutrition delivery at scale extremely difficult. Consumers in CWAR and ESAR markets spend a disproportionate share of income on food, but are unable to access products with adequate micronutrient density at price points they can sustain. The nutrition gap — particularly for children under 5 and women of reproductive age — is documented across multiple internal Nestlé analyses. The R&D Abidjan facility was created specifically to address this tension, with a mandate to develop affordable, nutritious products adapted to local taste profiles and supply chain realities.`,
-        stats:[],
-        findings:[
-          {type:"strategic context",confidence:"high",headline:"Affordability and nutrition are Nestlé's core strategic priority for Zone AOA — but the delivery model is unclear",body:"Nestlé's Zone AOA and Group strategy documents identify affordability and accessibility as core strategic priorities for Sub-Saharan Africa. The region's consumer economics require fundamentally different product architecture — smaller serves, lower price per unit, locally adapted ingredients — compared to developed market strategies.",implication:"The engagement must establish a clear, evidenced case for why addressing affordability in Sub-Saharan Africa is both a nutritional imperative and a commercial opportunity for Nestlé — not just a CSR obligation. R&D Abidjan's role in this case must be specific and measurable.",source_name:"Nestlé Zone AOA Strategy Documents — internal",source_url:"https://www.nestle.com/investors/annual-report"},
-          {type:"strategic context",confidence:"high",headline:"Consumer economics require small-serve packaging, local ingredient adaptation, and last-mile distribution innovation",body:"Consumer research in CWAR and ESAR markets consistently identifies three structural barriers to nutrition access: price per occasion (not per gram), availability at local retail touchpoints (kiosks, market stalls), and culturally familiar formats. Successful affordability innovation requires addressing all three simultaneously.",implication:"R&D Abidjan's product development mandate must be explicitly linked to these three consumer economic realities — and the engagement deliverable must show how the R&D centre's capability roadmap addresses each barrier.",source_name:"Nestlé affordability research — existing analyses",source_url:"https://www.nestle.com/"},
-        ],gaps:[]},
-      "BQ2":{
-        summary:`R&D Abidjan has a strategically unique mandate: proximity to West African consumer markets, cross-functional capability spanning formulation, regulatory, and consumer insights, and a decade of institutional knowledge on affordability innovation in the region. Past initiatives have had notable successes — particularly in local ingredient sourcing and small-serve packaging development — but have faced recurring challenges in scaling beyond pilots, translating operational insights into corporate investment decisions, and maintaining momentum across organisational changes. The key lesson: R&D Abidjan's value is best realised when it has a clear, leadership-endorsed mandate with defined accountability and resourcing — not when it operates as a regional adaptor of global innovations.`,
-        stats:[],
-        findings:[
-          {type:"strategic role",confidence:"high",headline:"R&D Abidjan is uniquely positioned for affordability innovation — proximity, capability, and local knowledge",body:"R&D Abidjan combines geographic proximity to West African consumer markets with cross-functional technical capability and deep institutional knowledge of local ingredient supply chains, regulatory environments, and consumer taste preferences. No other Nestlé R&D centre has this combination for Sub-Saharan Africa.",implication:"The leadership narrative must articulate R&D Abidjan's specific and non-replicable value proposition — not just what it does but why it uniquely can do it for this geography and consumer segment.",source_name:"R&D Abidjan capability documentation — internal",source_url:"https://www.nestle.com/"},
-          {type:"strategic role",confidence:"medium",headline:"Past affordability pilots succeeded technically but struggled to scale — the translation gap is the central problem",body:"Historical review of R&D Abidjan initiatives shows a pattern: technically successful pilots in small-serve packaging, local ingredient sourcing, and affordable formulation that failed to attract the investment and organisational commitment required for scale. The translation gap — between pilot evidence and corporate investment decision — is the central challenge this engagement must resolve.",implication:"The CTO deliverable must directly address the translation gap — it must not present more evidence of technical possibility but instead provide a clear investment thesis, decision framework, and leadership ask that enables resource commitment.",source_name:"Internal stakeholder interviews and prior analyses — Nestlé",source_url:"https://www.nestle.com/"},
-        ],gaps:[]},
-      "BQ3":{
-        summary:`The barriers to faster affordability innovation at Nestlé in Sub-Saharan Africa are structural, not technical. They cluster into four categories: governance fragmentation (decisions distributed across Zone, SBU, NPTC, and R&D with unclear accountability); capability gaps (limited expertise in last-mile distribution, micro-retail economics, and locally adapted formulation at scale); resourcing misalignment (R&D investment cycles mismatched to the rapid iteration required for affordability innovation); and organisational alignment friction (Zone strategy priorities not always reflected in SBU P&L incentives). The engagement must synthesise these barriers into a coherent case for change that leadership can act on.`,
-        stats:[],
-        findings:[
-          {type:"barrier analysis",confidence:"high",headline:"Governance fragmentation is the primary structural barrier — accountability is diffuse and decision rights unclear",body:"Affordability innovation requires decisions across S&T (formulation, ingredient sourcing), Zone (commercial strategy, market prioritisation), SBUs (product portfolio, P&L responsibility), and NPTCs (market execution). Current governance structures distribute these decisions without clear integration points, creating delays and misalignment.",implication:"The leadership ask must include a specific governance proposal — clear decision rights, integration touchpoints between S&T and commercial, and an explicit accountability model for R&D Abidjan's affordability mandate.",source_name:"Nestlé stakeholder interviews and mapping — internal",source_url:"https://www.nestle.com/"},
-        ],gaps:[]},
-      "BQ4":{
-        summary:`Success for this engagement means a CTO review where leadership can make three specific decisions: (1) endorse R&D Abidjan's affordability mandate and provide explicit resource commitment; (2) approve a Now-Next-Later roadmap with defined accountability and milestones; (3) resolve the governance question — who owns affordability innovation decisions and how are they integrated across Zone, SBU, and R&D. The Now-Next-Later structure provides the temporal clarity that leadership needs to act: Now (0–6 months: complete narrative, establish governance, confirm resourcing), Next (6–18 months: pilot scaled, first commercial launches from R&D Abidjan pipeline), Later (18–36 months: Abidjan as recognised regional model, replicable in other Zone AOA markets).`,
-        stats:[],
-        findings:[
-          {type:"strategic roadmap",confidence:"high",headline:"CTO-ready deliverable must enable three decisions — not present more analysis",body:"Leadership at CTO level needs to make decisions, not process more evidence. The engagement deliverable must be structured as a decision enabler: what is the opportunity, what has been learned, what are the barriers, what does success look like, and specifically what does leadership need to decide and resource.",implication:"The Executive Storyline Deck should be structured around the three decisions — not around research categories. Each section should culminate in a specific ask, not a finding.",source_name:"FutureBridge engagement scoping — Nestlé",source_url:"https://www.nestle.com/"},
-          {type:"strategic roadmap",confidence:"high",headline:"Now-Next-Later roadmap structure provides clarity for investment staging",body:"A Now-Next-Later roadmap allows leadership to make a staged commitment: Now (0–6m: governance, narrative completion, resourcing confirmation), Next (6–18m: scaled pilot, first commercial launches), Later (18–36m: Abidjan as regional model). This structure reduces the decision from 'full commitment now' to 'commitment to the first stage with conditional investment.'",implication:"Framing the leadership ask as a staged commitment rather than a binary yes/no significantly increases the likelihood of CTO endorsement. The Now stage must be specific, resourced, and time-bound.",source_name:"FutureBridge engagement proposal — Nestlé affordability",source_url:"https://www.nestle.com/"},
-        ],gaps:[]}
-    }
-  }
-};
 
 
 // ═══════════════════════════════════════════════════════════════
@@ -2832,7 +2809,7 @@ async function runSynthesis() {
 
   // Build allBQResults with BQ text attached
   var allBQResults = sel.map(function(bq) {
-    var d = S.bqResults[bq.id];
+    var d = normaliseResult(S.bqResults[bq.id]);
     if (!d) return null;
     return { bq: bq.id, bqText: bq.text, data: d };
   }).filter(Boolean);
@@ -3517,7 +3494,7 @@ async function buildFBDeck() {
 
   // ─── PER BQ SLIDES ──────────────────────────────────────
   bqs.forEach(function(bq, bqIdx) {
-    var d = results[bq.id] || {};
+    var d = normaliseResult(results[bq.id]) || {};
     var bqLabel = bq.id || ('BQ'+(bqIdx+1));
     var findings = d.findings || [];
     var hyps = d.hypotheses || [];
