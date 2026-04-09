@@ -981,8 +981,9 @@ function buildSynthesisResearchPrompt(bq, p, plan, allResearch, client){
     'Return keys in this exact order:',
     '{',
     '  "creative_angles": [{"angle_title":"","parallel_industry":"","insight":"","why_relevant_to_client":""}],',
-    '  "hypotheses": [{"statement":"","what_would_need_to_be_true":"","confidence_level":"low|medium|high"}],',
+    '  "hypotheses": [{"statement":"","what_would_need_to_be_true":"","confidence_level":"medium|high"}],',
     '  "primary_research_gaps": [{"gap":"","why_impossible":"","expert_profile":"","questions":[],"hypothesis":"","priority":"high|medium|low"}],',
+    '  "paid_source_flags": [{"source":"","what_it_unlocks":"","why_needed":"","priority":"CRITICAL|HIGH|MEDIUM"}],',
     '  "executive_summary": "3-4 sentences. Named companies + specific numbers + implication for '+client+'.",',
     '  "engagement_type": "'+engType+'",',
     '  "stats": [{"value":"","label":"","confidence":"web-verified|estimated|paid-source|primary-required","source_name":"","source_url":""}],',
@@ -1006,7 +1007,6 @@ function buildSynthesisResearchPrompt(bq, p, plan, allResearch, client){
     '  ],',
     '  "disruption_signals": [{"signal":"","company":"","date":"","type":"","client_implication":""}],',
     '  "client_decision_frame": {"option_a":"","option_b":"","key_condition":""},',
-    '  "paid_source_flags": [{"source":"","what_it_unlocks":"","why_needed":"","priority":"CRITICAL|HIGH|MEDIUM"}],',
     '  "profiles": [{"name":"","hq":"","founded":null,"type":"competitor|startup|supplier","role":"","geography":"","key_product":"","key_fact":"","client_relevance":"","source_url":""}]',
     '}',
     '',
@@ -1770,45 +1770,129 @@ async function buildProfiles(bqId){
   }
 }
 
-async function reEvaluateHypothesis(bqId, hypIdx){
+// Find new evidence for a hypothesis via live search, then evaluate verdict
+async function findEvidenceAndEvaluate(bqId, hypIdx){
   var btn=document.getElementById('reevalbtn-'+bqId+'-'+hypIdx);
-  if(btn){btn.textContent='Evaluating...';btn.disabled=true;}
-  var d=normaliseResult(S.bqResults&&S.bqResults[bqId]?S.bqResults[bqId]:null)||{};
-  var hyps=d.hypotheses||[];
+  var statusEl=document.getElementById('hypstatus-'+bqId+'-'+hypIdx);
+  var evidenceEl=document.getElementById('hypevidence-'+bqId+'-'+hypIdx);
+  if(btn){btn.textContent='Searching...';btn.disabled=true;}
+
+  // Read hypothesis directly from S.bqResults — never via normaliseResult (strips fields)
+  var raw=S.bqResults&&S.bqResults[bqId]?S.bqResults[bqId]:{};
+  var hyps=raw.hypotheses||[];
   var h=hyps[hypIdx];
   if(!h){if(btn){btn.textContent='Error';btn.disabled=false;}return;}
-  var findings=(d.findings||[]).map(function(f){return f.headline+': '+f.body;}).join('\n');
-  var stats=(d.stats||[]).map(function(s){return s.value+' '+s.label;}).join(', ');
-  var prompt='You are evaluating a research hypothesis against collected evidence.\n'+
-    'Hypothesis: '+( h.statement||h.headline||'')+'.\n'+
-    'What would need to be true: '+(h.what_would_need_to_be_true||h.client_implication||'')+'.\n'+
-    'Evidence collected:\n'+findings+'\nKey stats: '+stats+'.\n'+
-    'Based ONLY on the evidence above, evaluate the hypothesis. '+
-    'Return ONLY valid JSON: {"verdict":"Supported|Partially supported|Refuted|Unresolvable","note":"one sentence explanation citing specific evidence","new_confidence":"high|medium|low"}';
+
+  var statement=h.statement||h.headline||'';
+  var wwtbt=h.what_would_need_to_be_true||h.body||'';
+  var p=S.proposal||{};
+  var originalConf=h.confidence_level||'medium';
+
+  if(statusEl) statusEl.textContent='Step 1/2 — Searching for evidence...';
+
   try{
-    var data=await callAPI({
-      model:'claude-sonnet-4-6',max_tokens:500,
-      messages:[{role:'user',content:prompt}]
+    // ── PASS A: Search for new evidence on this hypothesis ───────
+    var searchPrompt='You are a senior research analyst. Search for evidence that either supports or refutes this hypothesis.\n'+
+      'Client context: '+p.client+' — '+(p.title||'')+'\n'+
+      'Hypothesis: '+statement+'\n'+
+      'What would need to be true: '+wwtbt+'\n\n'+
+      'Run 3 targeted searches:\n'+
+      '1. Search for data or events that SUPPORT this hypothesis\n'+
+      '2. Search for data or events that CONTRADICT this hypothesis\n'+
+      '3. Search for the most recent relevant news or data (last 12 months)\n\n'+
+      'After searching, write a brief evidence summary. Be specific — cite company names, numbers, dates.\n'+
+      'Format: 3-5 sentences. Then on a new line write exactly: VERDICT_JSON: followed by valid JSON:\n'+
+      '{"verdict":"Supported|Partially supported|Refuted|Unresolvable","note":"one sentence citing the strongest piece of evidence found"}';
+
+    var searchData=await callAPI({
+      model:'claude-sonnet-4-6',
+      max_tokens:1500,
+      tools:[{type:'web_search_20250305',name:'web_search'}],
+      messages:[{role:'user',content:searchPrompt}]
     });
-    var text=(data.content||[]).filter(function(b){return b.type==='text';}).map(function(b){return b.text;}).join('');
-    text=text.replace(/```json\s*/gi,'').replace(/```\s*/g,'').trim();
-    var m=text.match(/\{[\s\S]*\}/);
-    if(m){
-      var r=JSON.parse(m[0].split("\'").join("'"));
-      if(!S.bqResults[bqId]) S.bqResults[bqId]={};
-      if(!S.bqResults[bqId].hypotheses) S.bqResults[bqId].hypotheses=[];
-      S.bqResults[bqId].hypotheses[hypIdx]=Object.assign({},h,{
-        reeval_verdict:r.verdict,
-        reeval_note:r.note,
-        confidence_level:r.new_confidence||h.confidence_level
-      });
-      renderResults(); return;
+
+    if(statusEl) statusEl.textContent='Step 2/2 — Evaluating verdict...';
+
+    // Extract text from search response
+    var searchText=(searchData.content||[]).filter(function(b){return b.type==='text';}).map(function(b){return b.text;}).join('');
+
+    // Extract any URLs found during search
+    var newSources=[];
+    (searchData.content||[]).forEach(function(block){
+      if(block.type==='tool_result'||block.type==='web_search_tool_result'){
+        var cnt=block.content;
+        if(Array.isArray(cnt)){
+          cnt.forEach(function(c){
+            if(c.url) newSources.push(c.url);
+            else if(c.text) newSources=newSources.concat((c.text.match(/https?:\/\/[^\s"'<>]{15,}/g)||[]).slice(0,2));
+          });
+        }
+      }
+    });
+
+    // Parse verdict from response
+    var verdict='Unresolvable';
+    var note='Could not find sufficient new evidence to evaluate this hypothesis.';
+    var verdictMatch=searchText.match(/VERDICT_JSON:\s*(\{[\s\S]*?\})/);
+    if(verdictMatch){
+      try{
+        var vr=JSON.parse(verdictMatch[1].split("\'").join("'"));
+        verdict=vr.verdict||verdict;
+        note=vr.note||note;
+      }catch(e){}
     }
-    if(btn){btn.textContent='Retry';btn.disabled=false;}
+
+    // Derive new confidence — never downgrade from original
+    var newConf=originalConf;
+    if(verdict==='Supported') newConf='high';
+    else if(verdict==='Partially supported') newConf=originalConf==='low'?'medium':originalConf;
+    // Refuted or Unresolvable — keep original
+
+    // Store result
+    if(!S.bqResults[bqId].hypotheses) S.bqResults[bqId].hypotheses=[];
+    S.bqResults[bqId].hypotheses[hypIdx]=Object.assign({},h,{
+      reeval_verdict:verdict,
+      reeval_note:note,
+      reeval_evidence:searchText.replace(/VERDICT_JSON:[\s\S]*/,'').trim(),
+      reeval_sources:newSources.slice(0,4),
+      confidence_level:newConf
+    });
+
+    // Update UI in place — no full re-render
+    if(evidenceEl){
+      var vBg=verdict==='Supported'?'#E0F5EE':verdict==='Refuted'?'#FCEBEB':'#FEF5E4';
+      var vTxt=verdict==='Supported'?'#085041':verdict==='Refuted'?'#A32D2D':'#633806';
+      var srcHtml=newSources.slice(0,3).map(function(url){
+        var domain=url.replace(/^https?:\/\//,'').split('/')[0];
+        return '<a href="'+escH(url)+'" target="_blank" style="font-size:10px;color:#534AB7;background:#EEEDFE;padding:2px 8px;border-radius:10px;text-decoration:none;white-space:nowrap">'+escH(domain)+'</a>';
+      }).join('');
+      evidenceEl.innerHTML=
+        '<div style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#6B7280;margin-bottom:8px">New evidence found</div>'+
+        '<div style="font-size:12px;color:#374151;line-height:1.65;margin-bottom:10px">'+escH(searchText.replace(/VERDICT_JSON:[\s\S]*/,'').trim().slice(0,600))+'</div>'+
+        (srcHtml?'<div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px">'+srcHtml+'</div>':'')+
+        '<div style="padding:10px 14px;border-radius:8px;background:'+vBg+';border:.5px solid '+vBg+'">'+
+          '<div style="font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:'+vTxt+';margin-bottom:4px">Verdict</div>'+
+          '<div style="font-size:13px;font-weight:700;color:'+vTxt+'">'+escH(verdict)+'</div>'+
+          '<div style="font-size:11px;color:'+vTxt+';margin-top:4px;opacity:.85">'+escH(note)+'</div>'+
+        '</div>'+
+        (verdict==='Supported'?'<div style="margin-top:8px;font-size:11px;color:#166534;background:#F0FDF4;padding:8px 12px;border-radius:6px">Next step: Elevate to confirmed finding — include in deliverable with source citation.</div>':'')+
+        (verdict==='Refuted'?'<div style="margin-top:8px;font-size:11px;color:#92400E;background:#FFF7ED;padding:8px 12px;border-radius:6px">Next step: Document the counter-evidence as a finding. Update the client decision frame.</div>':'')+
+        (verdict==='Unresolvable'||verdict==='Partially supported'?'<div style="margin-top:8px;font-size:11px;color:#3730A3;background:#EEF2FF;padding:8px 12px;border-radius:6px">Next step: Add to primary research gaps — requires expert interview to resolve.</div>':'');
+      evidenceEl.style.display='block';
+    }
+    if(statusEl) statusEl.textContent='';
+    if(btn){btn.textContent='Search again';btn.disabled=false;}
+
   }catch(e){
-    console.error('reEval:',e);
-    if(btn){btn.textContent='Error — retry';btn.disabled=false;}
+    console.error('findEvidenceAndEvaluate:',e);
+    if(statusEl) statusEl.textContent='Search failed — try again';
+    if(btn){btn.textContent='Retry';btn.disabled=false;}
   }
+}
+
+// Keep old name as alias for any remaining references
+async function reEvaluateHypothesis(bqId, hypIdx){
+  return findEvidenceAndEvaluate(bqId, hypIdx);
 }
 
 function formatParas(text){
@@ -2079,32 +2163,27 @@ function renderResults(){
             '<div style="font-size:11px;color:#78350F">Hypothesis refuted. Document the counter-evidence as a finding. Update the client decision frame accordingly.</div>'+
           '</div>';
         }
-        return '<div class="hypothesis-card">'+
+        return '<div class="hypothesis-card" id="hyp-'+bqId+'-'+fi+'">'+
           '<div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:8px">'+
             '<span style="font-size:9px;font-weight:700;padding:2px 8px;border-radius:8px;background:'+confBg+';color:'+confColor+';flex-shrink:0;margin-top:2px">'+escH(conf.toUpperCase())+'</span>'+
             '<div class="hypothesis-q" style="margin-bottom:0">'+escH(f.statement||f.headline||'')+'</div>'+
           '</div>'+
-          (f.what_would_need_to_be_true||f.body?'<div style="font-size:11px;color:#4B5563;line-height:1.6;margin-bottom:4px;padding:8px 10px;background:#F9FAFB;border-radius:6px"><strong>What would need to be true:</strong> '+escH(f.what_would_need_to_be_true||f.body||'')+'</div>':'')+
+          (f.what_would_need_to_be_true||f.body?'<div style="font-size:11px;color:#4B5563;line-height:1.6;margin-bottom:8px;padding:8px 10px;background:#F9FAFB;border-radius:6px"><strong>What would need to be true:</strong> '+escH(f.what_would_need_to_be_true||f.body||'')+'</div>':'')+
           actionHtml+
-          nextStep+
-          '<div style="margin-top:10px;display:flex;gap:8px">'+
-            '<button class="btn btn-sm" id="reevalbtn-'+bqId+'-'+fi+'" style="font-size:10px;padding:4px 10px">Re-evaluate against evidence</button>'+
+          '<div id="hypevidence-'+bqId+'-'+fi+'" style="display:none;margin-top:10px;padding:12px 14px;background:#F8FAFC;border:.5px solid #E2E8F0;border-radius:8px"></div>'+
+          '<div style="margin-top:10px;display:flex;align-items:center;gap:10px">'+
+            '<button class="btn btn-sm" id="reevalbtn-'+bqId+'-'+fi+'" style="font-size:10px;padding:5px 12px;background:#534AB7;color:#fff;border:none">🔍 Find evidence &amp; evaluate</button>'+
+            '<span id="hypstatus-'+bqId+'-'+fi+'" style="font-size:10px;color:#9CA3AF;font-style:italic"></span>'+
           '</div>'+
         '</div>';
       }).join('');
     }
-    // Bind re-evaluate + search-hypothesis buttons
+    // Bind Find evidence & evaluate button
     (function(_id,_hyps){
       _hyps.forEach(function(f,fi){
         setTimeout(function(){
           var b=document.getElementById('reevalbtn-'+_id+'-'+fi);
-          if(b) b.onclick=function(){reEvaluateHypothesis(_id,fi);};
-          var sb=document.getElementById('searchhyp-'+_id+'-'+fi);
-          if(sb) sb.onclick=function(){
-            var hyp=_hyps[fi];
-            var q=hyp.statement||hyp.headline||'';
-            if(q) runMore(_id+'-hyp-'+fi, _id, q);
-          };
+          if(b) b.onclick=function(){findEvidenceAndEvaluate(_id,fi);};
         },150);
       });
     })(bqId,hyps);
@@ -2332,10 +2411,21 @@ function renderResults(){
           '</div>'+
         '</div>';
       }).filter(Boolean).join('');
-      exEl.innerHTML=briefRows||'<div style="font-size:11px;color:#9CA3AF;font-style:italic">Run research to populate the brief.</div>';
-      // Hint to run synthesis
       if(briefRows){
-        exEl.innerHTML+='<div style="font-size:10px;color:#9CA3AF;margin-top:8px;padding-top:8px;border-top:.5px solid #F2F4F7">Run Intelligence Summary above to generate cross-cutting key insight</div>';
+        exEl.innerHTML=briefRows+
+          '<div style="font-size:10px;color:#9CA3AF;margin-top:8px;padding-top:8px;border-top:.5px solid #F2F4F7">Run Intelligence Summary to generate cross-cutting key insight →</div>';
+      } else {
+        // No findings yet — show exec summaries as fallback
+        var fallbackRows=bqIds.map(function(id){
+          var d2=S.bqResults[id]||{};
+          var bq2=p2.bqs.find(function(b){return b.id===id;})||{};
+          if(!d2.executive_summary) return '';
+          return '<div style="display:flex;gap:10px;align-items:flex-start;padding:8px 0;border-bottom:.5px solid #F2F4F7">'+
+            '<span style="font-size:9px;font-weight:700;color:#E85520;font-family:monospace;min-width:30px;margin-top:2px">'+escH(id)+'</span>'+
+            '<div style="font-size:12px;color:#374151;line-height:1.55">'+escH((d2.executive_summary||'').slice(0,200))+'</div>'+
+          '</div>';
+        }).filter(Boolean).join('');
+        exEl.innerHTML=fallbackRows||'<div style="font-size:11px;color:#9CA3AF;font-style:italic">Research complete — scroll down to view findings per BQ.</div>';
       }
     }
   }
@@ -3007,6 +3097,7 @@ async function runSynthesis() {
     S.synthesis = parsed;
     S.detectedEngType = parsed.engagement && parsed.engagement.type ? parsed.engagement.type : engType;
     renderSectionView(parsed);
+    renderResults(); // Update Research Brief with key_insight now that synthesis is available
 
     // Switch to section tab
     document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('active');});
