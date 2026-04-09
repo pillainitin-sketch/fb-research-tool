@@ -1891,9 +1891,21 @@ function renderResults(){
     }
 
     // ── EXEC SUMMARY ──────────────────────────────────────────
-    if(d.executive_summary){
-      html+='<div class="bq-exec"><div class="exec-lbl">Executive summary</div>'+
-        '<div class="exec-body">'+formatParas(d.executive_summary)+'</div></div>';
+    var execText=d.executive_summary||'';
+    if(execText){
+      // Collect source links from findings for this BQ
+      var execSrcs=(d.findings||[]).filter(function(f){return f.source_url&&f.source_url!=='#'&&f.source_name;}).slice(0,5);
+      var srcLinksHtml=execSrcs.length?'<div style="margin-top:10px;padding-top:10px;border-top:.5px solid #E5E9F0">'+
+        '<div style="font-size:9px;font-weight:600;letter-spacing:1.2px;text-transform:uppercase;color:#9CA3AF;margin-bottom:6px">Sources — click to read more</div>'+
+        '<div style="display:flex;flex-wrap:wrap;gap:6px">'+
+        execSrcs.map(function(f){
+          return '<a href="'+escH(f.source_url)+'" target="_blank" style="font-size:10px;color:#534AB7;background:#EEEDFE;padding:3px 9px;border-radius:12px;text-decoration:none;white-space:nowrap">'+
+            escH(f.source_name.slice(0,35))+(f.source_name.length>35?'…':'')+'</a>';
+        }).join('')+
+        '</div></div>':'';      html+='<div class="bq-exec"><div class="exec-lbl">Executive summary</div>'+
+        '<div class="exec-body">'+formatParas(execText)+'</div>'+
+        srcLinksHtml+
+      '</div>';
     }
 
     // ── SCOPE COVERAGE CONFIRMATION ───────────────────────────
@@ -2023,22 +2035,76 @@ function renderResults(){
       html+='<div style="font-size:11px;color:var(--mgray);padding:8px 0;font-style:italic">No hypotheses identified for this BQ.</div>';
     } else {
       html+=hyps.map(function(f,fi){
+        var conf=f.confidence_level||'medium';
+        var confColor=conf==='high'?'#166534':conf==='low'?'#B91C1C':'#854D0E';
+        var confBg=conf==='high'?'#E0F5EE':conf==='low'?'#FEE2E2':'#FEF9C3';
+        // Build action block based on confidence and reeval status
+        var actionHtml='';
+        var verdict=f.reeval_verdict||'';
+        if(verdict){
+          var vBg=verdict==='Supported'?'#E0F5EE':verdict==='Refuted'?'#FCEBEB':'#FEF5E4';
+          var vTxt=verdict==='Supported'?'#085041':verdict==='Refuted'?'#A32D2D':'#633806';
+          actionHtml='<div style="margin-top:8px;padding:8px 12px;border-radius:6px;background:'+vBg+';font-size:11px;font-weight:600;color:'+vTxt+'">'+
+            '✓ Re-evaluated: '+escH(verdict)+(f.reeval_note?' — '+escH(f.reeval_note.slice(0,150)):'')+
+          '</div>';
+        }
+        // Next steps action block
+        var nextStep='';
+        if(conf==='low'||!verdict){
+          nextStep='<div style="margin-top:10px;background:#F5F3FF;border-radius:8px;padding:10px 12px;border:.5px solid #C4B5FD">'+
+            '<div style="font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#5B21B6;margin-bottom:6px">Suggested next steps</div>'+
+            '<div style="display:flex;flex-direction:column;gap:6px">'+
+              '<div style="display:flex;align-items:center;gap:8px">'+
+                '<span style="font-size:10px;background:#7C3AED;color:#fff;border-radius:4px;padding:2px 7px;font-weight:600;flex-shrink:0">1</span>'+
+                '<span style="font-size:11px;color:#3730A3">Re-evaluate against collected evidence — click the button below to test this hypothesis now</span>'+
+              '</div>'+
+              '<div style="display:flex;align-items:center;gap:8px">'+
+                '<span style="font-size:10px;background:#7C3AED;color:#fff;border-radius:4px;padding:2px 7px;font-weight:600;flex-shrink:0">2</span>'+
+                '<button id="searchhyp-'+bqId+'-'+fi+'" style="font-size:10px;padding:3px 10px;background:#EEEDFE;color:#534AB7;border:1px solid #C4B5FD;border-radius:6px;cursor:pointer;font-weight:500">Search for evidence on this hypothesis →</button>'+
+              '</div>'+
+              '<div style="display:flex;align-items:center;gap:8px">'+
+                '<span style="font-size:10px;background:#7C3AED;color:#fff;border-radius:4px;padding:2px 7px;font-weight:600;flex-shrink:0">3</span>'+
+                '<span style="font-size:11px;color:#3730A3">If still unresolved — add to primary research gap and flag for expert interview</span>'+
+              '</div>'+
+            '</div>'+
+          '</div>';
+        } else if(verdict==='Supported'){
+          nextStep='<div style="margin-top:10px;background:#F0FDF4;border-radius:8px;padding:10px 12px;border:.5px solid #86EFAC">'+
+            '<div style="font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#166534;margin-bottom:5px">Next step</div>'+
+            '<div style="font-size:11px;color:#14532D">Hypothesis supported by evidence. Elevate to a confirmed finding — include in client deliverable with source citation.</div>'+
+          '</div>';
+        } else if(verdict==='Refuted'){
+          nextStep='<div style="margin-top:10px;background:#FFF7ED;border-radius:8px;padding:10px 12px;border:.5px solid #FCD34D">'+
+            '<div style="font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#92400E;margin-bottom:5px">Next step</div>'+
+            '<div style="font-size:11px;color:#78350F">Hypothesis refuted. Document the counter-evidence as a finding. Update the client decision frame accordingly.</div>'+
+          '</div>';
+        }
         return '<div class="hypothesis-card">'+
-          '<div class="hypothesis-q">'+escH(f.headline||'')+'</div>'+
-          (f.body?'<div style="font-size:11px;color:var(--dark);line-height:1.55;margin-bottom:6px">'+escH(f.body)+'</div>':'')+
-          '<div class="hypothesis-wwtbt">What would need to be true: '+escH(f.client_implication||f.body||'Requires primary research to validate')+'</div>'+
-          (f.confidence_level?'<div style="font-size:9px;font-weight:600;margin-top:5px;color:'+(f.confidence_level==='high'?'#166534':f.confidence_level==='low'?'#B91C1C':'#854D0E')+'">Confidence: '+escH(f.confidence_level.toUpperCase())+'</div>':'')+
-          (f.reeval_verdict?'<div style="margin-top:7px;padding:6px 10px;border-radius:6px;background:'+(f.reeval_verdict==='Supported'?'#E0F5EE':f.reeval_verdict==='Refuted'?'#FCEBEB':'#FEF5E4')+';font-size:10px;font-weight:600;color:'+(f.reeval_verdict==='Supported'?'#085041':f.reeval_verdict==='Refuted'?'#A32D2D':'#633806')+'">✓ Re-evaluated: '+escH(f.reeval_verdict)+(f.reeval_note?' — '+escH(f.reeval_note.slice(0,120)):'')+'</div>':'')+
-          '<div style="margin-top:8px"><button class="btn btn-sm" id="reevalbtn-'+bqId+'-'+fi+'" style="font-size:10px;padding:4px 10px">Re-evaluate</button></div>'+
+          '<div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:8px">'+
+            '<span style="font-size:9px;font-weight:700;padding:2px 8px;border-radius:8px;background:'+confBg+';color:'+confColor+';flex-shrink:0;margin-top:2px">'+escH(conf.toUpperCase())+'</span>'+
+            '<div class="hypothesis-q" style="margin-bottom:0">'+escH(f.statement||f.headline||'')+'</div>'+
+          '</div>'+
+          (f.what_would_need_to_be_true||f.body?'<div style="font-size:11px;color:#4B5563;line-height:1.6;margin-bottom:4px;padding:8px 10px;background:#F9FAFB;border-radius:6px"><strong>What would need to be true:</strong> '+escH(f.what_would_need_to_be_true||f.body||'')+'</div>':'')+
+          actionHtml+
+          nextStep+
+          '<div style="margin-top:10px;display:flex;gap:8px">'+
+            '<button class="btn btn-sm" id="reevalbtn-'+bqId+'-'+fi+'" style="font-size:10px;padding:4px 10px">Re-evaluate against evidence</button>'+
+          '</div>'+
         '</div>';
       }).join('');
     }
-    // Bind re-evaluate buttons
+    // Bind re-evaluate + search-hypothesis buttons
     (function(_id,_hyps){
       _hyps.forEach(function(f,fi){
         setTimeout(function(){
           var b=document.getElementById('reevalbtn-'+_id+'-'+fi);
           if(b) b.onclick=function(){reEvaluateHypothesis(_id,fi);};
+          var sb=document.getElementById('searchhyp-'+_id+'-'+fi);
+          if(sb) sb.onclick=function(){
+            var hyp=_hyps[fi];
+            var q=hyp.statement||hyp.headline||'';
+            if(q) runMore(_id+'-hyp-'+fi, _id, q);
+          };
         },150);
       });
     })(bqId,hyps);
@@ -2057,22 +2123,32 @@ function renderResults(){
       }).join('');
     }
     html+='</div>';
-    // ── PARALLEL INDUSTRY ─────────────────────────────────────
+    // ── ADJACENT INTELLIGENCE — from creative_angles, no synthesis required ──
     var ca=d.creative_angles||[];
-    html+='<div class="bq-parallel"><div class="parallel-lbl">Adjacent Intelligence</div>';
-    if(!ca.length){
-      html+='<div style="font-size:11px;color:var(--mgray);padding:8px 0;font-style:italic">No adjacent industry signals identified for this BQ. The model will surface these when a relevant cross-sector analog exists.</div>';
-    } else {
-      html+=ca.map(function(c){
-        return '<div class="parallel-item">'+
-          '<div class="parallel-title">'+escH(c.angle_title||'')+'</div>'+
-          (c.parallel_industry?'<div class="parallel-industry">Adjacent: '+escH(c.parallel_industry)+'</div>':'')+
-          (c.insight?'<div class="parallel-insight">'+escH(c.insight)+'</div>':'')+
-          (c.why_relevant_to_client?'<div class="parallel-relevance">Relevance: '+escH(c.why_relevant_to_client)+'</div>':'')+
+    if(ca.length){
+      html+='<div style="background:#2E1065;border-radius:10px 10px 0 0;padding:12px 18px;margin-top:4px">'+
+        '<div style="font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#C4B5FD;margin-bottom:2px">Adjacent Intelligence</div>'+
+        '<div style="font-size:13px;font-weight:700;color:#fff">Strategic Analogies — '+escH(bqId)+'</div>'+
+        '<div style="font-size:11px;color:#A78BFA;margin-top:2px">Industries that solved this exact problem first</div>'+
+      '</div>'+
+      ca.map(function(c,ci){
+        var isLast=ci===ca.length-1;
+        return '<div style="background:#fff;border:.5px solid #C4B5FD;border-top:none;padding:14px 18px;'+( isLast?'border-radius:0 0 10px 10px;margin-bottom:14px':'')+'">' +
+          '<div style="font-size:13px;font-weight:700;color:#2E1065;margin-bottom:6px">'+escH(c.angle_title||'')+'</div>'+
+          (c.parallel_industry?'<div style="display:inline-block;font-size:10px;font-weight:600;color:#5B21B6;background:#EDE9FE;padding:3px 10px;border-radius:4px;margin-bottom:10px">Adjacent industry: '+escH(c.parallel_industry)+'</div>':'') +
+          '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">'+
+            '<div>'+
+              '<div style="font-size:9px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:#9CA3AF;margin-bottom:5px">The analogy</div>'+
+              '<div style="font-size:12px;color:#374151;line-height:1.7">'+escH(c.insight||c.the_analogy||'')+'</div>'+
+            '</div>'+
+            '<div style="background:#F5F3FF;border-radius:8px;padding:10px 12px">'+
+              '<div style="font-size:9px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:#5B21B6;margin-bottom:5px">What this means for research</div>'+
+              '<div style="font-size:12px;color:#2E1065;line-height:1.7;font-weight:500">'+escH(c.why_relevant_to_client||c.what_client_can_learn||'')+'</div>'+
+            '</div>'+
+          '</div>'+
         '</div>';
       }).join('');
     }
-    html+='</div>';
 
     // ── DISRUPTION SIGNALS ─────────────────────────────────────
     var dis=d.disruption_signals||[];
@@ -2099,24 +2175,58 @@ function renderResults(){
       '</div>';
     }
 
-    // ── PRIMARY RESEARCH GAPS ──────────────────────────────────
+    // ── RESEARCH GAPS — split Primary Research + Paid Sources ───
     var gaps=d.primary_research_gaps||[];
+    var paidFlags=d.paid_source_flags||[];
     if(gaps.length){
-      html+='<div class="bq-gaps"><div class="gaps-lbl">Primary research required</div>'+
+      html+='<div class="bq-gaps">'+
+        '<div class="gaps-lbl">🎤 Gaps: Primary Research Required</div>'+
+        '<div style="font-size:11px;color:#92400E;margin-bottom:10px">These gaps cannot be filled by web research. Each requires a targeted expert interview.</div>'+
         gaps.map(function(g){
-          var pri=g.priority||'HIGH';
-          var priBg=pri==='CRITICAL'?'#A32D2D':'#FBAE40';
+          var pri=(g.priority||'HIGH').toUpperCase();
+          var priBg=pri==='CRITICAL'?'#A32D2D':pri==='HIGH'?'#E85520':'#FBAE40';
+          var qs=Array.isArray(g.questions)?g.questions:(g.questions?[g.questions]:[]);
           return '<div class="gap-card">'+
-            '<div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:6px">'+
-              '<span class="gap-priority" style="background:'+priBg+';color:#fff">'+escH(pri)+'</span>'+
+            '<div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:8px">'+
+              '<span class="gap-priority" style="background:'+priBg+';color:#fff;flex-shrink:0">'+escH(pri)+'</span>'+
               '<div class="gap-title">'+escH(g.gap||g.title||'')+'</div>'+
             '</div>'+
-            (g.why_impossible?'<div class="gap-why">Why web research cannot answer this: '+escH(g.why_impossible)+'</div>':'')+
-            (g.expert_profile?'<div class="gap-expert">Expert needed: '+escH(g.expert_profile)+'</div>':'')+
-            (g.questions&&g.questions.length?'<div class="gap-qs">Questions to ask:<br>'+g.questions.map(function(q,i){return (i+1)+'. '+escH(q);}).join('<br>')+'</div>':'')+
-            (g.hypothesis?'<div class="gap-hyp">Hypothesis to test: '+escH(g.hypothesis)+'</div>':'')+
+            (g.why_impossible?'<div class="gap-why"><strong>Why web cannot answer this:</strong> '+escH(g.why_impossible)+'</div>':'')+
+            (g.expert_profile?'<div style="background:#FEF3C7;border-radius:6px;padding:8px 12px;margin:8px 0">'+
+              '<div style="font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#92400E;margin-bottom:4px">Ideal expert profile</div>'+
+              '<div style="font-size:12px;color:#78350F;font-weight:500">'+escH(g.expert_profile)+'</div>'+
+            '</div>':'')+
+            (qs.length?'<div style="background:#F0FDF4;border-radius:6px;padding:8px 12px;margin:8px 0">'+
+              '<div style="font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#166534;margin-bottom:6px">Questions to ask</div>'+
+              qs.map(function(q,i){
+                return '<div style="display:flex;gap:8px;margin-bottom:5px">'+
+                  '<span style="font-size:10px;font-weight:700;color:#166534;flex-shrink:0">'+(i+1)+'.</span>'+
+                  '<span style="font-size:11.5px;color:#14532D;line-height:1.5">'+escH(q)+'</span>'+
+                '</div>';
+              }).join('')+
+            '</div>':'')+
+            (g.hypothesis?'<div style="font-size:11px;color:#6B7280;font-style:italic;padding-top:6px;border-top:.5px solid #FDE68A">Hypothesis to test: '+escH(g.hypothesis)+'</div>':'')+
           '</div>';
-        }).join('')+'</div>';
+        }).join('')+
+      '</div>';
+    }
+    if(paidFlags.length){
+      html+='<div style="padding:14px 18px;background:#F0F7FF;border-bottom:1px solid #BFDBFE">'+
+        '<div style="font-size:9px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:#1D4ED8;margin-bottom:6px">🔒 Gaps: Paid Source Required</div>'+
+        '<div style="font-size:11px;color:#1E40AF;margin-bottom:10px">These gaps require a commercial database subscription to fill.</div>'+
+        paidFlags.map(function(s){
+          var pri=(s.priority||'HIGH').toUpperCase();
+          var priBg=pri==='CRITICAL'?'#A32D2D':pri==='HIGH'?'#1D4ED8':'#FBAE40';
+          return '<div style="border:1px solid #BFDBFE;border-radius:8px;padding:13px 15px;margin-bottom:8px;background:#fff">'+
+            '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">'+
+              '<span style="font-size:9px;font-weight:700;padding:2px 8px;border-radius:4px;background:'+priBg+';color:#fff">'+escH(pri)+'</span>'+
+              '<span style="font-size:12px;font-weight:600;color:#1E3A8A">'+escH(s.source||'')+'</span>'+
+            '</div>'+
+            '<div style="font-size:11.5px;color:#1E40AF;margin-bottom:4px"><strong>What it unlocks:</strong> '+escH(s.what_it_unlocks||'')+'</div>'+
+            '<div style="font-size:11px;color:#6B7280"><strong>Why needed:</strong> '+escH(s.why_needed||'')+'</div>'+
+          '</div>';
+        }).join('')+
+      '</div>';
     }
 
     // ── COMPETITOR PROFILES ────────────────────────────────────
@@ -2162,23 +2272,39 @@ function renderResults(){
     container.appendChild(card);
   });
 
-  // Summary text for synthesis
+  // Summary: use cross-cutting key_insight from synthesis if available, else build from findings
   var parts=[];
-  bqIds.forEach(function(id){
-    var d2=S.bqResults[id];
-    if(d2&&d2.executive_summary) parts.push(d2.executive_summary);
-  });
-  S.summary=parts.join(' ');
+  if(S.synthesis&&S.synthesis.cross_cutting&&S.synthesis.cross_cutting.key_insight){
+    S.summary=S.synthesis.cross_cutting.key_insight;
+  } else {
+    bqIds.forEach(function(id){
+      var d2=S.bqResults[id];
+      if(d2&&d2.executive_summary) parts.push(d2.executive_summary);
+    });
+    S.summary=parts.join(' ');
+  }
   S.detectedEngType=S.bqResults[bqIds[0]]&&S.bqResults[bqIds[0]].engagement_type||'general';
 
-  // Update results header
+  // Update results header — use key_insight if synthesis available, else summary
   var p2=S.proposal;
   var rtEl=document.getElementById('resTitle');
   var rmEl=document.getElementById('resMeta');
   if(rtEl) rtEl.textContent=p2.client+' - '+p2.title;
   if(rmEl) rmEl.textContent=p2.practice+' - '+p2.geography+' - '+p2.period;
   var exEl=document.getElementById('exTxt');
-  if(exEl) exEl.textContent=S.summary.slice(0,300)+(S.summary.length>300?'...':'');
+  if(exEl){
+    var ki=S.synthesis&&S.synthesis.cross_cutting&&S.synthesis.cross_cutting.key_insight;
+    var ns=S.synthesis&&S.synthesis.cross_cutting&&S.synthesis.cross_cutting.recommended_next_step;
+    var bg=S.synthesis&&S.synthesis.cross_cutting&&S.synthesis.cross_cutting.biggest_gap;
+    if(ki){
+      exEl.innerHTML='<div style="font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#534AB7;margin-bottom:8px">Key insight across all research</div>'+
+        '<div style="font-size:13px;font-weight:600;color:#26215C;line-height:1.7;margin-bottom:10px">'+escH(ki)+'</div>'+
+        (ns?'<div style="font-size:11px;color:#534AB7;padding:8px 12px;background:#fff;border-radius:6px;border:.5px solid #AFA9EC;margin-bottom:6px"><strong>Recommended next step:</strong> '+escH(ns)+'</div>':'')+
+        (bg?'<div style="font-size:10px;color:#888;padding-top:6px"><strong>Biggest remaining gap:</strong> '+escH(bg)+'</div>':'');
+    } else {
+      exEl.textContent=S.summary.slice(0,400)+(S.summary.length>400?'...':'');
+    }
+  }
 }
 
 function toggleBQCard(bqId){
@@ -3005,22 +3131,43 @@ function renderSectionView(parsed) {
         return '<span style="font-size:9px;background:#fdecea;color:var(--red);padding:1px 6px;border-radius:3px;font-family:var(--fm)">' + b + '</span>';
       }).join(' ');
       var bullets = (sec.bullet_points||[]).map(function(bp) {
-        return '<div style="display:flex;gap:8px;align-items:flex-start;margin-bottom:7px">' +
-          '<div style="width:5px;height:5px;border-radius:50%;background:var(--red);flex-shrink:0;margin-top:6px"></div>' +
-          '<div style="font-size:12px;color:var(--dark);line-height:1.6">' + bp + '</div></div>';
+        return '<div style="display:flex;gap:10px;align-items:flex-start;padding:8px 12px;background:#F9FAFB;border-radius:6px;border-left:3px solid var(--red)">' +
+          '<div style="font-size:12px;color:var(--dark);line-height:1.6;flex:1">' + escH(bp) + '</div></div>';
       }).join('');
+      // Build source links from findings across source_bqs
+      var secSrcLinks='';
+      var secSrcs=[];
+      (sec.source_bqs||[]).forEach(function(bid){
+        var bd=(S.bqResults||{})[bid]||{};
+        (bd.findings||[]).filter(function(f){return f.source_url&&f.source_url!=='#'&&f.source_name;}).slice(0,3).forEach(function(f){
+          secSrcs.push(f);
+        });
+      });
+      if(secSrcs.length){
+        secSrcLinks='<div style="margin-top:12px;padding-top:10px;border-top:.5px solid #E5E9F0">'+
+          '<div style="font-size:9px;font-weight:600;letter-spacing:1.2px;text-transform:uppercase;color:#9CA3AF;margin-bottom:6px">Key sources</div>'+
+          '<div style="display:flex;flex-wrap:wrap;gap:5px">'+
+          secSrcs.slice(0,6).map(function(f){
+            return '<a href="'+escH(f.source_url)+'" target="_blank" style="font-size:10px;color:#534AB7;background:#EEEDFE;padding:3px 9px;border-radius:12px;text-decoration:none;white-space:nowrap">'+
+              escH((f.source_name||'').slice(0,30))+'</a>';
+          }).join('')+
+          '</div></div>';
+      }
       card.innerHTML =
         '<div style="display:flex;align-items:center;gap:10px;padding:13px 16px;border-bottom:.5px solid var(--gray);cursor:pointer" onclick="toggleSec(\'' + sec.id + '\')">' +
           '<span style="font-size:16px;color:var(--mgray)">' + (sec.icon||'·') + '</span>' +
-          '<span style="font-size:13px;font-weight:500;color:var(--dark);flex:1">' + escH(sec.title||'') + '</span>' +
-          bqTags +
+          '<div style="flex:1">' +
+            '<div style="font-size:13px;font-weight:600;color:var(--dark)">' + escH(sec.title||'') + '</div>' +
+            '<div style="font-size:10px;color:var(--mgray);margin-top:2px">Draws on: ' + (sec.source_bqs||[]).join(', ') + '</div>' +
+          '</div>' +
           '<span style="font-size:9px;font-weight:500;padding:3px 9px;border-radius:20px;background:' + covBg + ';color:' + covColor + '">' + covLabel + '</span>' +
           '<span style="font-size:10px;color:var(--mgray);margin-left:4px" id="schev-' + sec.id + '">▼</span>' +
         '</div>' +
-        '<div id="secbd-' + sec.id + '" style="padding:14px 16px">' +
-          '<div style="font-size:12px;color:var(--mgray);line-height:1.75;margin-bottom:12px;padding-bottom:12px;border-bottom:.5px solid var(--lgray)">' + (sec.synthesis||'') + '</div>' +
-          bullets +
-          (sec.coverage_note ? '<div style="margin-top:10px;padding:9px 12px;background:#FFFBF3;border-left:2px solid var(--amber);font-size:11px;color:#633806;line-height:1.6"><strong>Coverage note:</strong> ' + sec.coverage_note + '</div>' : '') +
+        '<div id="secbd-' + sec.id + '" style="padding:16px 18px">' +
+          '<div style="font-size:13px;color:#1A2B4A;line-height:1.8;margin-bottom:14px;padding-bottom:12px;border-bottom:.5px solid var(--lgray);font-weight:400">' + escH(sec.synthesis||'') + '</div>' +
+          '<div style="display:flex;flex-direction:column;gap:8px">' + bullets + '</div>' +
+          (sec.coverage_note ? '<div style="margin-top:12px;padding:10px 14px;background:#FFFBF3;border-left:3px solid var(--amber);border-radius:0 6px 6px 0;font-size:11px;color:#633806;line-height:1.6"><strong>What is missing:</strong> ' + sec.coverage_note + '</div>' : '') +
+          secSrcLinks +
         '</div>';
       container.appendChild(card);
     });
