@@ -396,7 +396,7 @@ input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;h
       <button class="out-btn" onclick="reset()">↩ New</button>
     </div>
   </div>
-  <div class="exec-box"><div class="ex-lbl">Executive summary</div><div class="ex-txt" id="exTxt"></div></div>
+  <div class="exec-box"><div class="ex-lbl">Research Brief</div><div class="ex-txt" id="exTxt"></div></div>
   <div class="tabs">
     <div class="tab active" onclick="showTab('findings',this)">Findings by BQ</div>
     <div class="tab" id="tab-sections" onclick="showTab('sections',this)">Section view <span id="secBadge" style="display:none;font-size:9px;background:#534AB7;color:#fff;padding:1px 6px;border-radius:10px;margin-left:4px">new</span></div>
@@ -1307,6 +1307,52 @@ function normaliseResult(result){
   return result;
 }
 
+// ── TOP-LEVEL API CALLER — retry logic, 529/429 handling ────
+async function callAPI(body, logFn){
+  var logger=logFn||function(t,m){console.log('[callAPI]',t,m);};
+  var resp,lastErr;
+  var maxAttempts=5;
+  for(var attempt=1;attempt<=maxAttempts;attempt++){
+    try{
+      logger('info','API call attempt '+attempt+'/'+maxAttempts+'...');
+      var _fp=fetch(window.FB_PROXY_URL||'https://api.anthropic.com/v1/messages',{
+        method:'POST',
+        headers:{'Content-Type':'application/json','anthropic-version':'2023-06-01','x-api-key':getApiKey()},
+        body:JSON.stringify(body)
+      });
+      var _to=new Promise(function(_,rej){setTimeout(function(){rej(new Error('API timeout after 4 minutes'));},240000);});
+      resp=await Promise.race([_fp,_to]);
+      if(resp.ok) break;
+      var et=await resp.text();
+      if(resp.status===529){
+        logger('info','API overloaded (529) — waiting '+((attempt*15))+'s before retry '+attempt+'/'+maxAttempts+'...');
+        if(attempt<maxAttempts) await new Promise(function(r){setTimeout(r,attempt*15000);});
+        lastErr=new Error('API overloaded (529) — Anthropic servers busy. Retrying...');
+        continue;
+      }
+      if(resp.status===402||et.indexOf('credit balance')>=0||et.indexOf('billing')>=0){
+        throw new Error('MONTHLY_CAP: Credit balance too low. Add credit at console.anthropic.com');
+      }
+      if(resp.status===429){
+        var wait=attempt*10000;
+        logger('info','Rate limited (429) — waiting '+(wait/1000)+'s...');
+        if(attempt<maxAttempts) await new Promise(function(r){setTimeout(r,wait);});
+        lastErr=new Error('Rate limited — retrying...');
+        continue;
+      }
+      lastErr=new Error('API '+resp.status+' - '+et.slice(0,120));
+      if(attempt<maxAttempts) await new Promise(function(r){setTimeout(r,attempt*3000);});
+    }catch(e){
+      if(e.message.indexOf('MONTHLY_CAP')>=0) throw e;
+      lastErr=e;
+      if(attempt<maxAttempts) await new Promise(function(r){setTimeout(r,attempt*3000);});
+    }
+  }
+  if(!resp||!resp.ok) throw(lastErr||new Error('API failed after '+maxAttempts+' attempts'));
+  var _jt=new Promise(function(_,rej){setTimeout(function(){rej(new Error('JSON parse timeout'));},60000);});
+  return await Promise.race([resp.json(),_jt]);
+}
+
 // Main research orchestrator — sequential, one BQ at a time
 
 async function researchBQ(bq, p, onLog){
@@ -1323,52 +1369,6 @@ async function researchBQ(bq, p, onLog){
     }
     function stopTicker(){if(ticker){clearInterval(ticker);ticker=null;}}
 
-    async function callAPI(body){
-      var resp,lastErr;
-      var maxAttempts=5;
-      for(var attempt=1;attempt<=maxAttempts;attempt++){
-        try{
-          onLog('info','API call attempt '+attempt+'/'+maxAttempts+'...');
-          var _fp=fetch(window.FB_PROXY_URL||'https://api.anthropic.com/v1/messages',{
-            method:'POST',
-            headers:{'Content-Type':'application/json','anthropic-version':'2023-06-01','x-api-key':getApiKey()},
-            body:JSON.stringify(body)
-          });
-          var _to=new Promise(function(_,rej){setTimeout(function(){rej(new Error('API timeout after 4 minutes'));},240000);});
-          resp=await Promise.race([_fp,_to]);
-          if(resp.ok) break;
-          var et=await resp.text();
-          // 529 = Anthropic overloaded — wait and retry, NOT a credit error
-          if(resp.status===529){
-            onLog('info','API overloaded (529) — waiting '+((attempt*15))+'s before retry '+attempt+'/'+maxAttempts+'...');
-            if(attempt<maxAttempts) await new Promise(function(r){setTimeout(r,attempt*15000);});
-            lastErr=new Error('API overloaded (529) — Anthropic servers busy. Retrying...');
-            continue;
-          }
-          // Credit balance exhausted
-          if(resp.status===402||et.indexOf('credit balance')>=0||et.indexOf('billing')>=0){
-            throw new Error('MONTHLY_CAP: Credit balance too low. Add credit at console.anthropic.com');
-          }
-          // Rate limit (429) — wait and retry
-          if(resp.status===429){
-            var wait=attempt*10000;
-            onLog('info','Rate limited (429) — waiting '+(wait/1000)+'s...');
-            if(attempt<maxAttempts) await new Promise(function(r){setTimeout(r,wait);});
-            lastErr=new Error('Rate limited — retrying...');
-            continue;
-          }
-          lastErr=new Error('API '+resp.status+' - '+et.slice(0,120));
-          if(attempt<maxAttempts) await new Promise(function(r){setTimeout(r,attempt*3000);});
-        }catch(e){
-          if(e.message.indexOf('MONTHLY_CAP')>=0) throw e;
-          lastErr=e;
-          if(attempt<maxAttempts) await new Promise(function(r){setTimeout(r,attempt*3000);});
-        }
-      }
-      if(!resp||!resp.ok) throw(lastErr||new Error('API failed after '+maxAttempts+' attempts'));
-      var _jt=new Promise(function(_,rej){setTimeout(function(){rej(new Error('JSON parse timeout'));},60000);});
-      return await Promise.race([resp.json(),_jt]);
-    }
 
     function extractText(blocks){
       return (blocks||[]).filter(function(b){return b.type==='text';}).map(function(b){return b.text;}).join('');
@@ -1454,7 +1454,7 @@ async function researchBQ(bq, p, onLog){
       model:'claude-sonnet-4-6',
       max_tokens:1500,
       messages:[{role:'user',content:planPrompt}]
-    });
+    }, onLog);
 
     stopTicker();
 
@@ -1489,7 +1489,7 @@ async function researchBQ(bq, p, onLog){
       max_tokens:4000,
       tools:[{type:'web_search_20250305',name:'web_search'}],
       messages:[{role:'user',content:buildResearchPrompt(bq,p,plan)}]
-    });
+    }, onLog);
     stopTicker();
 
     var searches2=extractSearches(searchData.content);
@@ -1507,7 +1507,7 @@ async function researchBQ(bq, p, onLog){
       max_tokens:3000,
       tools:[{type:'web_search_20250305',name:'web_search'}],
       messages:[{role:'user',content:followPrompt}]
-    });
+    }, onLog);
     stopTicker();
 
     var searches3=extractSearches(followData.content);
@@ -1525,7 +1525,7 @@ async function researchBQ(bq, p, onLog){
       model:'claude-sonnet-4-6',
       max_tokens:8000,
       messages:[{role:'user',content:synthPrompt}]
-    });
+    }, onLog);
     stopTicker();
 
     var rawText=extractText(synthData.content);
@@ -2285,7 +2285,7 @@ function renderResults(){
   }
   S.detectedEngType=S.bqResults[bqIds[0]]&&S.bqResults[bqIds[0]].engagement_type||'general';
 
-  // Update results header — use key_insight if synthesis available, else summary
+  // Update results header — Research Brief
   var p2=S.proposal;
   var rtEl=document.getElementById('resTitle');
   var rmEl=document.getElementById('resMeta');
@@ -2297,12 +2297,46 @@ function renderResults(){
     var ns=S.synthesis&&S.synthesis.cross_cutting&&S.synthesis.cross_cutting.recommended_next_step;
     var bg=S.synthesis&&S.synthesis.cross_cutting&&S.synthesis.cross_cutting.biggest_gap;
     if(ki){
-      exEl.innerHTML='<div style="font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#534AB7;margin-bottom:8px">Key insight across all research</div>'+
-        '<div style="font-size:13px;font-weight:600;color:#26215C;line-height:1.7;margin-bottom:10px">'+escH(ki)+'</div>'+
+      // Synthesis has run — show cross-cutting key insight
+      exEl.innerHTML=
+        '<div style="font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#534AB7;margin-bottom:8px">Key insight across all research</div>'+
+        '<div style="font-size:13px;font-weight:600;color:#26215C;line-height:1.75;margin-bottom:10px">'+escH(ki)+'</div>'+
         (ns?'<div style="font-size:11px;color:#534AB7;padding:8px 12px;background:#fff;border-radius:6px;border:.5px solid #AFA9EC;margin-bottom:6px"><strong>Recommended next step:</strong> '+escH(ns)+'</div>':'')+
-        (bg?'<div style="font-size:10px;color:#888;padding-top:6px"><strong>Biggest remaining gap:</strong> '+escH(bg)+'</div>':'');
+        (bg?'<div style="font-size:10px;color:#888;padding-top:6px;border-top:.5px solid #E5E9F0;margin-top:6px"><strong>Biggest remaining gap:</strong> '+escH(bg)+'</div>':'');
     } else {
-      exEl.textContent=S.summary.slice(0,400)+(S.summary.length>400?'...':'');
+      // No synthesis yet — show strongest finding per BQ as a scannable brief
+      var briefRows=bqIds.map(function(id){
+        var d2=S.bqResults[id]||{};
+        var bq2=p2.bqs.find(function(b){return b.id===id;})||{};
+        // Pick strongest finding — first FACT, else first INFERENCE, else first any
+        var findings2=d2.findings||[];
+        var top=findings2.find(function(f){return(f.evidence_type||'').toUpperCase()==='FACT';})
+          ||findings2.find(function(f){return(f.evidence_type||'').toUpperCase()==='INFERENCE';})
+          ||findings2[0];
+        if(!top) return '';
+        var src=top.source_url&&top.source_url!=='#'
+          ?'<a href="'+escH(top.source_url)+'" target="_blank" style="font-size:9px;color:#534AB7;margin-left:8px;text-decoration:none">'+escH((top.source_name||'source').slice(0,25))+'↗</a>'
+          :(top.source_name?'<span style="font-size:9px;color:#9CA3AF;margin-left:8px">'+escH(top.source_name.slice(0,25))+'</span>':'');
+        var et=(top.evidence_type||'INFERENCE').toUpperCase();
+        var etBg=et==='FACT'?'#E1F5EE':et==='INFERENCE'?'#FEF9C3':'#FEE2E2';
+        var etTxt=et==='FACT'?'#085041':et==='INFERENCE'?'#92400E':'#B91C1C';
+        return '<div style="display:flex;gap:10px;align-items:flex-start;padding:8px 0;border-bottom:.5px solid #F2F4F7">'+
+          '<span style="font-size:9px;font-weight:700;color:#E85520;font-family:monospace;min-width:30px;margin-top:3px">'+escH(id)+'</span>'+
+          '<div style="flex:1">'+
+            '<div style="display:flex;align-items:center;gap:6px;margin-bottom:3px">'+
+              '<span style="font-size:8px;font-weight:700;padding:1px 6px;border-radius:3px;background:'+etBg+';color:'+etTxt+'">'+et+'</span>'+
+              src+
+            '</div>'+
+            '<div style="font-size:12px;color:#1A2B4A;line-height:1.5;font-weight:500">'+escH(top.headline||'')+'</div>'+
+            (top.client_implication&&top.client_implication!==top.headline?'<div style="font-size:11px;color:#166534;margin-top:3px">'+escH(top.client_implication.slice(0,140))+'</div>':'')+ 
+          '</div>'+
+        '</div>';
+      }).filter(Boolean).join('');
+      exEl.innerHTML=briefRows||'<div style="font-size:11px;color:#9CA3AF;font-style:italic">Run research to populate the brief.</div>';
+      // Hint to run synthesis
+      if(briefRows){
+        exEl.innerHTML+='<div style="font-size:10px;color:#9CA3AF;margin-top:8px;padding-top:8px;border-top:.5px solid #F2F4F7">Run Intelligence Summary above to generate cross-cutting key insight</div>';
+      }
     }
   }
 }
