@@ -80,6 +80,79 @@ input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;h
 .bq-kws{display:flex;flex-wrap:wrap;gap:4px;margin-top:5px}
 .kw{font-size:9px;padding:2px 7px;background:#F2F4F7;color:#6B7280;border-radius:4px}
 .gap-pill{font-size:9px;padding:2px 7px;background:#FFF5F2;color:#E85520;border-radius:4px;flex-shrink:0;margin-top:2px}
+.ai-panel{margin-top:8px;border:1px solid #E0E7FF;border-radius:8px;overflow:hidden;background:#FAFBFF;}
+.ai-panel-hdr{padding:7px 12px;background:#EEF2FF;cursor:pointer;display:flex;align-items:center;justify-content:space-between;font-size:11px;font-weight:600;color:#534AB7;letter-spacing:.4px;user-select:none;}
+.ai-panel-hdr:hover{background:#E0E7FF;}
+.ai-panel-body{padding:12px 14px;display:none;}
+.ai-panel-body.open{display:block;}
+.ai-toggle-row{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+.ai-toggle{position:relative;width:36px;height:20px;cursor:pointer;}
+.ai-toggle input{opacity:0;width:0;height:0;}
+.ai-toggle-slider{position:absolute;inset:0;background:#D1D5DB;border-radius:10px;transition:.2s;}
+.ai-toggle input:checked+.ai-toggle-slider{background:#534AB7;}
+.ai-toggle-slider:before{content:'';position:absolute;width:14px;height:14px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.2s;}
+.ai-toggle input:checked+.ai-toggle-slider:before{transform:translateX(16px);}
+.ai-toggle-label{font-size:12px;font-weight:600;color:#374151;}
+.ai-sub{margin-left:46px;margin-bottom:10px;padding:10px 12px;background:#F5F3FF;border-radius:6px;border:1px solid #DDD6FE;}
+.ai-sub-q{font-size:11px;font-weight:600;color:#534AB7;margin-bottom:7px;}
+.ai-opts{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;}
+.ai-opt{padding:4px 10px;border-radius:12px;border:1.5px solid #C4B5FD;background:#fff;font-size:11px;color:#534AB7;cursor:pointer;transition:.15s;}
+.ai-opt.sel{background:#534AB7;color:#fff;border-color:#534AB7;}
+.ai-opt:hover:not(.sel){background:#EDE9FE;}
+.ai-free{width:100%;box-sizing:border-box;padding:6px 9px;border:1px solid #DDD6FE;border-radius:6px;font-size:11px;color:#374151;resize:none;height:44px;font-family:inherit;}
+.ai-free:focus{outline:none;border-color:#534AB7;}
+.ai-reg-opts{display:flex;flex-wrap:wrap;gap:6px;}
+.ai-reg-opt{padding:4px 10px;border-radius:12px;border:1.5px solid #86EFAC;background:#fff;font-size:11px;color:#166534;cursor:pointer;transition:.15s;}
+.ai-reg-opt.sel{background:#166534;color:#fff;border-color:#166534;}
+.ai-reg-opt:hover:not(.sel){background:#F0FDF4;}
+.ai-pat-sub{margin-left:46px;margin-bottom:10px;padding:10px 12px;background:#FFFBEB;border-radius:6px;border:1px solid #FDE68A;}
+.ai-pat-sub .ai-sub-q{color:#92400E;}
+.ai-pat-sub .ai-free{border-color:#FDE68A;}
+.ai-pat-sub .ai-free:focus{border-color:#92400E;}
+.ai-reg-sub{margin-left:46px;margin-bottom:10px;padding:10px 12px;background:#F0FDF4;border-radius:6px;border:1px solid #86EFAC;}
+.ai-reg-sub .ai-sub-q{color:#166534;}
+    /* ── NEW SECTION VIEW ──────────────────────────────────── */
+    .sv-nav{display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap;}
+    .sv-nav-btn{padding:6px 14px;border-radius:20px;border:1.5px solid #DBDBDD;background:#fff;font-size:11px;font-weight:600;color:#6B7280;cursor:pointer;transition:.15s;}
+    .sv-nav-btn.active{background:#1A2B4A;color:#fff;border-color:#1A2B4A;}
+    .sv-nav-btn.spec-sci{border-color:#5DCAA5;color:#0F6E56;}
+    .sv-nav-btn.spec-sci.active{background:#0F6E56;color:#fff;}
+    .sv-nav-btn.spec-pat{border-color:#FCD34D;color:#92400E;}
+    .sv-nav-btn.spec-pat.active{background:#92400E;color:#fff;}
+    .sv-nav-btn.spec-reg{border-color:#86EFAC;color:#166534;}
+    .sv-nav-btn.spec-reg.active{background:#166534;color:#fff;}
+    .sv-panel{display:none;}.sv-panel.active{display:block;}
+    .sv-sec-card{background:#fff;border:.5px solid #DBDBDD;border-radius:10px;margin-bottom:10px;overflow:hidden;}
+    .sv-sec-hdr{display:flex;align-items:center;gap:10px;padding:13px 16px;border-bottom:.5px solid #F2F4F7;cursor:pointer;}
+    .sv-sec-hdr:hover{background:#FAFAFA;}
+    .sv-sec-title{font-size:14px;font-weight:700;color:#1A2B4A;flex:1;}
+    .sv-sec-sub{font-size:10px;color:#9CA3AF;margin-top:2px;}
+    .sv-bq-tag{font-size:9px;background:#FEF2F2;color:#E85520;padding:2px 7px;border-radius:4px;font-weight:600;font-family:monospace;}
+    .sv-cov{font-size:9px;font-weight:600;padding:3px 9px;border-radius:20px;}
+    .sv-body{padding:16px 18px;}
+    .sv-synthesis{font-size:13px;color:#1A2B4A;line-height:1.8;margin-bottom:14px;padding-bottom:12px;border-bottom:.5px solid #F2F4F7;}
+    .sv-bullet{display:flex;gap:10px;align-items:flex-start;padding:9px 12px;background:#F9FAFB;border-radius:6px;border-left:3px solid #E85520;margin-bottom:6px;}
+    .sv-bullet-text{font-size:12px;color:#1A2B4A;line-height:1.6;}
+    .sv-gap-note{margin-top:10px;padding:10px 14px;background:#FFFBF3;border-left:3px solid #F59E0B;border-radius:0 6px 6px 0;font-size:11px;color:#633806;line-height:1.6;}
+    .sv-sources{margin-top:12px;padding-top:10px;border-top:.5px solid #F2F4F7;}
+    .sv-src-label{font-size:9px;font-weight:600;letter-spacing:1.2px;text-transform:uppercase;color:#9CA3AF;margin-bottom:6px;}
+    .sv-src-chips{display:flex;flex-wrap:wrap;gap:5px;}
+    .sv-src-chip{font-size:10px;color:#534AB7;background:#EEEDFE;padding:3px 9px;border-radius:12px;text-decoration:none;white-space:nowrap;}
+    .sv-spec-card{background:#fff;border-radius:10px;margin-bottom:10px;overflow:hidden;border:.5px solid #DBDBDD;}
+    .sv-spec-hdr{padding:14px 18px;border-bottom:.5px solid #F2F4F7;}
+    .sv-spec-title{font-size:15px;font-weight:700;color:#1A2B4A;margin-bottom:3px;}
+    .sv-spec-meta{font-size:10px;color:#9CA3AF;}
+    .sv-spec-body{padding:16px 18px;}
+    .sv-spec-field{margin-bottom:12px;}
+    .sv-spec-field-label{font-size:9px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:#9CA3AF;margin-bottom:5px;}
+    .sv-spec-field-val{font-size:12px;color:#374151;line-height:1.7;}
+    .sv-spec-table{width:100%;border-collapse:collapse;font-size:11px;margin-top:4px;}
+    .sv-spec-table th{background:#F9FAFB;padding:6px 10px;text-align:left;font-weight:600;color:#6B7280;border-bottom:.5px solid #E5E9F0;}
+    .sv-spec-table td{padding:7px 10px;border-bottom:.5px solid #F2F4F7;color:#374151;vertical-align:top;}
+    .sv-spec-table tr:last-child td{border-bottom:none;}
+    .sv-placeholder{padding:20px;text-align:center;color:#9CA3AF;font-size:12px;font-style:italic;}
+    .sv-generating{display:flex;align-items:center;gap:8px;padding:16px;color:#534AB7;font-size:12px;}
+    .sv-spin{display:inline-block;animation:spin .9s linear infinite;font-size:16px;}
 .mod-sep{font-size:10px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:#9CA3AF;margin:16px 0 8px;display:flex;align-items:center;gap:8px}
 .mod-sep::after{content:'';flex:1;height:.5px;background:#E5E9F0}
 
@@ -720,6 +793,136 @@ async function handleFile(f){
 
 // ═══ PARSE ANIMATION ═════════════════════════════
 // ═══ REVIEW ══════════════════════════════════════
+function renderAIPanel(idx){
+  return '<div class="ai-panel" id="aip-'+idx+'">' +
+    '<div class="ai-panel-hdr" onclick="toggleAIPanel('+idx+')"><span>⚙ Research Focus</span><span id="aip-arr-'+idx+'">▸</span></div>' +
+    '<div class="ai-panel-body" id="aip-body-'+idx+'">' +
+
+    // Scientific Evidence
+    '<div class="ai-toggle-row">' +
+      '<label class="ai-toggle"><input type="checkbox" id="tog-sci-'+idx+'" onchange="toggleAISub('+idx+',\'sci\')"><span class="ai-toggle-slider"></span></label>' +
+      '<span class="ai-toggle-label">Scientific Evidence</span>' +
+    '</div>' +
+    '<div class="ai-sub" id="sub-sci-'+idx+'" style="display:none">' +
+      '<div class="ai-sub-q">What does the client need to prove?</div>' +
+      '<div class="ai-opts" id="sci-opts-'+idx+'">' +
+        '<div class="ai-opt" onclick="selAIOpt(this,'+idx+',\'sci\')">Works in people</div>' +
+        '<div class="ai-opt" onclick="selAIOpt(this,'+idx+',\'sci\')">How and why it works</div>' +
+        '<div class="ai-opt" onclick="selAIOpt(this,'+idx+',\'sci\')">Regulatory accepted</div>' +
+        '<div class="ai-opt" onclick="selAIOpt(this,'+idx+',\'sci\')">Latest developments</div>' +
+        '<div class="ai-opt" onclick="selAIOpt(this,'+idx+',\'sci\')">All available science</div>' +
+      '</div>' +
+      '<div class="ai-sub-q">Key researchers, institutions, or publications to target? <span style="font-weight:400;color:#6B7280">(optional)</span></div>' +
+      '<textarea class="ai-free" id="sci-free-'+idx+'" placeholder="e.g. Prof. John Smith MIT, EFSA 2024 probiotic opinion, Cochrane IBS review"></textarea>' +
+    '</div>' +
+
+    // Patent Landscape
+    '<div class="ai-toggle-row">' +
+      '<label class="ai-toggle"><input type="checkbox" id="tog-pat-'+idx+'" onchange="toggleAISub('+idx+',\'pat\')"><span class="ai-toggle-slider"></span></label>' +
+      '<span class="ai-toggle-label">Patent Landscape</span>' +
+    '</div>' +
+    '<div class="ai-pat-sub" id="sub-pat-'+idx+'" style="display:none">' +
+      '<div class="ai-sub-q">Key companies, technologies, or inventors to focus on? <span style="font-weight:400;color:#6B7280">(optional — leave blank for full landscape scan)</span></div>' +
+      '<textarea class="ai-free" id="pat-free-'+idx+'" placeholder="e.g. Schaeffler, SKF, NSK — wind bearing applications"></textarea>' +
+    '</div>' +
+
+    // Regulatory
+    '<div class="ai-toggle-row">' +
+      '<label class="ai-toggle"><input type="checkbox" id="tog-reg-'+idx+'" onchange="toggleAISub('+idx+',\'reg\')"><span class="ai-toggle-slider"></span></label>' +
+      '<span class="ai-toggle-label">Regulatory &amp; Safety Data</span>' +
+    '</div>' +
+    '<div class="ai-reg-sub" id="sub-reg-'+idx+'" style="display:none">' +
+      '<div class="ai-sub-q">Which jurisdictions matter?</div>' +
+      '<div class="ai-reg-opts" id="reg-opts-'+idx+'">' +
+        '<div class="ai-reg-opt" onclick="selRegOpt(this,'+idx+')">EU</div>' +
+        '<div class="ai-reg-opt" onclick="selRegOpt(this,'+idx+')">US</div>' +
+        '<div class="ai-reg-opt" onclick="selRegOpt(this,'+idx+')">Asia-Pacific</div>' +
+        '<div class="ai-reg-opt" onclick="selRegOpt(this,'+idx+')">Global / WHO</div>' +
+        '<div class="ai-reg-opt" onclick="selRegOpt(this,'+idx+')">All</div>' +
+      '</div>' +
+    '</div>' +
+
+    '</div></div>';
+}
+
+function toggleAIPanel(idx){
+  var body=document.getElementById('aip-body-'+idx);
+  var arr=document.getElementById('aip-arr-'+idx);
+  if(!body)return;
+  var open=body.classList.toggle('open');
+  if(arr)arr.textContent=open?'▾':'▸';
+}
+
+function toggleAISub(idx,type){
+  var tog=document.getElementById('tog-'+type+'-'+idx);
+  var sub=document.getElementById('sub-'+type+'-'+idx);
+  if(!tog||!sub)return;
+  sub.style.display=tog.checked?'block':'none';
+}
+
+function selAIOpt(el,idx,type){
+  var container=document.getElementById(type+'-opts-'+idx);
+  if(!container)return;
+  container.querySelectorAll('.ai-opt').forEach(function(o){o.classList.remove('sel');});
+  el.classList.add('sel');
+}
+
+function selRegOpt(el,idx){
+  var container=document.getElementById('reg-opts-'+idx);
+  if(!container)return;
+  // Allow multi-select for jurisdictions — toggle individual
+  el.classList.toggle('sel');
+  // If All is selected, select all and disable others
+  if(el.textContent==='All'&&el.classList.contains('sel')){
+    container.querySelectorAll('.ai-reg-opt').forEach(function(o){o.classList.add('sel');});
+  } else if(el.textContent!=='All'){
+    var allBtn=Array.from(container.querySelectorAll('.ai-reg-opt')).find(function(o){return o.textContent==='All';});
+    if(allBtn)allBtn.classList.remove('sel');
+  }
+}
+
+function getAnalystInput(idx){
+  // Returns structured analyst input for a BQ, or null if no toggles active
+  var sciOn=document.getElementById('tog-sci-'+idx);
+  var patOn=document.getElementById('tog-pat-'+idx);
+  var regOn=document.getElementById('tog-reg-'+idx);
+  if(!sciOn)return null;
+
+  var result={scientific:null,patent:null,regulatory:null};
+  var hasAny=false;
+
+  if(sciOn.checked){
+    var sciOpts=document.getElementById('sci-opts-'+idx);
+    var selOpt=sciOpts?sciOpts.querySelector('.ai-opt.sel'):null;
+    var sciFree=document.getElementById('sci-free-'+idx);
+    result.scientific={
+      evidence_type:selOpt?selOpt.textContent:'All available science',
+      targets:sciFree?sciFree.value.trim():''
+    };
+    hasAny=true;
+  }
+
+  if(patOn.checked){
+    var patFree=document.getElementById('pat-free-'+idx);
+    result.patent={
+      focus:'full_landscape',
+      targets:patFree?patFree.value.trim():''
+    };
+    hasAny=true;
+  }
+
+  if(regOn.checked){
+    var regOpts=document.getElementById('reg-opts-'+idx);
+    var selJur=regOpts?Array.from(regOpts.querySelectorAll('.ai-reg-opt.sel')).map(function(o){return o.textContent;}).filter(function(t){return t!=='All';}).join(', '):'';
+    result.regulatory={
+      jurisdictions:selJur||'All'
+    };
+    hasAny=true;
+  }
+
+  return hasAny?result:null;
+}
+
 function renderReview(){
   var p=S.proposal;
   document.getElementById('rwTitle').textContent=p.client+' · '+p.title;
@@ -741,7 +944,8 @@ function renderReview(){
       d.innerHTML='<div class="chk on" id="chk-'+idx+'" onclick="togBQ('+idx+')">✓</div>'+
         '<div style="flex:1;min-width:0"><div class="bq-id">'+bq.id+'</div>'+
         '<div class="bq-text">'+bq.text+'</div>'+
-        '<div class="bq-kws">'+(bq.kw||[]).map(function(k){return'<span class="kw">'+k+'</span>';}).join('')+'</div></div>'+
+        '<div class="bq-kws">'+(bq.kw||[]).map(function(k){return'<span class="kw">'+k+'</span>';}).join('')+'</div>'+
+        renderAIPanel(idx)+'</div>'+
         (bq.gap?'<span class="gap-pill">Gap likely</span>':'');
       area.appendChild(d);
     });
@@ -864,7 +1068,7 @@ function getTypeSpecificInstructions(engType, bqFocus, client) {
 }
 
 
-function buildSynthesisResearchPrompt(bq, p, plan, allResearch, client){
+function buildSynthesisResearchPrompt(bq, p, plan, allResearch, client, analystInput){
   var engType=bq.bq_type||detectEngagementType(p,bq);
   client=client||p.client||'the client';
 
@@ -1008,6 +1212,9 @@ function buildSynthesisResearchPrompt(bq, p, plan, allResearch, client){
     '  "disruption_signals": [{"signal":"","company":"","date":"","type":"","client_implication":""}],',
     '  "client_decision_frame": {"option_a":"","option_b":"","key_condition":""},',
     '  "profiles": [{"name":"","hq":"","founded":null,"type":"competitor|startup|supplier","role":"","geography":"","key_product":"","key_fact":"","client_relevance":"","source_url":""}]',
+    (analystInput&&analystInput.scientific ? ',  "specialist_scientific": {"state_of_evidence":"","strongest_findings":[{"what":"","study_type":"","year":"","replicated":false}],"contested":"","regulatory_acceptance":"","recency_signal":"","evidence_gaps":""}' : ''),
+    (analystInput&&analystInput.patent ? ',  "specialist_patent": {"top_assignees":[{"name":"","filing_volume":"","strategic_posture":"","key_claim_area":""}],"technology_evolution":"","whitespace":["specific area with no meaningful IP"],"recent_signals":[{"assignee":"","filing_date":"","technology":"","significance":""}],"fto_flags":[{"concern":"","assignee":"","patent_ref":"","expiry":""}],"geography_gaps":""}' : ''),
+    (analystInput&&analystInput.regulatory ? ',  "specialist_regulatory": {"status_by_jurisdiction":[{"jurisdiction":"","status":"approved|permitted|restricted|under review|no data","detail":"","authority":"","year":""}],"critical_thresholds":[{"parameter":"","value":"","regulation":"","jurisdiction":""}],"trajectory":"","jurisdiction_divergence":"","compliance_pathway":"","regulatory_gaps":""}' : ''),
     '}',
     '',
     'RULES:',
@@ -1017,6 +1224,9 @@ function buildSynthesisResearchPrompt(bq, p, plan, allResearch, client){
     '(4) primary_research_gaps: MINIMUM 2 entries.',
     '(5) Every headline must contain: a named company/product AND a specific number.',
     '(6) No markdown. Double quotes only. Escape apostrophes with backslash.',
+    '(7) BANNED SOURCES — never cite these as findings: Wikipedia, Reddit, Quora, MarketsandMarkets, Grand View Research, Mordor Intelligence, Allied Market Research, Persistence Market Research, Technavio, IMARC, Statista reports, PRNewswire, BusinessWire, or any other syndicated aggregator. If data came from these, mark confidence as estimated and flag it as needing primary validation.',
+    '(8) PREFERRED sources: company annual reports, regulatory filings, government databases, patent offices, trade association publications, peer-reviewed journals. Data from these = FACT. Data from aggregators = INFERENCE at best.',
+    '(9) specialist_scientific/specialist_patent/specialist_regulatory: populate with specific named data from the research — not generic statements. Every field must contain real extracted data.',
   ].join('\n');
 }
 
@@ -1100,13 +1310,30 @@ function buildResearchPrompt(bq, p, plan) {
     '── WHAT TO RESEARCH AND INCLUDE ────────────────────────',
     typeInstruction,
     '',
+    '── BLOCKED SOURCES — NEVER USE OR CITE ────────────────',
+    'The following are BANNED. Do not search them, do not cite them, do not use their content even if returned in results:',
+    'User-generated: Wikipedia, Reddit, Quora, Yahoo Answers, Stack Overflow, SlideShare, ResearchGate, Medium, Substack',
+    'Social: Twitter/X, LinkedIn posts, Facebook, Instagram, YouTube',
+    'Syndicated aggregators (fabricated market size data, no methodology): MarketsandMarkets, Grand View Research, Mordor Intelligence, Allied Market Research, Persistence Market Research, Future Market Insights, Technavio, IMARC, Statista reports (use Statista raw data only), Verified Market Research, Business Market Insights, Transparency Market Research',
+    'Press release wires (use original company source instead): PRNewswire, BusinessWire, Globe Newswire, EIN Presswire',
+    'News aggregators: MSN News, Yahoo News, Google News aggregated pages, Flipboard',
+    'If a search result comes from these sources — skip it entirely. Find the original primary source instead.',
+    '',
+    '── PRIORITY SOURCES — ALWAYS PREFER ───────────────────',
+    'Company primary sources: Annual reports, investor presentations, earnings calls, official press releases from company website, regulatory filings (SEC, BSE, NSE, Companies House)',
+    'Government and regulatory: National statistics offices, ministry publications, regulatory authority databases, patent office databases (Espacenet, USPTO, JPO)',
+    'Industry associations: Trade body publications, standards organisations, official industry databases',
+    'Financial and trade data: TradeMap (ITC), UN Comtrade, World Bank Open Data, IMF data, central bank publications',
+    'Academic and scientific: Peer-reviewed journals (PubMed, ScienceDirect, ACS), university research centres',
+    'Specialist databases: Derwent (patents), Mintel (consumer), ICIS (chemicals pricing), Bloomberg, Reuters (factual news only)',
+    '',
     '── FINDING QUALITY STANDARDS (ALL 6 required per finding) ──',
     '1. NAMED — specific company/product/person, never "leading players"',
     '2. NUMBERED — specific %, price, volume, year, count',
     '3. MECHANISTIC — WHY/HOW not just WHAT',
     '4. GEO-TAGGED — which geography this applies to',
     '5. CLIENT-FRAMED — end with "For ' + client + ': [specific threat/opportunity/decision]"',
-    '6. SOURCED — name the publication or site, never "industry sources"',
+    '6. SOURCED — must be a primary source from the PRIORITY list above, never a syndicated aggregator',
     '',
     '── ADJACENT INTELLIGENCE (MANDATORY) ───────────────────',
     'Parallel industry from plan: ' + ((plan&&plan.parallel_industry)||'identify which other industry solved this first'),
@@ -1355,7 +1582,7 @@ async function callAPI(body, logFn){
 
 // Main research orchestrator — sequential, one BQ at a time
 
-async function researchBQ(bq, p, onLog){
+async function researchBQ(bq, p, onLog, analystInput){
   var sources=[];
   var result=null;
   var client=p.client||'the client';
@@ -1434,6 +1661,9 @@ async function researchBQ(bq, p, onLog){
       '  "search_queries": [\n'+
       '    {"query":"specific search string","intent":"what this finds","priority":"high|medium"}\n'+
       '  ],\n'+
+      '  "direct_urls": [\n'+
+      '    "https://... direct URL of a primary source document to fetch and read"\n'+
+      '  ],\n'+
       '  "key_entities": ["named company or player"],\n'+
       '  "data_shape": {"primary_metrics":["'+metricHint+'"],"comparison_axis":"what to compare across"},\n'+
       '  "hypotheses": [{"statement":"specific testable belief with company or number","what_would_need_to_be_true":"...","confidence_level":"low|medium|high"}],\n'+
@@ -1448,19 +1678,146 @@ async function researchBQ(bq, p, onLog){
       '- At least 1 pricing/cost data query\n'+
       '- Vary angles — do not repeat same search with different words\n'+
       '- Use year qualifiers 2023 2024 2025 in queries for recency\n'+
-      '- No trailing commas. Double quotes only.';
+      '\ndirect_urls RULES — this is where the tool beats manual research:\n'+
+      'Include as many direct URLs as you know to be relevant and authoritative. No limit. These pages will be fully read, not just snippet-searched.\n'+
+      'The goal: give the research engine the exact documents a senior analyst would go to first.\n\n'+
+      'ALWAYS include direct URLs for these if relevant to the BQ:\n'+
+      '  Company primary sources:\n'+
+      '    - Annual report or investor relations page of every named competitor\n'+
+      '    - BSE/NSE filing pages for listed Indian companies\n'+
+      '    - SEC EDGAR for US companies (https://www.sec.gov/cgi-bin/browse-edgar)\n'+
+      '    - Companies House for UK companies\n'+
+      '  Patent sources (for IP/innovation BQs):\n'+
+      '    - https://worldwide.espacenet.com/patent/search?q=[query] — EPO global patents\n'+
+      '    - https://patents.google.com/patent/search?q=[query] — Google Patents\n'+
+      '    - https://ppubs.uspto.gov/pubwebapp/external.html — USPTO\n'+
+      '  Trade and market data:\n'+
+      '    - https://www.trademap.org/Product_SelCountry_TS.aspx — ITC TradeMap\n'+
+      '    - https://comtradeplus.un.org/ — UN Comtrade\n'+
+      '    - https://data.worldbank.org/ — World Bank\n'+
+      '  Regulatory databases:\n'+
+      '    - https://echa.europa.eu/information-on-chemicals — ECHA chemicals\n'+
+      '    - https://www.epa.gov/chemical-data-reporting — US EPA\n'+
+      '    - https://chemicals.gov.in/ — India chemicals\n'+
+      '    - National regulatory authority pages for relevant jurisdictions\n'+
+      '  Government statistics:\n'+
+      '    - Ministry or department publication pages for relevant countries\n'+
+      '    - National statistics office data pages\n'+
+      '    - Central bank or financial regulator publications\n'+
+      '  Industry-specific:\n'+
+      '    - Trade association publications for this sector\n'+
+      '    - Standards body technical pages (ISO, ASTM, BIS)\n'+
+      '    - Academic institution research pages if known to work in this area\n\n'+
+      'Include a URL only if you are confident it exists and is relevant. Do not invent URLs.\n'+
+      'No trailing commas. Double quotes only.';
+
+    // ── ANALYST INPUT: specialist source targeting ───────────────
+    var specialistBlock='';
+    if(analystInput){
+      var sb=[];
+
+      if(analystInput.scientific){
+        var evType=analystInput.scientific.evidence_type||'All available science';
+        var sciTargets=analystInput.scientific.targets||'';
+        sb.push('SCIENTIFIC EVIDENCE FOCUS (analyst-specified):');
+        sb.push('Evidence type needed: '+evType);
+        var sciUrls=[];
+        var scopeQ=(bq.scope_nouns||[]).slice(0,2).join(' ').replace(/\s+/g,'+');
+        if(evType==='Works in people'||evType==='All available science'){
+          sciUrls.push('https://pubmed.ncbi.nlm.nih.gov/?term='+scopeQ+'&filter=pubt.clinicaltrial&filter=pubt.meta-analysis');
+          sciUrls.push('https://www.cochranelibrary.com/search?searchBy=6&searchText='+scopeQ);
+          sciUrls.push('https://clinicaltrials.gov/search?term='+scopeQ);
+          sciUrls.push('https://europepmc.org/search?query='+scopeQ+'&resulttype=core');
+        }
+        if(evType==='How and why it works'||evType==='All available science'){
+          sciUrls.push('https://www.biorxiv.org/search/'+scopeQ);
+          sciUrls.push('https://pubmed.ncbi.nlm.nih.gov/?term='+scopeQ+'&filter=pubt.review');
+        }
+        if(evType==='Regulatory accepted'||evType==='All available science'){
+          sciUrls.push('https://efsa.europa.eu/en/search/site/'+scopeQ);
+          sciUrls.push('https://www.who.int/publications/i/list?topics='+scopeQ);
+          sciUrls.push('https://www.fda.gov/food/food-ingredients-packaging/generally-recognized-safe-gras');
+        }
+        if(evType==='Latest developments'||evType==='All available science'){
+          sciUrls.push('https://api.semanticscholar.org/graph/v1/paper/search?query='+scopeQ+'&fields=title,abstract,year,citationCount&sort=citationCount&limit=10');
+          sciUrls.push('https://arxiv.org/search/?searchtype=all&query='+scopeQ+'&start=0');
+          sciUrls.push('https://www.medrxiv.org/search/'+scopeQ);
+        }
+        if(sciTargets){
+          sb.push('Priority institutions/researchers to target: '+sciTargets);
+          sb.push('Search specifically for publications by these institutions/researchers on the BQ topic.');
+        }
+        sb.push('Add these to direct_urls (in addition to any others you identify):');
+        sciUrls.forEach(function(u){sb.push('  '+u);});
+      }
+
+      if(analystInput.patent){
+        var patTargets=analystInput.patent.targets||'';
+        sb.push('\nPATENT LANDSCAPE FOCUS (analyst-specified):');
+        sb.push('Run FULL patent sweep: assignee landscape, whitespace, technology evolution, recent filings (last 24 months).');
+        var scopeTerms=(bq.scope_nouns||[]).slice(0,3).join(' ');
+        var patUrls=[
+          'https://patents.google.com/patent/search?q='+encodeURIComponent(scopeTerms),
+          'https://worldwide.espacenet.com/patent/search?q='+encodeURIComponent(scopeTerms),
+          'https://patentscope.wipo.int/search/en/search.jsf?query='+encodeURIComponent(scopeTerms),
+          'https://ppubs.uspto.gov/pubwebapp/external.html'
+        ];
+        if(patTargets){
+          sb.push('Focus assignee searches on: '+patTargets);
+          patTargets.split(/[,;]+/).forEach(function(co){
+            var coQ=co.trim().replace(/\s+/g,'+');
+            patUrls.push('https://patents.google.com/patent/search?assignee='+encodeURIComponent(co.trim())+'&q='+encodeURIComponent(scopeTerms));
+          });
+        }
+        sb.push('Construct queries for: (1) top assignees by volume, (2) filing trend 2015-2025, (3) whitespace gaps, (4) recent filings 2023-2025');
+        sb.push('Add these to direct_urls:');
+        patUrls.forEach(function(u){sb.push('  '+u);});
+      }
+
+      if(analystInput.regulatory){
+        var jurs=analystInput.regulatory.jurisdictions||'All';
+        sb.push('\nREGULATORY FOCUS (analyst-specified):');
+        sb.push('Jurisdictions: '+jurs);
+        var regUrls=[];
+        var scopeQ2=(bq.scope_nouns||[]).slice(0,2).join('+');
+        if(jurs.indexOf('EU')>=0||jurs==='All'){
+          regUrls.push('https://efsa.europa.eu/en/search/site/'+scopeQ2);
+          regUrls.push('https://echa.europa.eu/information-on-chemicals');
+          regUrls.push('https://eur-lex.europa.eu/search.html?text='+scopeQ2+'&scope=EURLEX&type=quick&lang=en');
+        }
+        if(jurs.indexOf('US')>=0||jurs==='All'){
+          regUrls.push('https://www.fda.gov/search?s='+scopeQ2);
+          regUrls.push('https://www.epa.gov/search/site/'+scopeQ2);
+          regUrls.push('https://www.federalregister.gov/search?conditions%5Bterm%5D='+scopeQ2);
+        }
+        if(jurs.indexOf('Asia')>=0||jurs==='All'){
+          regUrls.push('https://www.mhlw.go.jp/english/search/?q='+scopeQ2);
+          regUrls.push('https://www.tga.gov.au/search-page?search_api_views_fulltext='+scopeQ2);
+        }
+        if(jurs.indexOf('Global')>=0||jurs.indexOf('WHO')>=0||jurs==='All'){
+          regUrls.push('https://www.who.int/publications/i/list?topics='+scopeQ2);
+          regUrls.push('http://www.fao.org/fao-who-codexalimentarius/search/en/?q='+scopeQ2);
+        }
+        sb.push('Add these regulatory database URLs to direct_urls:');
+        regUrls.forEach(function(u){sb.push('  '+u);});
+      }
+
+      if(sb.length>0){
+        specialistBlock='\n\n── ANALYST-SPECIFIED RESEARCH FOCUS ────────────────────\n'+sb.join('\n')+'\n\nIncorporate all specialist source URLs above into your direct_urls list. These are pre-validated by the analyst.';
+      }
+    }
 
     var planData=await callAPI({
       model:'claude-sonnet-4-6',
-      max_tokens:1500,
-      messages:[{role:'user',content:planPrompt}]
+      max_tokens:1800,
+      messages:[{role:'user',content:planPrompt+specialistBlock}]
     }, onLog);
 
     stopTicker();
 
     var planText=extractText(planData.content);
     var plan={
-      search_queries:[],key_entities:[],
+      search_queries:[],key_entities:[],direct_urls:[],
       data_shape:{primary_metrics:[],comparison_axis:''},
       hypotheses:[],parallel_industry:'',
       search_angle_1:'',search_angle_2:'',search_angle_3:'',hypothesis:''
@@ -1486,7 +1843,7 @@ async function researchBQ(bq, p, onLog){
 
     var searchData=await callAPI({
       model:'claude-sonnet-4-6',
-      max_tokens:4000,
+      max_tokens:5000,
       tools:[{type:'web_search_20250305',name:'web_search'}],
       messages:[{role:'user',content:buildResearchPrompt(bq,p,plan)}]
     }, onLog);
@@ -1494,32 +1851,159 @@ async function researchBQ(bq, p, onLog){
 
     var searches2=extractSearches(searchData.content);
     var searchText=extractText(searchData.content);
-    onLog('done','Pass 2: '+searches2.length+' searches complete');
+    onLog('done','Pass 2: '+searches2.length+' searches — identifying high-value sources');
 
-    // ── PASS 3: FOLLOW THE LEAD ─────────────────────────────────
-    startTicker(['Following key lead...','Digging deeper...','Finding the non-obvious...']);
-    onLog('pass','Pass 3: Following lead');
+    // ── PASS 3A: SELECT & FETCH FULL PAGES ──────────────────────
+    // Extract URLs found in Pass 2 — filter for high-value primary sources
+    startTicker(['Selecting primary sources...','Reading company documents...','Fetching annual reports and filings...','Extracting data from full pages...']);
+    onLog('pass','Pass 3: Reading source documents');
 
-    var followPrompt='Follow-up research for '+bq.text+'. Initial findings: '+searchText.slice(0,2000)+'. Run 2-3 targeted searches on the single most promising lead found. Focus on specific numbers, named companies, and pricing data.';
+    // Collect all URLs found during Pass 2
+    var pass2Urls=[];
+    (searchData.content||[]).forEach(function(block){
+      if(block.type==='tool_result'||block.type==='web_search_tool_result'||block.type==='server_tool_result'){
+        var cnt=block.content;
+        if(typeof cnt==='string'){
+          (cnt.match(/https?:\/\/[^\s"'<>]{20,}/g)||[]).forEach(function(u){pass2Urls.push(u);});
+        } else if(Array.isArray(cnt)){
+          cnt.forEach(function(c){
+            if(c.url) pass2Urls.push(c.url);
+            else if(c.text)(c.text.match(/https?:\/\/[^\s"'<>]{20,}/g)||[]).forEach(function(u){pass2Urls.push(u);});
+          });
+        }
+      }
+    });
 
-    var followData=await callAPI({
-      model:'claude-sonnet-4-6',
-      max_tokens:3000,
-      tools:[{type:'web_search_20250305',name:'web_search'}],
-      messages:[{role:'user',content:followPrompt}]
-    }, onLog);
+    // Also add plan's direct URL targets if any
+    if(plan.direct_urls&&plan.direct_urls.length){
+      plan.direct_urls.forEach(function(u){pass2Urls.push(u);});
+    }
+
+    // Deduplicate
+    pass2Urls=[...new Set(pass2Urls)];
+
+    // BLOCKED domains — never fetch these
+    var BLOCKED=/reddit\.com|wikipedia\.org|quora\.com|twitter\.com|x\.com|facebook\.com|instagram\.com|linkedin\.com|youtube\.com|medium\.com|substack\.com|yahoo\.com|msn\.com|flipboard|marketsandmarkets|grandviewresearch|mordorintelligence|alliedmarketresearch|persistencemarketresearch|futuremarketinsights|technavio\.com|imarcgroup|transparencymarketresearch|verifiedmarketresearch|prnewswire|businesswire|globenewswire|einpresswire|slideshare|researchgate\.net|stackoverflow|quora|glassdoor|trustpilot|g2\.com/i;
+
+    // HIGH-VALUE domains — always fetch these in full
+    var HIGH_VALUE=/annual.report|investor|investors\.|ir\.|financials|results|earnings|report|filing|publication|data|database|statistics|regulatory|authority|patent|espacenet|patents\.google|ppubs\.uspto|gov\.|europa\.eu|oecd\.org|worldbank\.org|trademap\.org|comtrade|imf\.org|who\.int|fda\.gov|echa\.europa|epa\.gov|bse\.com|nseindia|sec\.gov|companieshouse\.gov|edgaronline|bundesanzeiger|eur-lex|bis\.org|schaeffler|skf\.com|timken|ntn-|nsk\.com|bharat.forge|rolex.rings|basf\.com|dow\.com|evonik|lanxess|solvay|henkel\.com|beiersdorf|ashland|clariant|dsm\.com|evonik|covestro|wacker|arkema|loreal|unilever|procter|colgate|reckitt|suzlon|inox.wind|siemens-gamesa|vestas|nordex|enercon|goldwind|miba\.at|tata.steel|sail\.co|jsw|hindalco|omya|imerys|mineral.technologies|cabot|croda/i;
+
+    // Score each URL — higher score = fetch first
+    function scoreUrl(u){
+      if(BLOCKED.test(u)) return -1;
+      var score=0;
+      if(HIGH_VALUE.test(u)) score+=10;
+      if(u.indexOf('.pdf')>0) score+=8; // PDFs are primary documents
+      if(/annual.report|investor.relat|ir\//i.test(u)) score+=7;
+      if(/\/report|\/publication|\/research|\/data|\/statistics/i.test(u)) score+=5;
+      if(/gov\.|europa\.eu|\.org/i.test(u)) score+=4;
+      if(/\.edu/i.test(u)) score+=3;
+      if(/news|press|release/i.test(u)) score+=1;
+      return score;
+    }
+
+    var scoredUrls=pass2Urls
+      .filter(function(u){return scoreUrl(u)>=0;})
+      .map(function(u){return {url:u,score:scoreUrl(u)};})
+      .sort(function(a,b){return b.score-a.score;})
+      .filter(function(x){return x.score>0;}) // Only fetch genuinely valuable pages
+      .slice(0,10) // Max 10 pages — balance quality vs token budget
+      .map(function(x){return x.url;});
+
+    // Also add plan's direct URLs at the front (these are pre-validated by Pass 1)
+    var valuableUrls=[];
+    (plan.direct_urls||[]).forEach(function(u){
+      if(!BLOCKED.test(u)&&valuableUrls.indexOf(u)<0) valuableUrls.push(u);
+    });
+    scoredUrls.forEach(function(u){
+      if(valuableUrls.indexOf(u)<0) valuableUrls.push(u);
+    });
+    valuableUrls=valuableUrls.slice(0,12); // Hard ceiling: 12 pages max per BQ
+
+    var fetchedContent='';
+    var fetchedUrls=[];
+
+    if(valuableUrls.length){
+      onLog('info','Fetching '+valuableUrls.length+' primary source documents...');
+
+      // Build fetch prompt — ask Claude to fetch each URL and extract key data
+      var fetchPrompt='You are a senior FutureBridge research analyst reading primary source documents. Your job is to extract hard data — not write about it, not summarise generally, but extract the specific numbers, names, dates, and facts that answer this business question.\n\n'+
+        'Business Question: '+bq.text+'\n'+
+        'Client: '+client+' | Engagement: '+(p.title||'')+'\n'+
+        'Data points that MUST be captured if found: '+(bq.scope_nouns||[]).join(', ')+'\n\n'+
+        'IMPORTANT SOURCE RULES:\n'+
+        '- SKIP any page that is: Wikipedia, Reddit, Quora, a market research aggregator (MarketsandMarkets, Grand View Research, Mordor Intelligence, etc.), a press release wire, or social media\n'+
+        '- PRIORITISE: company annual reports, regulatory filings, government databases, patent filings, official trade data\n\n'+
+        'Documents to fetch and read (in order — fetch as many as you can):\n'+
+        valuableUrls.map(function(u,i){return (i+1)+'. '+u;}).join('\n')+'\n\n'+
+        'For EACH document you successfully read:\n'+
+        '1. Write: SOURCE: [exact url]\n'+
+        '2. Write: TYPE: [Annual Report / Regulatory Filing / Trade Data / Patent / Government Publication / Other]\n'+
+        '3. Extract ONLY hard data points relevant to the BQ — use this format:\n'+
+        '   - [Company/Entity]: [Specific metric] = [Value with unit] ([year]) [confidence: confirmed/estimated]\n'+
+        '   Example: Schaeffler India: Revenue from wind bearings = INR 2,340 Cr (FY2024) [confirmed]\n'+
+        '   Example: SKF India: Localisation level = 75% (2024) [confirmed]\n'+
+        '   Example: Import duty on bearing rings HS 8482.50 = 7.5% + 10% social welfare surcharge [confirmed]\n'+
+        '4. If a page is blocked, paywalled, or irrelevant — write: SKIPPED: [url] — [reason]\n\n'+
+        'Do not write narrative. Do not summarise. Data points only. Every number must have a unit and a year.';
+
+      try{
+        var fetchData=await callAPI({
+          model:'claude-sonnet-4-6',
+          max_tokens:10000,
+          tools:[
+            {type:'web_search_20250305',name:'web_search'},
+            {type:'web_fetch_20250305',name:'web_fetch'}
+          ],
+          messages:[{role:'user',content:fetchPrompt}]
+        }, onLog);
+
+        fetchedContent=extractText(fetchData.content);
+
+        // Log which domains were read
+        valuableUrls.forEach(function(url){
+          var domain=url.replace(/^https?:\/\//,'').split('/')[0];
+          onLog('read','Read full page: '+domain);
+          sources.push({type:'fetched',bq:bq.id,title:'Full page: '+domain,url:url});
+          fetchedUrls.push(url);
+        });
+
+        onLog('done','Pass 3: '+fetchedUrls.length+' pages read — '+(fetchedContent.length/1000).toFixed(0)+'k chars extracted');
+      }catch(fe){
+        onLog('info','Page fetch encountered issues — continuing with search data');
+        fetchedContent='';
+      }
+    } else {
+      onLog('info','No primary source documents identified — running targeted follow-up searches');
+    }
+
+    // ── PASS 3B: FOLLOW-UP SEARCH (if no fetchable pages, or supplementary) ──
+    var followText='';
+    if(!fetchedContent||fetchedContent.length<500){
+      // No pages fetched — fall back to follow-up searches as before
+      startTicker(['Following key lead...','Running targeted follow-up...']);
+      var followPrompt2='Follow-up research. BQ: '+bq.text+'. Initial findings: '+searchText.slice(0,2000)+'. Run 2-3 more targeted searches on the strongest specific lead — focus on exact prices, named company moves, or regulatory details not yet found.';
+      var followData2=await callAPI({
+        model:'claude-sonnet-4-6',
+        max_tokens:3000,
+        tools:[{type:'web_search_20250305',name:'web_search'}],
+        messages:[{role:'user',content:followPrompt2}]
+      }, onLog);
+      var searches3b=extractSearches(followData2.content);
+      followText=extractText(followData2.content);
+      onLog('done','Pass 3B: '+searches3b.length+' follow-up searches complete');
+    } else {
+      followText=fetchedContent;
+    }
+
     stopTicker();
-
-    var searches3=extractSearches(followData.content);
-    var followText=extractText(followData.content);
-    onLog('done','Pass 3: '+searches3.length+' follow-up searches complete');
 
     // ── PASS 4: SYNTHESISE ──────────────────────────────────────
     startTicker(['Synthesising findings...','Applying FIH framework...','Building structured output...']);
     onLog('pass','Pass 4: Synthesising');
 
-    var allResearch='Initial research: '+searchText+' Follow-up: '+followText;
-    var synthPrompt=buildSynthesisResearchPrompt(bq,p,plan,allResearch,client);
+    var allResearch='Search findings:\n'+searchText+'\n\nPrimary source data:\n'+followText;
+    var synthPrompt=buildSynthesisResearchPrompt(bq,p,plan,allResearch,client,analystInput);
 
     var synthData=await callAPI({
       model:'claude-sonnet-4-6',
@@ -1627,7 +2111,9 @@ async function runResearch(){
     }
     var onLog=makeOnLog(logEl,scEl,pcEl,rcEl);
 
-    var r=await researchBQ(bq,p,onLog);
+    var bqOrigIdx=S.selBQs[i];
+    var analystIn=getAnalystInput(bqOrigIdx);
+    var r=await researchBQ(bq,p,onLog,analystIn);
 
     // Handle failed BQ — show error but CONTINUE to next BQ
     if(!r.result){
@@ -2980,9 +3466,18 @@ function buildSynthesisPrompt(p, allBQResults, engType) {
     return lines.join('\n');
   }).filter(Boolean).join('\n\n---\n\n');
 
-  var sectionList = sections.map(function(s) {
-    return s.id + ': ' + s.title + ' — ' + s.desc;
-  }).join('\n');
+  var sectionList = [
+    'key_insights: Key Insights from Research — the 3-5 most important cross-cutting findings that directly inform ' + client + '\'s decision',
+    'market_overview: Market Overview — market size, structure, growth trajectory, key segments, geographic breakdown with named data points',
+    'competitor_overview: Competitor Overview — named players, their positioning, recent moves, relative strengths and weaknesses',
+    'supply_chain: Supply Chain & Value Chain — tier structure, named intermediaries, pricing dynamics, localisation levels, concentration risks',
+    'strategic_moves: Strategic Moves & Signals — M&A, JVs, capacity expansions, new entrants, executive moves in last 24 months',
+    'technology_readiness: Technology Readiness & Innovation — TRL levels, commercialisation timelines, what is deployed vs in development',
+    'cost_pricing: Cost & Pricing Intelligence — ex-works pricing, cost build-up, margin structure, pricing trends with specific numbers',
+    'adjacent_intelligence: Adjacent Intelligence — parallel industries that solved this problem first, with named analogies and learnings',
+    'voice_of_market: Voice of the Market — what buyers, distributors, and end users are saying; unmet needs and switching triggers',
+    'risk_scenario: Risk & Scenario Analysis — scenario-framed risks (regulatory, technology, supply, geopolitical) and their commercial implications for ' + client,
+  ].join('\n');
 
   return [
     'You are a senior FutureBridge consultant synthesising web research outputs into a structured deliverable.',
@@ -2994,7 +3489,7 @@ function buildSynthesisPrompt(p, allBQResults, engType) {
     bqSummaries,
     '',
     '── YOUR TASK ────────────────────────────────────────────',
-    'Synthesise the research above into the following sections for a ' + engType.replace(/_/g,' ') + ' engagement:',
+    'Synthesise the research above into the following sections. Use EXACTLY these section IDs:',
     sectionList,
     '',
     'For each section:',
@@ -3171,62 +3666,35 @@ function renderSectionView(parsed) {
   var client = (p.client||'the client');
   var bqs = p.bqs || [];
 
-  // ── 1. ENGAGEMENT HEADER ─────────────────────────────────────
+  // Detect which specialist panels have data
+  var hasSpecSci = false, hasSpecPat = false, hasSpecReg = false;
+  S.selBQs.forEach(function(i){
+    var bq = (p.bqs||[])[i];
+    if(!bq) return;
+    var d = normaliseResult(S.bqResults[bq.id]);
+    if(d && d.specialist_scientific) hasSpecSci = true;
+    if(d && d.specialist_patent) hasSpecPat = true;
+    if(d && d.specialist_regulatory) hasSpecReg = true;
+  });
+
+  // ── ENGAGEMENT HEADER ────────────────────────────────────────
   var hdr = document.createElement('div');
-  hdr.style.cssText = 'background:var(--dark);border-radius:10px;padding:16px 20px;margin-bottom:14px;display:flex;align-items:flex-start;justify-content:space-between';
+  hdr.style.cssText = 'background:#1A2B4A;border-radius:10px;padding:16px 20px;margin-bottom:14px;display:flex;align-items:flex-start;justify-content:space-between';
   hdr.innerHTML =
     '<div>' +
-      '<div style="font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#939399;margin-bottom:6px">FutureBridge Research Workbench — Section Intelligence</div>' +
+      '<div style="font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#6B7280;margin-bottom:6px">FutureBridge Research Intelligence — Section View</div>' +
       '<div style="font-size:18px;font-weight:700;color:#fff;margin-bottom:4px">' + escH(p.title||'Research Intelligence') + '</div>' +
-      '<div style="font-size:12px;color:#939399">' + escH(client) +
+      '<div style="font-size:12px;color:#9CA3AF">' + escH(client) +
         (p.geography ? ' &nbsp;·&nbsp; ' + escH(p.geography) : '') +
-        (p.period ? ' &nbsp;·&nbsp; ' + escH(p.period) : '') +
-      '</div>' +
+        (p.period ? ' &nbsp;·&nbsp; ' + escH(p.period) : '') + '</div>' +
     '</div>' +
     '<div style="text-align:right">' +
-      '<div style="font-size:9px;color:#6F6F77;margin-bottom:4px">' + bqs.length + ' business questions</div>' +
-      '<div style="font-size:9px;color:#6F6F77">' + sections.length + ' sections synthesised</div>' +
+      '<div style="font-size:9px;color:#6B7280;margin-bottom:3px">' + sections.length + ' sections synthesised</div>' +
+      '<div style="font-size:9px;color:#6B7280">' + bqs.length + ' business questions</div>' +
     '</div>';
   container.appendChild(hdr);
 
-  // ── 2. BQ COVERAGE MATRIX ────────────────────────────────────
-  if (bqs.length) {
-    var matrix = document.createElement('div');
-    matrix.style.cssText = 'background:var(--white);border:.5px solid var(--gray);border-radius:10px;margin-bottom:14px;overflow:hidden';
-    var matHd = document.createElement('div');
-    matHd.style.cssText = 'padding:10px 16px;border-bottom:.5px solid var(--gray);display:flex;align-items:center;justify-content:space-between';
-    matHd.innerHTML = '<span style="font-size:11px;font-weight:600;color:var(--dark)">BQ Coverage Matrix</span>' +
-      '<span style="font-size:9px;color:var(--mgray)">Status across all business questions</span>';
-    matrix.appendChild(matHd);
-    var matBody = document.createElement('div');
-    matBody.style.cssText = 'padding:8px 10px';
-    bqs.forEach(function(bq) {
-      var d = (S.bqResults||{})[bq.id] || {};
-      var findings = (d.findings||[]).length;
-      var profiles = (d.profiles||[]).length;
-      var gaps = (d.primary_research_gaps||[]).length;
-      var stats = (d.stats||[]).length;
-      var hasData = findings > 0 || stats > 0;
-      var statusBg = hasData ? (findings>=3?'#e0f5ee':'#FEF5E4') : '#fdecea';
-      var statusTxt = hasData ? (findings>=3?'#085041':'#633806') : '#A32D2D';
-      var statusLbl = hasData ? (findings>=3?'Complete':'Partial') : 'Not run';
-      var row = document.createElement('div');
-      row.style.cssText = 'display:flex;align-items:center;gap:10px;padding:7px 6px;border-radius:6px;margin-bottom:3px;background:#FAFAFA';
-      row.innerHTML =
-        '<span style="font-size:9px;font-weight:700;color:var(--red);font-family:var(--fm);min-width:28px">' + escH(bq.id) + '</span>' +
-        '<span style="font-size:10px;color:var(--dark);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + escH((bq.text||'').slice(0,100)) + '</span>' +
-        '<span style="font-size:9px;padding:2px 8px;border-radius:8px;font-weight:600;background:' + statusBg + ';color:' + statusTxt + '">' + statusLbl + '</span>' +
-        (findings?'<span style="font-size:9px;color:var(--mgray)">' + findings + ' findings</span>':'') +
-        (stats?'<span style="font-size:9px;color:var(--mgray)">' + stats + ' stats</span>':'') +
-        (profiles?'<span style="font-size:9px;color:var(--teal)">' + profiles + ' profiles</span>':'') +
-        (gaps?'<span style="font-size:9px;color:#A32D2D">' + gaps + ' gaps</span>':'');
-      matBody.appendChild(row);
-    });
-    matrix.appendChild(matBody);
-    container.appendChild(matrix);
-  }
-
-  // ── 3. KEY INSIGHT BANNER ────────────────────────────────────
+  // ── KEY INSIGHT BANNER ───────────────────────────────────────
   if (cc.key_insight || cc.recommended_next_step) {
     var banner = document.createElement('div');
     banner.style.cssText = 'background:#EEEDFE;border:.5px solid #7F77DD;border-radius:10px;padding:16px 20px;margin-bottom:14px';
@@ -3234,159 +3702,333 @@ function renderSectionView(parsed) {
       '<div style="font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#534AB7;margin-bottom:10px">Key insight across all research</div>' +
       (cc.key_insight ? '<div style="font-size:14px;font-weight:600;color:#26215C;line-height:1.6;margin-bottom:10px">' + escH(cc.key_insight) + '</div>' : '') +
       (cc.recommended_next_step ? '<div style="font-size:12px;color:#534AB7;padding:10px 12px;background:#fff;border-radius:6px;border:.5px solid #AFA9EC"><strong>Recommended next step:</strong> ' + escH(cc.recommended_next_step) + '</div>' : '') +
-      (cc.biggest_gap ? '<div style="font-size:11px;color:#888;margin-top:8px;padding-top:8px;border-top:.5px solid #AFA9EC"><strong>Biggest remaining gap:</strong> ' + escH(cc.biggest_gap) + '</div>' : '');
+      (cc.biggest_gap ? '<div style="font-size:11px;color:#888;margin-top:8px;padding-top:8px;border-top:.5px solid #AFA9EC"><strong>Biggest gap:</strong> ' + escH(cc.biggest_gap) + '</div>' : '');
     container.appendChild(banner);
   }
 
-  // ── 4. SECTION CARDS ─────────────────────────────────────────
-  if (sections.length) {
-    var secHd = document.createElement('div');
-    secHd.style.cssText = 'font-size:9px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--mgray);margin-bottom:8px;padding:0 4px';
-    secHd.textContent = 'Research Sections';
-    container.appendChild(secHd);
-
-    sections.forEach(function(sec) {
-      var covColor = sec.coverage_level==='complete'?'#0F6E56':sec.coverage_level==='partial'?'#633806':'#A32D2D';
-      var covBg    = sec.coverage_level==='complete'?'#e0f5ee':sec.coverage_level==='partial'?'#FEF5E4':'#fdecea';
-      var covLabel = sec.coverage_level==='complete'?'Complete':sec.coverage_level==='partial'?'Partial':'Gap';
-      var card = document.createElement('div');
-      card.style.cssText = 'background:var(--white);border:.5px solid var(--gray);border-radius:10px;margin-bottom:8px;overflow:hidden';
-      card.id = 'sec-' + sec.id;
-      var bqTags = (sec.source_bqs||[]).map(function(b){
-        return '<span style="font-size:9px;background:#fdecea;color:var(--red);padding:1px 6px;border-radius:3px;font-family:var(--fm)">' + b + '</span>';
-      }).join(' ');
-      var bullets = (sec.bullet_points||[]).map(function(bp) {
-        return '<div style="display:flex;gap:10px;align-items:flex-start;padding:8px 12px;background:#F9FAFB;border-radius:6px;border-left:3px solid var(--red)">' +
-          '<div style="font-size:12px;color:var(--dark);line-height:1.6;flex:1">' + escH(bp) + '</div></div>';
-      }).join('');
-      // Build source links from findings across source_bqs
-      var secSrcLinks='';
-      var secSrcs=[];
-      (sec.source_bqs||[]).forEach(function(bid){
-        var bd=(S.bqResults||{})[bid]||{};
-        (bd.findings||[]).filter(function(f){return f.source_url&&f.source_url!=='#'&&f.source_name;}).slice(0,3).forEach(function(f){
-          secSrcs.push(f);
-        });
-      });
-      if(secSrcs.length){
-        secSrcLinks='<div style="margin-top:12px;padding-top:10px;border-top:.5px solid #E5E9F0">'+
-          '<div style="font-size:9px;font-weight:600;letter-spacing:1.2px;text-transform:uppercase;color:#9CA3AF;margin-bottom:6px">Key sources</div>'+
-          '<div style="display:flex;flex-wrap:wrap;gap:5px">'+
-          secSrcs.slice(0,6).map(function(f){
-            return '<a href="'+escH(f.source_url)+'" target="_blank" style="font-size:10px;color:#534AB7;background:#EEEDFE;padding:3px 9px;border-radius:12px;text-decoration:none;white-space:nowrap">'+
-              escH((f.source_name||'').slice(0,30))+'</a>';
-          }).join('')+
-          '</div></div>';
-      }
-      card.innerHTML =
-        '<div style="display:flex;align-items:center;gap:10px;padding:13px 16px;border-bottom:.5px solid var(--gray);cursor:pointer" onclick="toggleSec(\'' + sec.id + '\')">' +
-          '<span style="font-size:16px;color:var(--mgray)">' + (sec.icon||'·') + '</span>' +
-          '<div style="flex:1">' +
-            '<div style="font-size:13px;font-weight:600;color:var(--dark)">' + escH(sec.title||'') + '</div>' +
-            '<div style="font-size:10px;color:var(--mgray);margin-top:2px">Draws on: ' + (sec.source_bqs||[]).join(', ') + '</div>' +
-          '</div>' +
-          '<span style="font-size:9px;font-weight:500;padding:3px 9px;border-radius:20px;background:' + covBg + ';color:' + covColor + '">' + covLabel + '</span>' +
-          '<span style="font-size:10px;color:var(--mgray);margin-left:4px" id="schev-' + sec.id + '">▼</span>' +
-        '</div>' +
-        '<div id="secbd-' + sec.id + '" style="padding:16px 18px">' +
-          '<div style="font-size:13px;color:#1A2B4A;line-height:1.8;margin-bottom:14px;padding-bottom:12px;border-bottom:.5px solid var(--lgray);font-weight:400">' + escH(sec.synthesis||'') + '</div>' +
-          '<div style="display:flex;flex-direction:column;gap:8px">' + bullets + '</div>' +
-          (sec.coverage_note ? '<div style="margin-top:12px;padding:10px 14px;background:#FFFBF3;border-left:3px solid var(--amber);border-radius:0 6px 6px 0;font-size:11px;color:#633806;line-height:1.6"><strong>What is missing:</strong> ' + sec.coverage_note + '</div>' : '') +
-          secSrcLinks +
-        '</div>';
-      container.appendChild(card);
+  // ── BQ COVERAGE MATRIX ───────────────────────────────────────
+  if (bqs.length) {
+    var matrix = document.createElement('div');
+    matrix.style.cssText = 'background:#fff;border:.5px solid #DBDBDD;border-radius:10px;margin-bottom:14px;overflow:hidden';
+    var matHd = document.createElement('div');
+    matHd.style.cssText = 'padding:10px 16px;border-bottom:.5px solid #DBDBDD;display:flex;align-items:center;justify-content:space-between;background:#FAFAFA';
+    matHd.innerHTML = '<span style="font-size:11px;font-weight:600;color:#1A2B4A">BQ Coverage</span><span style="font-size:9px;color:#9CA3AF">Research status per business question</span>';
+    matrix.appendChild(matHd);
+    var matBody = document.createElement('div');
+    matBody.style.cssText = 'padding:8px 10px';
+    bqs.forEach(function(bq) {
+      var d = (S.bqResults||{})[bq.id] || {};
+      var findings = (d.findings||[]).length;
+      var hasData = findings > 0 || (d.stats||[]).length > 0;
+      var sBg = hasData?(findings>=3?'#E1F5EE':'#FEF5E4'):'#FDECEA';
+      var sTx = hasData?(findings>=3?'#085041':'#633806'):'#A32D2D';
+      var sLb = hasData?(findings>=3?'Complete':'Partial'):'Not run';
+      var row = document.createElement('div');
+      row.style.cssText = 'display:flex;align-items:center;gap:10px;padding:7px 6px;border-radius:6px;margin-bottom:3px;background:#FAFAFA';
+      row.innerHTML =
+        '<span style="font-size:9px;font-weight:700;color:#E85520;font-family:monospace;min-width:32px">' + escH(bq.id) + '</span>' +
+        '<span style="font-size:10px;color:#1A2B4A;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + escH((bq.text||'').slice(0,110)) + '</span>' +
+        '<span style="font-size:9px;padding:2px 8px;border-radius:8px;font-weight:600;background:' + sBg + ';color:' + sTx + '">' + sLb + '</span>' +
+        (findings?'<span style="font-size:9px;color:#9CA3AF">' + findings + ' findings</span>':'') +
+        ((d.profiles||[]).length?'<span style="font-size:9px;color:#0F6E56">' + d.profiles.length + ' profiles</span>':'') +
+        ((d.primary_research_gaps||[]).length?'<span style="font-size:9px;color:#A32D2D">' + d.primary_research_gaps.length + ' gaps</span>':'');
+      matBody.appendChild(row);
     });
+    matrix.appendChild(matBody);
+    container.appendChild(matrix);
   }
 
-  // ── 5. PRIMARY RESEARCH GAPS — standalone ────────────────────
-  var allGaps = [];
-  (S.proposal&&S.proposal.bqs||[]).forEach(function(bq) {
-    var d = (S.bqResults||{})[bq.id] || {};
-    (d.primary_research_gaps||[]).forEach(function(g) {
-      allGaps.push({bqId:bq.id, gap:g});
-    });
+  // ── SECTION VIEW NAV ─────────────────────────────────────────
+  var nav = document.createElement('div');
+  nav.className = 'sv-nav';
+  var navBtns = [{id:'sv-overview', label:'Research Sections', cls:''}];
+  if(hasSpecSci) navBtns.push({id:'sv-scientific', label:'Scientific Landscape', cls:'spec-sci'});
+  if(hasSpecPat) navBtns.push({id:'sv-patent', label:'Patent Landscape', cls:'spec-pat'});
+  if(hasSpecReg) navBtns.push({id:'sv-regulatory', label:'Regulatory Overview', cls:'spec-reg'});
+
+  navBtns.forEach(function(btn, i){
+    var b = document.createElement('button');
+    b.className = 'sv-nav-btn ' + btn.cls + (i===0?' active':'');
+    b.textContent = btn.label;
+    b.onclick = (function(id){ return function(){
+      document.querySelectorAll('.sv-nav-btn').forEach(function(x){x.classList.remove('active');});
+      document.querySelectorAll('.sv-panel').forEach(function(x){x.classList.remove('active');});
+      b.classList.add('active');
+      var panel = document.getElementById(id);
+      if(panel) panel.classList.add('active');
+    };})(btn.id);
+    nav.appendChild(b);
   });
-  if (allGaps.length) {
-    var gapSection = document.createElement('div');
-    gapSection.style.cssText = 'margin-bottom:14px';
-    var gapHd = document.createElement('div');
-    gapHd.style.cssText = 'background:#FFF2F0;border:.5px solid #FCA5A5;border-radius:10px 10px 0 0;padding:12px 16px;display:flex;align-items:center;gap:10px';
-    gapHd.innerHTML =
-      '<div style="width:28px;height:28px;border-radius:6px;background:#F94F5E;display:flex;align-items:center;justify-content:center;flex-shrink:0">' +
-        '<span style="color:#fff;font-size:14px;font-weight:700">!</span>' +
-      '</div>' +
-      '<div>' +
-        '<div style="font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#A32D2D">Primary Research Gaps</div>' +
-        '<div style="font-size:11px;color:#B91C1C;margin-top:1px">What web research cannot answer — requires expert interview or paid database (' + allGaps.length + ' gaps across ' + (S.proposal&&S.proposal.bqs||[]).length + ' BQs)</div>' +
-      '</div>';
-    gapSection.appendChild(gapHd);
-    allGaps.forEach(function(item, idx) {
-      var g = item.gap;
-      var pri = (g.priority||'MEDIUM').toUpperCase();
-      var priBg = pri==='HIGH'?'#FCEBEB':pri==='MEDIUM'?'#FEF5E4':'#E0F5EE';
-      var priTxt = pri==='HIGH'?'#A32D2D':pri==='MEDIUM'?'#633806':'#085041';
-      var isLast = idx === allGaps.length - 1;
-      var gCard = document.createElement('div');
-      gCard.style.cssText = 'background:var(--white);border:.5px solid #FCA5A5;border-top:none;padding:12px 16px;' +
-        (isLast ? 'border-radius:0 0 10px 10px' : '');
-      gCard.innerHTML =
-        '<div style="display:flex;align-items:flex-start;gap:10px">' +
-          '<span style="font-size:9px;font-weight:700;color:var(--red);font-family:var(--fm);min-width:28px;margin-top:2px">' + escH(item.bqId) + '</span>' +
-          '<div style="flex:1">' +
-            '<div style="display:flex;align-items:center;gap:8px;margin-bottom:5px">' +
-              '<span style="font-size:9px;font-weight:700;padding:2px 8px;border-radius:8px;background:' + priBg + ';color:' + priTxt + '">' + pri + '</span>' +
-              '<span style="font-size:12px;font-weight:600;color:var(--dark)">' + escH(g.gap||'') + '</span>' +
-            '</div>' +
-            (g.why_impossible ? '<div style="font-size:11px;color:var(--mgray);margin-bottom:4px">Why web fails: ' + escH(g.why_impossible) + '</div>' : '') +
-            (g.expert_profile ? '<div style="font-size:11px;color:var(--dark)"><strong>Expert needed:</strong> ' + escH(g.expert_profile) + '</div>' : '') +
-            (g.questions ? '<div style="font-size:11px;color:var(--dark);font-style:italic;margin-top:3px">Ask: ' + escH(g.questions) + '</div>' : '') +
-          '</div>' +
-        '</div>';
-      gapSection.appendChild(gCard);
+  container.appendChild(nav);
+
+  // ── PANEL: RESEARCH SECTIONS (overview) ──────────────────────
+  var overviewPanel = document.createElement('div');
+  overviewPanel.id = 'sv-overview';
+  overviewPanel.className = 'sv-panel active';
+
+  // Section definitions — ordered, with BQ mapping
+  var SECTION_DEFS = [
+    {id:'key_insights', title:'Key Insights from Research', icon:'💡', color:'#534AB7', bg:'#EEEDFE'},
+    {id:'market_overview', title:'Market Overview', icon:'📊', color:'#1A2B4A', bg:'#E8EBF0'},
+    {id:'competitor_overview', title:'Competitor Overview', icon:'🏢', color:'#0F6E56', bg:'#E1F5EE'},
+    {id:'supply_chain', title:'Supply Chain & Value Chain', icon:'🔗', color:'#1D4ED8', bg:'#EFF6FF'},
+    {id:'strategic_moves', title:'Strategic Moves & Signals', icon:'📡', color:'#E85520', bg:'#FEF2F2'},
+    {id:'technology_readiness', title:'Technology Readiness & Innovation', icon:'⚡', color:'#7C3AED', bg:'#F5F3FF'},
+    {id:'cost_pricing', title:'Cost & Pricing Intelligence', icon:'💰', color:'#166534', bg:'#F0FDF4'},
+    {id:'adjacent_intelligence', title:'Adjacent Intelligence', icon:'🔭', color:'#2E1065', bg:'#F5F3FF'},
+    {id:'voice_of_market', title:'Voice of the Market', icon:'🗣', color:'#633806', bg:'#FFFBEB'},
+    {id:'risk_scenario', title:'Risk & Scenario Analysis', icon:'⚠', color:'#A32D2D', bg:'#FFF2F2'},
+  ];
+
+  sections.forEach(function(sec) {
+    var def = SECTION_DEFS.find(function(d){return d.id===sec.id;}) || {icon:'·',color:'#6B7280',bg:'#F9FAFB'};
+    var covColor = sec.coverage_level==='complete'?'#0F6E56':sec.coverage_level==='partial'?'#633806':'#A32D2D';
+    var covBg    = sec.coverage_level==='complete'?'#E1F5EE':sec.coverage_level==='partial'?'#FEF5E4':'#FDECEA';
+    var covLabel = sec.coverage_level==='complete'?'Complete':sec.coverage_level==='partial'?'Partial':'Gap';
+
+    var card = document.createElement('div');
+    card.className = 'sv-sec-card';
+    card.id = 'sec-' + sec.id;
+
+    // BQ tags
+    var bqTags = (sec.source_bqs||[]).map(function(b){
+      return '<span class="sv-bq-tag">' + escH(b) + '</span>';
+    }).join(' ');
+
+    // Bullet points
+    var bullets = (sec.bullet_points||[]).map(function(bp){
+      return '<div class="sv-bullet"><div class="sv-bullet-text">' + escH(bp) + '</div></div>';
+    }).join('');
+
+    // Source links
+    var srcLinks = '';
+    var srcArr = [];
+    (sec.source_bqs||[]).forEach(function(bid){
+      var bd = (S.bqResults||{})[bid]||{};
+      (bd.findings||[]).filter(function(f){return f.source_url&&f.source_url!=='#'&&f.source_name;}).slice(0,3).forEach(function(f){srcArr.push(f);});
     });
-    container.appendChild(gapSection);
+    if(srcArr.length){
+      srcLinks = '<div class="sv-sources"><div class="sv-src-label">Key sources</div><div class="sv-src-chips">' +
+        srcArr.slice(0,6).map(function(f){
+          return '<a href="' + escH(f.source_url) + '" target="_blank" class="sv-src-chip">' + escH((f.source_name||'').slice(0,30)) + '</a>';
+        }).join('') + '</div></div>';
+    }
+
+    card.innerHTML =
+      '<div class="sv-sec-hdr" onclick="toggleSec(\'' + sec.id + '\')">' +
+        '<span style="font-size:18px;line-height:1">' + (def.icon||sec.icon||'·') + '</span>' +
+        '<div style="flex:1">' +
+          '<div class="sv-sec-title">' + escH(sec.title||'') + '</div>' +
+          '<div class="sv-sec-sub">BQs covered: ' + bqTags + '</div>' +
+        '</div>' +
+        '<span class="sv-cov" style="background:' + covBg + ';color:' + covColor + '">' + covLabel + '</span>' +
+        '<span style="font-size:10px;color:#9CA3AF;margin-left:6px" id="schev-' + sec.id + '">▼</span>' +
+      '</div>' +
+      '<div id="secbd-' + sec.id + '" class="sv-body">' +
+        '<div class="sv-synthesis">' + escH(sec.synthesis||'') + '</div>' +
+        '<div style="display:flex;flex-direction:column;gap:6px">' + bullets + '</div>' +
+        (sec.coverage_note ? '<div class="sv-gap-note"><strong>What is missing:</strong> ' + escH(sec.coverage_note) + '</div>' : '') +
+        srcLinks +
+      '</div>';
+
+    overviewPanel.appendChild(card);
+  });
+
+  // Gaps section
+  var allGaps = [];
+  (p.bqs||[]).forEach(function(bq){
+    var d = (S.bqResults||{})[bq.id]||{};
+    (d.primary_research_gaps||[]).forEach(function(g){allGaps.push({bqId:bq.id,gap:g});});
+  });
+  if(allGaps.length){
+    var gWrap = document.createElement('div');
+    gWrap.style.cssText = 'margin-bottom:10px';
+    var gHd = document.createElement('div');
+    gHd.style.cssText = 'background:#FFF2F0;border:.5px solid #FCA5A5;border-radius:10px 10px 0 0;padding:12px 16px;display:flex;align-items:center;gap:10px';
+    gHd.innerHTML = '<div style="width:26px;height:26px;border-radius:6px;background:#A32D2D;display:flex;align-items:center;justify-content:center;flex-shrink:0"><span style="color:#fff;font-size:13px;font-weight:700">!</span></div>' +
+      '<div><div style="font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#A32D2D">Primary Research Gaps</div>' +
+      '<div style="font-size:11px;color:#B91C1C;margin-top:1px">Requires expert interview or paid database — ' + allGaps.length + ' gaps identified</div></div>';
+    gWrap.appendChild(gHd);
+    allGaps.forEach(function(item,idx){
+      var g=item.gap;
+      var pri=(g.priority||'MEDIUM').toUpperCase();
+      var priBg=pri==='HIGH'?'#FDECEA':pri==='MEDIUM'?'#FEF5E4':'#E1F5EE';
+      var priTx=pri==='HIGH'?'#A32D2D':pri==='MEDIUM'?'#633806':'#085041';
+      var gCard=document.createElement('div');
+      gCard.style.cssText='background:#fff;border:.5px solid #FCA5A5;border-top:none;padding:12px 16px;'+(idx===allGaps.length-1?'border-radius:0 0 10px 10px':'');
+      gCard.innerHTML='<div style="display:flex;align-items:flex-start;gap:10px">' +
+        '<span style="font-size:9px;font-weight:700;color:#E85520;font-family:monospace;min-width:32px;margin-top:2px">'+escH(item.bqId)+'</span>' +
+        '<div style="flex:1">' +
+          '<div style="display:flex;align-items:center;gap:8px;margin-bottom:5px">' +
+            '<span style="font-size:9px;font-weight:700;padding:2px 8px;border-radius:8px;background:'+priBg+';color:'+priTx+'">'+pri+'</span>' +
+            '<span style="font-size:12px;font-weight:600;color:#1A2B4A">'+escH(g.gap||'')+'</span>' +
+          '</div>' +
+          (g.why_impossible?'<div style="font-size:11px;color:#9CA3AF;margin-bottom:4px">Why web fails: '+escH(g.why_impossible)+'</div>':'') +
+          (g.expert_profile?'<div style="font-size:11px;color:#374151"><strong>Expert needed:</strong> '+escH(g.expert_profile)+'</div>':'') +
+        '</div></div>';
+      gWrap.appendChild(gCard);
+    });
+    overviewPanel.appendChild(gWrap);
   }
 
-  // ── 6. STRATEGIC ANALOGIES — after main content ───────────────
-  if (sa.length) {
-    var saSection = document.createElement('div');
-    saSection.style.cssText = 'margin-bottom:14px';
+  // Strategic analogies
+  if(sa.length){
+    var saWrap = document.createElement('div');
+    saWrap.style.cssText = 'margin-bottom:10px';
     var saHd = document.createElement('div');
-    saHd.style.cssText = 'background:#2E1065;border-radius:10px 10px 0 0;padding:14px 20px;display:flex;align-items:center;gap:10px';
-    saHd.innerHTML =
-      '<div>' +
-        '<div style="font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#C4B5FD;margin-bottom:2px">Adjacent Intelligence</div>' +
-        '<div style="font-size:14px;font-weight:700;color:#fff">Strategic Analogies</div>' +
-        '<div style="font-size:11px;color:#A78BFA;margin-top:2px">Industries that solved the same problem first — what ' + escH(client) + ' can learn</div>' +
-      '</div>';
-    saSection.appendChild(saHd);
-    sa.forEach(function(a, i) {
-      var sourceBQs = (a.source_bqs||[]).map(function(bq){
-        return '<span style="font-size:9px;font-weight:600;background:#EDE9FE;color:#5B21B6;padding:1px 7px;border-radius:10px;margin-right:4px">' + escH(bq) + '</span>';
-      }).join('');
-      var isLast = i === sa.length - 1;
-      var aCard = document.createElement('div');
-      aCard.style.cssText = 'background:#fff;border:.5px solid #C4B5FD;border-top:none;padding:16px 20px;' +
-        (isLast ? 'border-radius:0 0 10px 10px' : 'border-bottom:.5px solid #E5E9F0');
-      aCard.innerHTML =
-        '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">' +
-          '<div style="font-size:14px;font-weight:700;color:#2E1065">' + escH(a.title||a.angle_title||'') + '</div>' +
-          '<div>' + sourceBQs + '</div>' +
-        '</div>' +
-        (a.source_industry||a.parallel_industry ? '<div style="display:inline-block;font-size:10px;font-weight:600;color:#5B21B6;background:#EDE9FE;padding:3px 10px;border-radius:4px;margin-bottom:10px">Adjacent industry: ' + escH(a.source_industry||a.parallel_industry) + '</div>' : '') +
-        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">' +
-          '<div>' +
-            '<div style="font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#9CA3AF;margin-bottom:6px">The analogy</div>' +
-            '<div style="font-size:12px;color:#374151;line-height:1.7">' + escH(a.the_analogy||a.insight||'') + '</div>' +
-          '</div>' +
-          '<div style="background:#F5F3FF;border-radius:8px;padding:12px 14px">' +
-            '<div style="font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#5B21B6;margin-bottom:6px">What ' + escH(client) + ' can learn</div>' +
-            '<div style="font-size:12px;color:#2E1065;line-height:1.7;font-weight:500">' + escH(a.what_client_can_learn||a.why_relevant_to_client||'') + '</div>' +
-          '</div>' +
+    saHd.style.cssText = 'background:#2E1065;border-radius:10px 10px 0 0;padding:14px 20px';
+    saHd.innerHTML = '<div style="font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#C4B5FD;margin-bottom:2px">Adjacent Intelligence</div>' +
+      '<div style="font-size:14px;font-weight:700;color:#fff">Strategic Analogies</div>' +
+      '<div style="font-size:11px;color:#A78BFA;margin-top:2px">Industries that solved the same problem first — what ' + escH(client) + ' can learn</div>';
+    saWrap.appendChild(saHd);
+    sa.forEach(function(a,i){
+      var srcBQs=(a.source_bqs||[]).map(function(b){return '<span style="font-size:9px;font-weight:600;background:#EDE9FE;color:#5B21B6;padding:1px 7px;border-radius:10px;margin-right:4px">'+escH(b)+'</span>';}).join('');
+      var aCard=document.createElement('div');
+      aCard.style.cssText='background:#fff;border:.5px solid #C4B5FD;border-top:none;padding:16px 20px;'+(i===sa.length-1?'border-radius:0 0 10px 10px':'border-bottom:.5px solid #E5E9F0');
+      aCard.innerHTML='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px"><div style="font-size:14px;font-weight:700;color:#2E1065">'+escH(a.title||a.angle_title||'')+'</div><div>'+srcBQs+'</div></div>'+
+        (a.source_industry||a.parallel_industry?'<div style="display:inline-block;font-size:10px;font-weight:600;color:#5B21B6;background:#EDE9FE;padding:3px 10px;border-radius:4px;margin-bottom:10px">Adjacent: '+escH(a.source_industry||a.parallel_industry)+'</div>':'')+
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">'+
+          '<div><div style="font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#9CA3AF;margin-bottom:6px">The analogy</div><div style="font-size:12px;color:#374151;line-height:1.7">'+escH(a.the_analogy||a.insight||'')+'</div></div>'+
+          '<div style="background:#F5F3FF;border-radius:8px;padding:12px 14px"><div style="font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#5B21B6;margin-bottom:6px">What '+escH(client)+' can learn</div><div style="font-size:12px;color:#2E1065;line-height:1.7;font-weight:500">'+escH(a.what_client_can_learn||a.why_relevant_to_client||'')+'</div></div>'+
         '</div>';
-      saSection.appendChild(aCard);
+      saWrap.appendChild(aCard);
     });
-    container.appendChild(saSection);
+    overviewPanel.appendChild(saWrap);
+  }
+
+  container.appendChild(overviewPanel);
+
+  // ── PANEL: SCIENTIFIC LANDSCAPE ──────────────────────────────
+  if(hasSpecSci){
+    var sciPanel = document.createElement('div');
+    sciPanel.id = 'sv-scientific';
+    sciPanel.className = 'sv-panel';
+
+    var sciHdr = document.createElement('div');
+    sciHdr.style.cssText = 'background:#0F6E56;border-radius:10px;padding:14px 20px;margin-bottom:10px';
+    sciHdr.innerHTML = '<div style="font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#5DCAA5;margin-bottom:4px">Specialist Output</div>' +
+      '<div style="font-size:17px;font-weight:700;color:#fff">Scientific Landscape</div>' +
+      '<div style="font-size:11px;color:#A7F3D0;margin-top:3px">Evidence state, key findings, contested areas, and regulatory acceptance</div>';
+    sciPanel.appendChild(sciHdr);
+
+    S.selBQs.forEach(function(i){
+      var bq = (p.bqs||[])[i];
+      if(!bq) return;
+      var d = normaliseResult(S.bqResults[bq.id]);
+      if(!d || !d.specialist_scientific) return;
+      var ss = d.specialist_scientific;
+
+      var card = document.createElement('div');
+      card.className = 'sv-spec-card';
+      card.innerHTML = '<div class="sv-spec-hdr" style="background:#F0FDF4">' +
+        '<div class="sv-spec-title">' + escH(bq.id) + ' — ' + escH((bq.text||'').slice(0,80)) + '</div>' +
+        '<div class="sv-spec-meta">Scientific evidence summary</div>' +
+      '</div>' +
+      '<div class="sv-spec-body">' +
+        (ss.state_of_evidence ? '<div class="sv-spec-field"><div class="sv-spec-field-label">State of evidence</div><div class="sv-spec-field-val" style="font-weight:600;color:#0F6E56">'+escH(ss.state_of_evidence)+'</div></div>' : '') +
+        (ss.strongest_findings && ss.strongest_findings.length ? '<div class="sv-spec-field"><div class="sv-spec-field-label">Strongest findings</div><table class="sv-spec-table"><tr><th>Finding</th><th>Study type</th><th>Year</th><th>Replicated</th></tr>' +
+          ss.strongest_findings.map(function(f){ return '<tr><td>'+escH(f.what||'')+'</td><td>'+escH(f.study_type||'')+'</td><td>'+escH(String(f.year||''))+'</td><td>'+(f.replicated?'Yes':'No')+'</td></tr>';}).join('') +
+        '</table></div>' : '') +
+        (ss.contested ? '<div class="sv-spec-field"><div class="sv-spec-field-label">What is contested</div><div class="sv-spec-field-val" style="color:#A32D2D">'+escH(ss.contested)+'</div></div>' : '') +
+        (ss.regulatory_acceptance ? '<div class="sv-spec-field"><div class="sv-spec-field-label">Regulatory acceptance</div><div class="sv-spec-field-val">'+escH(ss.regulatory_acceptance)+'</div></div>' : '') +
+        (ss.recency_signal ? '<div class="sv-spec-field"><div class="sv-spec-field-label">Field activity</div><div class="sv-spec-field-val">'+escH(ss.recency_signal)+'</div></div>' : '') +
+        (ss.evidence_gaps ? '<div class="sv-spec-field"><div class="sv-spec-field-label">Evidence gaps</div><div class="sv-spec-field-val" style="color:#633806">'+escH(ss.evidence_gaps)+'</div></div>' : '') +
+      '</div>';
+
+      sciPanel.appendChild(card);
+    });
+    container.appendChild(sciPanel);
+  }
+
+  // ── PANEL: PATENT LANDSCAPE ──────────────────────────────────
+  if(hasSpecPat){
+    var patPanel = document.createElement('div');
+    patPanel.id = 'sv-patent';
+    patPanel.className = 'sv-panel';
+
+    var patHdr = document.createElement('div');
+    patHdr.style.cssText = 'background:#92400E;border-radius:10px;padding:14px 20px;margin-bottom:10px';
+    patHdr.innerHTML = '<div style="font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#FCD34D;margin-bottom:4px">Specialist Output</div>' +
+      '<div style="font-size:17px;font-weight:700;color:#fff">Patent Landscape</div>' +
+      '<div style="font-size:11px;color:#FDE68A;margin-top:3px">Assignee map, whitespace, technology evolution, and FTO signals</div>';
+    patPanel.appendChild(patHdr);
+
+    S.selBQs.forEach(function(i){
+      var bq = (p.bqs||[])[i];
+      if(!bq) return;
+      var d = normaliseResult(S.bqResults[bq.id]);
+      if(!d || !d.specialist_patent) return;
+      var sp = d.specialist_patent;
+
+      var card = document.createElement('div');
+      card.className = 'sv-spec-card';
+      card.innerHTML = '<div class="sv-spec-hdr" style="background:#FFFBEB">' +
+        '<div class="sv-spec-title">' + escH(bq.id) + ' — ' + escH((bq.text||'').slice(0,80)) + '</div>' +
+        '<div class="sv-spec-meta">Patent landscape summary</div>' +
+      '</div>' +
+      '<div class="sv-spec-body">' +
+        (sp.top_assignees && sp.top_assignees.length ? '<div class="sv-spec-field"><div class="sv-spec-field-label">Top assignees</div><table class="sv-spec-table"><tr><th>Assignee</th><th>Filing volume</th><th>Key claim area</th><th>Strategic posture</th></tr>' +
+          sp.top_assignees.map(function(a){return '<tr><td><strong>'+escH(a.name||'')+'</strong></td><td>'+escH(a.filing_volume||'')+'</td><td>'+escH(a.key_claim_area||'')+'</td><td>'+escH(a.strategic_posture||'')+'</td></tr>';}).join('')+
+        '</table></div>' : '') +
+        (sp.technology_evolution ? '<div class="sv-spec-field"><div class="sv-spec-field-label">Technology evolution</div><div class="sv-spec-field-val">'+escH(sp.technology_evolution)+'</div></div>' : '') +
+        (sp.whitespace && sp.whitespace.length ? '<div class="sv-spec-field"><div class="sv-spec-field-label">Whitespace identified</div>' +
+          sp.whitespace.map(function(w){return '<div style="padding:6px 10px;background:#F0FDF4;border-left:3px solid #5DCAA5;border-radius:0 6px 6px 0;margin-bottom:5px;font-size:12px;color:#085041">'+escH(w)+'</div>';}).join('')+'</div>' : '') +
+        (sp.recent_signals && sp.recent_signals.length ? '<div class="sv-spec-field"><div class="sv-spec-field-label">Recent filing signals (last 24 months)</div><table class="sv-spec-table"><tr><th>Assignee</th><th>Date</th><th>Technology</th><th>Significance</th></tr>' +
+          sp.recent_signals.map(function(r){return '<tr><td>'+escH(r.assignee||'')+'</td><td>'+escH(r.filing_date||'')+'</td><td>'+escH(r.technology||'')+'</td><td>'+escH(r.significance||'')+'</td></tr>';}).join('')+'</table></div>' : '') +
+        (sp.fto_flags && sp.fto_flags.length ? '<div class="sv-spec-field"><div class="sv-spec-field-label" style="color:#A32D2D">Freedom to operate — flags</div>' +
+          sp.fto_flags.map(function(f){return '<div style="padding:8px 12px;background:#FDECEA;border-left:3px solid #A32D2D;border-radius:0 6px 6px 0;margin-bottom:5px;font-size:12px;color:#A32D2D"><strong>'+escH(f.concern||'')+'</strong> — '+escH(f.assignee||'')+' ('+escH(f.patent_ref||'')+', expires '+escH(f.expiry||'')+')</div>';}).join('')+'</div>' : '') +
+        (sp.geography_gaps ? '<div class="sv-spec-field"><div class="sv-spec-field-label">Geography gaps</div><div class="sv-spec-field-val">'+escH(sp.geography_gaps)+'</div></div>' : '') +
+      '</div>';
+
+      patPanel.appendChild(card);
+    });
+    container.appendChild(patPanel);
+  }
+
+  // ── PANEL: REGULATORY OVERVIEW ───────────────────────────────
+  if(hasSpecReg){
+    var regPanel = document.createElement('div');
+    regPanel.id = 'sv-regulatory';
+    regPanel.className = 'sv-panel';
+
+    var regHdr = document.createElement('div');
+    regHdr.style.cssText = 'background:#166534;border-radius:10px;padding:14px 20px;margin-bottom:10px';
+    regHdr.innerHTML = '<div style="font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#86EFAC;margin-bottom:4px">Specialist Output</div>' +
+      '<div style="font-size:17px;font-weight:700;color:#fff">Regulatory Overview</div>' +
+      '<div style="font-size:11px;color:#BBF7D0;margin-top:3px">Status by jurisdiction, critical thresholds, trajectory, and compliance pathway</div>';
+    regPanel.appendChild(regHdr);
+
+    S.selBQs.forEach(function(i){
+      var bq = (p.bqs||[])[i];
+      if(!bq) return;
+      var d = normaliseResult(S.bqResults[bq.id]);
+      if(!d || !d.specialist_regulatory) return;
+      var sr = d.specialist_regulatory;
+
+      var card = document.createElement('div');
+      card.className = 'sv-spec-card';
+      card.innerHTML = '<div class="sv-spec-hdr" style="background:#F0FDF4">' +
+        '<div class="sv-spec-title">' + escH(bq.id) + ' — ' + escH((bq.text||'').slice(0,80)) + '</div>' +
+        '<div class="sv-spec-meta">Regulatory intelligence summary</div>' +
+      '</div>' +
+      '<div class="sv-spec-body">' +
+        (sr.status_by_jurisdiction && sr.status_by_jurisdiction.length ? '<div class="sv-spec-field"><div class="sv-spec-field-label">Status by jurisdiction</div><table class="sv-spec-table"><tr><th>Jurisdiction</th><th>Status</th><th>Authority</th><th>Year</th><th>Detail</th></tr>' +
+          sr.status_by_jurisdiction.map(function(j){
+            var sBg=j.status==='approved'?'#E1F5EE':j.status==='restricted'?'#FDECEA':'#FEF5E4';
+            var sTx=j.status==='approved'?'#085041':j.status==='restricted'?'#A32D2D':'#633806';
+            return '<tr><td><strong>'+escH(j.jurisdiction||'')+'</strong></td><td><span style="font-size:9px;font-weight:600;padding:2px 8px;border-radius:8px;background:'+sBg+';color:'+sTx+'">'+escH(j.status||'')+'</span></td><td>'+escH(j.authority||'')+'</td><td>'+escH(String(j.year||''))+'</td><td>'+escH(j.detail||'')+'</td></tr>';
+          }).join('')+'</table></div>' : '') +
+        (sr.critical_thresholds && sr.critical_thresholds.length ? '<div class="sv-spec-field"><div class="sv-spec-field-label">Critical thresholds</div><table class="sv-spec-table"><tr><th>Parameter</th><th>Value</th><th>Regulation</th><th>Jurisdiction</th></tr>' +
+          sr.critical_thresholds.map(function(t){return '<tr><td>'+escH(t.parameter||'')+'</td><td><strong>'+escH(t.value||'')+'</strong></td><td>'+escH(t.regulation||'')+'</td><td>'+escH(t.jurisdiction||'')+'</td></tr>';}).join('')+'</table></div>' : '') +
+        (sr.trajectory ? '<div class="sv-spec-field"><div class="sv-spec-field-label">Regulatory trajectory</div><div class="sv-spec-field-val" style="font-weight:600">'+escH(sr.trajectory)+'</div></div>' : '') +
+        (sr.jurisdiction_divergence ? '<div class="sv-spec-field"><div class="sv-spec-field-label">Jurisdiction divergence</div><div class="sv-spec-field-val" style="color:#633806">'+escH(sr.jurisdiction_divergence)+'</div></div>' : '') +
+        (sr.compliance_pathway ? '<div class="sv-spec-field"><div class="sv-spec-field-label">Compliance pathway</div><div class="sv-spec-field-val">'+escH(sr.compliance_pathway)+'</div></div>' : '') +
+        (sr.regulatory_gaps ? '<div class="sv-spec-field"><div class="sv-spec-field-label">Regulatory gaps</div><div class="sv-spec-field-val" style="color:#A32D2D">'+escH(sr.regulatory_gaps)+'</div></div>' : '') +
+      '</div>';
+
+      regPanel.appendChild(card);
+    });
+    container.appendChild(regPanel);
   }
 }
 
