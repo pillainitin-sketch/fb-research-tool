@@ -1221,7 +1221,7 @@ function buildSynthesisResearchPrompt(bq, p, plan, allResearch, client, analystI
     '(1) findings: 6-10 entries minimum. Every finding needs a metrics array with 2-4 specific data points.',
     '(2) FACT requires source_url — if no URL, downgrade to INFERENCE.',
     '(3) creative_angles: NEVER empty. Always find the adjacent industry analog.',
-    '(4) primary_research_gaps: MINIMUM 2 entries.',
+    '(4) primary_research_gaps: MANDATORY. Minimum 2, ideally 3-4 entries. This is where the tool beats web-only research — it tells the analyst WHO to call and WHAT to ask. For each gap: (a) gap = specific named unresolved question (not a topic), (b) why_impossible = one sentence on why public research cannot answer, (c) expert_profile = SPECIFIC profile with role + company tier + years + geography (e.g. "Former Ops Manager, Tier-1 superalloy foundry, 2018-2024, US/EU"). Not "an industry expert", (d) questions = 3-5 specific questions referencing named entities or numbers from the research; no generic consulting questions, (e) hypothesis = what you believe the answer is that the expert will validate/disprove, (f) priority = high|medium|low. If you cannot identify 2+ gaps, the research is too thin.',
     '(5) Every headline must contain: a named company/product AND a specific number.',
     '(6) No markdown. Double quotes only. Escape apostrophes with backslash.',
     '(7) BANNED SOURCES — never cite these as findings: Wikipedia, Reddit, Quora, MarketsandMarkets, Grand View Research, Mordor Intelligence, Allied Market Research, Persistence Market Research, Technavio, IMARC, Statista reports, PRNewswire, BusinessWire, or any other syndicated aggregator. If data came from these, mark confidence as estimated and flag it as needing primary validation.',
@@ -1379,7 +1379,14 @@ function buildResearchPrompt(bq, p, plan) {
     '  - metrics array in each finding: 2-4 labelled data points with specific values and units.',
     '  - FACT requires source_url — if no URL found, downgrade to INFERENCE.',
     '  - profiles: include competitors, startups, AND suppliers — all three types.',
-    '  - primary_research_gaps: minimum 2 entries.',
+    '  - primary_research_gaps: MANDATORY. Minimum 2, ideally 3-4. This is the most valuable part of the output — it tells the analyst WHO to call and WHAT to ask when public research cannot answer the question. For each gap:',
+    '      * gap: the specific unresolved question, named (e.g. "Single-crystal blade casting capacity by OEM 2024-2025"), not a topic area',
+    '      * why_impossible: one sentence on why public research cannot resolve this (confidential, paywalled, requires tacit knowledge, etc.)',
+    '      * expert_profile: a SPECIFIC profile — role + company tier + years experience + geography (e.g. "Former Plant Manager, Tier-1 superalloy foundry, 2018-2024, US or EU"). Not "an industry expert."',
+    '      * questions: 3-5 specific questions THIS profile can answer. Must reference a named entity, a number, or a claim from the research. Generic consulting questions are forbidden.',
+    '      * hypothesis: what you believe the answer is, based on the research so far — the expert is validating or disproving this',
+    '      * priority: high|medium|low based on decision impact for the client',
+    '    If you genuinely cannot identify 2+ gaps, the research is too thin — go back and be more specific about what is missing.',
     '  - creative_angles: never empty — always find the adjacent industry analog.',
     '  - APOSTROPHES: escape with backslash. No trailing commas. Double quotes only.',
   ].join('\n');
@@ -5099,7 +5106,11 @@ async function buildFBDeck() {
         gapS.addText(safe(g.gap,200), {x:1.00,y:gy+0.07,w:8.60,h:0.22,fontSize:9,fontFace:FONT,color:FB.charcoal,bold:true,margin:0});
         if (g.why_impossible) gapS.addText('Why web fails: '+safe(g.why_impossible,200), {x:0.32,y:gy+0.32,w:9.20,h:0.28,fontSize:8,fontFace:FONT,color:FB.grey1,margin:0});
         if (g.expert_profile) gapS.addText('Expert: '+safe(g.expert_profile,150), {x:0.32,y:gy+0.62,w:9.20,h:0.18,fontSize:8,fontFace:FONT,color:FB.charcoal,bold:true,margin:0});
-        if (g.questions) gapS.addText('Ask: '+safe(g.questions,200), {x:0.32,y:gy+0.82,w:9.20,h:0.28,fontSize:8,fontFace:FONT,color:FB.charcoal,italic:true,margin:0});
+        if (g.questions) {
+          var qArr = Array.isArray(g.questions) ? g.questions : [g.questions];
+          var qText = qArr.filter(Boolean).map(function(q,qi){return (qi+1)+'. '+q;}).join('  ');
+          gapS.addText('Ask: '+safe(qText,300), {x:0.32,y:gy+0.82,w:9.20,h:0.28,fontSize:8,fontFace:FONT,color:FB.charcoal,italic:true,margin:0});
+        }
       });
       // Paid source banner
       if (paid.length) {
