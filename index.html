@@ -1650,12 +1650,57 @@ async function researchBQ(bq, p, onLog, analystInput){
       general:'key metric, named company, geography, year'
     }[bqType]||'key metric, named company, geography, year';
 
+    // ── LIST-AWARE EXTRACTION ──────────────────────────────────
+    // When a BQ enumerates specific items (industries, standards, technical areas),
+    // Pass 1 must plan queries per-item, not converge on 2-3 obvious ones.
+    var enumeratedItems = (function extractEnumLists(bqText) {
+      if (!bqText) return [];
+      var lists = [];
+      // Match trigger phrases followed by parenthesised or comma-listed items
+      // Triggers: across, including, such as, areas of, like, e.g., covering, spanning
+      var triggerRe = /\b(?:across|including|such as|areas of|areas like|covering|spanning|like|e\.?g\.?)\s*[:\-]?\s*(\([^\)]{15,600}\)|[^\.\n\?]{15,600})/gi;
+      var m;
+      while ((m = triggerRe.exec(bqText)) !== null) {
+        var chunk = m[1].replace(/^[\(]|[\)]$/g,'').trim();
+        // Split on commas or "and" — keep items of reasonable length
+        var items = chunk.split(/,|(?:\s+and\s+)/).map(function(s){return s.trim();}).filter(function(s){
+          return s.length > 2 && s.length < 80 && !/^(the|a|an|of|in|on|to|for|by|with)\b/i.test(s);
+        });
+        if (items.length >= 3) lists.push(items);
+      }
+      // Also catch explicit named-standard/regulation patterns like "ASME B133.8", "ISO 2314"
+      var namedStd = bqText.match(/\b[A-Z]{2,6}\s*[0-9]+(?:[\.\-][0-9A-Z]+)*(?:\/[A-Z]+)?\b/g) || [];
+      var stdFiltered = namedStd.filter(function(s){return s.length < 20;});
+      if (stdFiltered.length >= 2) lists.push(stdFiltered);
+      // Flatten + dedupe
+      var seen = {};
+      var flat = [];
+      lists.forEach(function(L){L.forEach(function(item){
+        var k = item.toLowerCase();
+        if (!seen[k]) { seen[k] = 1; flat.push(item); }
+      });});
+      return flat;
+    })(bq.text);
+
+    var listCoverageBlock = '';
+    if (enumeratedItems.length >= 3) {
+      listCoverageBlock =
+        '\n── ENUMERATED COVERAGE REQUIREMENT ──────────────────────\n'+
+        'The Business Question explicitly names '+enumeratedItems.length+' items that MUST each be covered:\n'+
+        enumeratedItems.map(function(x,i){return '  '+(i+1)+'. '+x;}).join('\n')+'\n\n'+
+        'MANDATORY: Generate at least ONE distinct search query per listed item above.\n'+
+        'Do NOT converge on 2-3 obvious items and skip the rest. Each item needs its own query.\n'+
+        'If an item is clearly out of scope for this BQ, include a query anyway to confirm the absence — the final synthesis needs coverage evidence for every listed item.\n'+
+        'These item-specific queries are IN ADDITION TO the 8-12 overarching queries — expect the total query count to exceed 12 for list-heavy BQs.\n';
+    }
+
     var planPrompt='You are a senior FutureBridge research analyst. Design a targeted research plan.\n'+
       'Client: '+client+' | Engagement: '+(p.title||'')+' | Geography: '+(p.geography||'Global')+'\n'+
       'Competitors in scope: '+(p.competitors||[]).join(', ')+'\n'+
       'BQ type: '+bqType+'\n'+
       'Business Question: '+bq.text+'\n'+
-      'Scope nouns that MUST be covered: '+(bq.scope_nouns||[]).join(', ')+'\n\n'+
+      'Scope nouns that MUST be covered: '+(bq.scope_nouns||[]).join(', ')+'\n'+
+      listCoverageBlock+'\n'+
       'Return ONLY valid JSON:\n'+
       '{\n'+
       '  "search_queries": [\n'+
@@ -2953,11 +2998,56 @@ function renderResults(){
   if(rmEl) rmEl.textContent=p2.practice+' - '+p2.geography+' - '+p2.period;
   var exEl=document.getElementById('exTxt');
   if(exEl){
+    var eb=S.synthesis&&S.synthesis.executive_brief;
     var ki=S.synthesis&&S.synthesis.cross_cutting&&S.synthesis.cross_cutting.key_insight;
     var ns=S.synthesis&&S.synthesis.cross_cutting&&S.synthesis.cross_cutting.recommended_next_step;
     var bg=S.synthesis&&S.synthesis.cross_cutting&&S.synthesis.cross_cutting.biggest_gap;
-    if(ki){
-      // Synthesis has run — show cross-cutting key insight
+
+    if(eb && (eb.headline_insight || eb.engagement_narrative)){
+      // New structured executive brief
+      var lbl=function(t){return '<div style="font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#534AB7;margin:14px 0 6px">'+t+'</div>';};
+      var para=function(t){return '<div style="font-size:12px;color:#26215C;line-height:1.7;margin-bottom:4px">'+escH(t||'')+'</div>';};
+      var html='';
+      if(eb.headline_insight){
+        html+='<div style="font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#534AB7;margin-bottom:8px">Headline insight</div>'+
+          '<div style="font-size:13px;font-weight:600;color:#26215C;line-height:1.75;margin-bottom:10px">'+escH(eb.headline_insight)+'</div>';
+      }
+      if(eb.engagement_narrative){
+        html+=lbl('The story across the research')+para(eb.engagement_narrative);
+      }
+      if(eb.opportunity_sizing){
+        html+=lbl('Opportunity at stake')+
+          '<div style="font-size:12px;color:#085041;background:#E1F5EE;border-left:3px solid #0F6E56;padding:8px 12px;border-radius:0 6px 6px 0;line-height:1.6">'+escH(eb.opportunity_sizing)+'</div>';
+      }
+      if(eb.strategic_options && eb.strategic_options.length){
+        html+=lbl('Strategic options');
+        html+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px">';
+        eb.strategic_options.slice(0,2).forEach(function(o){
+          var rBg=o.risk==='lower'?'#DCFCE7':o.risk==='higher'?'#FEE2E2':'#FEF9C3';
+          var rTx=o.risk==='lower'?'#15803D':o.risk==='higher'?'#B91C1C':'#92400E';
+          html+='<div style="background:#fff;border:.5px solid #E5E9F0;border-radius:6px;padding:10px 12px">'+
+            '<div style="font-size:11px;font-weight:700;color:#1A2B4A;margin-bottom:4px">'+escH(o.label||'')+'</div>'+
+            '<div style="font-size:11px;color:#374151;line-height:1.55;margin-bottom:6px">'+escH(o.thesis||'')+'</div>'+
+            (o.risk?'<span style="font-size:8px;font-weight:700;padding:1px 6px;border-radius:3px;background:'+rBg+';color:'+rTx+';margin-right:6px">RISK: '+escH(o.risk.toUpperCase())+'</span>':'')+
+            (o.time_to_value?'<span style="font-size:9px;color:#6B7280">'+escH(o.time_to_value)+'</span>':'')+
+            (o.key_dependency?'<div style="font-size:10px;color:#6B7280;margin-top:4px"><em>Depends on: '+escH(o.key_dependency)+'</em></div>':'')+
+          '</div>';
+        });
+        html+='</div>';
+      }
+      if(eb.competitive_threat){
+        html+=lbl('If the client does nothing')+
+          '<div style="font-size:12px;color:#991B1B;background:#FEF2F2;border-left:3px solid #B91C1C;padding:8px 12px;border-radius:0 6px 6px 0;line-height:1.6">'+escH(eb.competitive_threat)+'</div>';
+      }
+      if(eb.recommended_next_step){
+        html+='<div style="font-size:11px;color:#534AB7;padding:10px 12px;background:#fff;border-radius:6px;border:.5px solid #AFA9EC;margin-top:12px"><strong>Recommended next step:</strong> '+escH(eb.recommended_next_step)+'</div>';
+      }
+      if(eb.biggest_gap){
+        html+='<div style="font-size:10px;color:#888;padding-top:8px;border-top:.5px solid #E5E9F0;margin-top:8px"><strong>Biggest remaining gap:</strong> '+escH(eb.biggest_gap)+'</div>';
+      }
+      exEl.innerHTML=html;
+    } else if(ki){
+      // Legacy path — cross_cutting only
       exEl.innerHTML=
         '<div style="font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#534AB7;margin-bottom:8px">Key insight across all research</div>'+
         '<div style="font-size:13px;font-weight:600;color:#26215C;line-height:1.75;margin-bottom:10px">'+escH(ki)+'</div>'+
@@ -3615,6 +3705,18 @@ function buildSynthesisPrompt(p, allBQResults, engType) {
     '    "biggest_gap": "The most critical data point still missing",',
     '    "recommended_next_step": "Specific action ' + client + ' should take based on this research"',
     '  },',
+    '  "executive_brief": {',
+    '    "headline_insight": "2-3 sentences. The single most decision-shaping finding. Named entity + specific number + what it means for ' + client + '. This is what an executive reads first.",',
+    '    "engagement_narrative": "4-6 sentences. How do the BQs connect into one story? What does the research tell ' + client + ' when read as a whole, not BQ by BQ? Name the 2-3 forces converging and why they matter now.",',
+    '    "opportunity_sizing": "2-3 sentences. Quantified where possible — deal size, market share at stake, revenue window, or time-to-value. If unquantifiable from the research, state that and name the specific data that would quantify it.",',
+    '    "strategic_options": [',
+    '      {"label":"Option A — [2-4 word descriptor]","thesis":"1 sentence. What this option does.","risk":"lower|medium|higher","time_to_value":"e.g. 12-18 months","key_dependency":"What must be true for this to work"},',
+    '      {"label":"Option B — [2-4 word descriptor]","thesis":"...","risk":"...","time_to_value":"...","key_dependency":"..."}',
+    '    ],',
+    '    "competitive_threat": "2-3 sentences. If ' + client + ' does nothing, who moves first and what do they capture? Name specific competitors and specific moves they have already signalled.",',
+    '    "recommended_next_step": "Single concrete action. Named vendor/party + time-box (e.g. 60 days) + specific deliverable. Not \\"explore\\" or \\"consider\\" — a commission an executive could approve today.",',
+    '    "biggest_gap": "1 sentence. What the research could not resolve + the specific source (named database or expert type) that would close it."',
+    '  },',
     '  "strategic_analogies": [',
     '    {',
     '      "title": "One-line title for the strategic analogy",',
@@ -3632,7 +3734,18 @@ function buildSynthesisPrompt(p, allBQResults, engType) {
     '- synthesis: max 2 sentences per section. Specific, named, numbered. Never generic.',
     '- coverage_note: one sentence max. Only if partial or gap.',
     '- strategic_analogies: 2-3 entries only. the_analogy max 2 sentences. what_client_can_learn max 2 sentences.',
-    '- cross_cutting.key_insight: one sentence, the single most important finding',
+    '- cross_cutting.key_insight: one sentence, the single most important finding (kept for backward compatibility)',
+    '',
+    '- EXECUTIVE_BRIEF RULES (this is the most important block — an executive reads this first):',
+    '  * headline_insight: 2-3 sentences, must contain at least one named entity and one specific number',
+    '  * engagement_narrative: 4-6 sentences, must synthesise across BQs not summarise one',
+    '  * opportunity_sizing: 2-3 sentences, quantified; if you cannot quantify, say what data would',
+    '  * strategic_options: EXACTLY 2 options (A and B), each with meaningfully different risk/time profile — not cosmetically different versions of the same move',
+    '  * competitive_threat: 2-3 sentences with named competitors and their signalled moves',
+    '  * recommended_next_step: concrete, time-boxed, with a named party; not "explore" or "consider"',
+    '  * biggest_gap: 1 sentence, must name a specific source that would close it',
+    '  * TARGET: executive_brief totals 350-450 words. Shorter than 300 is too thin. Longer than 500 defeats the purpose.',
+    '',
     '- APOSTROPHES: escape every apostrophe with backslash in string values',
     '- OUTPUT MUST BE COMPLETE VALID JSON — do not truncate. If running long, shorten bullet_points.',
     '- Respond ONLY with valid JSON. No markdown. No text before or after.',
@@ -3670,8 +3783,8 @@ async function runSynthesis() {
       headers:{'Content-Type':'application/json','anthropic-version':'2023-06-01','x-api-key':getApiKey()},
       body: JSON.stringify({
         model: 'claude-sonnet-4-6',
-        max_tokens: 10000,
-        system: 'You are a senior FutureBridge consultant. Synthesise research into structured deliverable sections. Respond ONLY with valid JSON. Escape all apostrophes with backslash. No markdown fences. Be concise — each synthesis field max 2 sentences, each bullet_point max 20 words.',
+        max_tokens: 13000,
+        system: 'You are a senior FutureBridge consultant. Synthesise research into structured deliverable sections. Respond ONLY with valid JSON. Escape all apostrophes with backslash. No markdown fences. Be concise in section synthesis (max 2 sentences) and bullet_points (max 20 words). The executive_brief block is the exception — that block targets 350-450 words and is the most important deliverable.',
         messages: [{ role: 'user', content: prompt }]
       })
     });
