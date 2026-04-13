@@ -2256,14 +2256,13 @@ async function buildProfiles(bqId){
   }
 }
 
-// Find new evidence for a hypothesis via live search, then evaluate verdict
+// Hypothesis analysis — reasons from existing research findings, no new searches
 async function findEvidenceAndEvaluate(bqId, hypIdx){
   var btn=document.getElementById('reevalbtn-'+bqId+'-'+hypIdx);
   var statusEl=document.getElementById('hypstatus-'+bqId+'-'+hypIdx);
   var evidenceEl=document.getElementById('hypevidence-'+bqId+'-'+hypIdx);
-  if(btn){btn.textContent='Searching...';btn.disabled=true;}
+  if(btn){btn.textContent='Analysing...';btn.disabled=true;}
 
-  // Read hypothesis directly from S.bqResults — never via normaliseResult (strips fields)
   var raw=S.bqResults&&S.bqResults[bqId]?S.bqResults[bqId]:{};
   var hyps=raw.hypotheses||[];
   var h=hyps[hypIdx];
@@ -2272,114 +2271,210 @@ async function findEvidenceAndEvaluate(bqId, hypIdx){
   var statement=h.statement||h.headline||'';
   var wwtbt=h.what_would_need_to_be_true||h.body||'';
   var p=S.proposal||{};
-  var originalConf=h.confidence_level||'medium';
+  var client=p.client||'the client';
 
-  if(statusEl) statusEl.textContent='Step 1/2 — Searching for evidence...';
+  var findings=raw.findings||[];
+  var gaps=raw.primary_research_gaps||[];
+  var stats=raw.stats||[];
+  var df=raw.client_decision_frame||{};
+
+  var evidenceContext='EXISTING RESEARCH FINDINGS FOR THIS BQ:\n';
+  findings.slice(0,12).forEach(function(f,i){
+    evidenceContext+=(i+1)+'. ['+(f.evidence_type||'FINDING')+'] '+
+      (f.headline||f.subject||'')+' — '+
+      (f.body||'').slice(0,150)+
+      (f.source_name?' (Source: '+f.source_name+')':'')+
+      (f.geo?' ['+f.geo+']':'')+
+      '\n';
+  });
+  if(stats.length){
+    evidenceContext+='\nKEY STATS FROM RESEARCH:\n';
+    stats.slice(0,6).forEach(function(s){
+      evidenceContext+='• '+s.label+': '+s.value+' ['+(s.confidence||'')+']\n';
+    });
+  }
+  if(gaps.length){
+    evidenceContext+='\nPRIMARY RESEARCH GAPS:\n';
+    gaps.slice(0,4).forEach(function(g){
+      evidenceContext+='• '+g.gap+(g.why_impossible?' — '+g.why_impossible:'')+' ['+(g.priority||'medium')+']\n';
+    });
+  }
+  if(df.option_a) evidenceContext+='\nCLIENT DECISION FRAME: '+df.option_a+' vs '+df.option_b+'\n';
+
+  if(statusEl) statusEl.textContent='Analysing hypothesis against research findings...';
+
+  var prompt=[
+    'You are a senior management consultant at a top-tier firm.',
+    'Client: '+client+' | Engagement: '+(p.title||'')+' | Practice: '+(p.practice||'')+' | Geography: '+(p.geography||''),
+    '',
+    'HYPOTHESIS TO ANALYSE:',
+    '"'+statement+'"',
+    (wwtbt?'What would need to be true: '+wwtbt:''),
+    '',
+    evidenceContext,
+    '',
+    'Produce a structured hypothesis analysis. Respond ONLY with valid JSON:',
+    '{',
+    '  "sharpened_hypothesis": "Restate as specific falsifiable statement — named entity + specific metric + causal claim. Max 2 sentences.",',
+    '  "why_this_hypothesis": "Structural logic or research signal making this worth testing. Cite 1-2 specific findings above. Max 2 sentences.",',
+    '  "assessability": "Can assess|Partially assessable|Cannot assess",',
+    '  "assessability_reason": "One sentence. If Cannot assess — what specific data is missing.",',
+    '  "evidence_for": [{"finding": "specific finding from research above supporting hypothesis", "source": "source name or Unknown", "strength": "strong|moderate|weak"}],',
+    '  "evidence_against": [{"finding": "specific finding contradicting or complicating hypothesis", "source": "source name or Unknown", "strength": "strong|moderate|weak"}],',
+    '  "impact_if_proved": {',
+    '    "for_client": "Specific decision '+client+' should take if true. Named, specific, consequential.",',
+    '    "for_recommendation": "How this changes the overall engagement recommendation.",',
+    '    "magnitude": "high|medium|low"',
+    '  },',
+    '  "impact_if_not_proved": {',
+    '    "alternative": "What to believe instead if hypothesis is wrong.",',
+    '    "for_client": "What '+client+' should do differently if false."',
+    '  },',
+    '  "resolution_path": {',
+    '    "critical_data_point": "The single specific data point that would confirm or kill this hypothesis.",',
+    '    "data_type": "Public but unfound|Expert network call|Primary research|Paid database",',
+    '    "suggested_approach": "Specific action — e.g. Interview 2-3 category managers at wind OEMs."',
+    '  },',
+    '  "bq_project_value": "How resolving this hypothesis advances the BQ and unlocks a recommendation. Max 2 sentences."',
+    '}',
+    '',
+    'RULES: Only cite findings from the research above. Do not invent evidence. impact_if_proved.for_client must be specific to '+client+'. No markdown. Valid JSON only.',
+  ].join('\n');
 
   try{
-    // ── PASS A: Search for new evidence on this hypothesis ───────
-    var searchPrompt='You are a senior research analyst. Search for evidence that either supports or refutes this hypothesis.\n'+
-      'Client context: '+p.client+' — '+(p.title||'')+'\n'+
-      'Hypothesis: '+statement+'\n'+
-      'What would need to be true: '+wwtbt+'\n\n'+
-      'Run 3 targeted searches:\n'+
-      '1. Search for data or events that SUPPORT this hypothesis\n'+
-      '2. Search for data or events that CONTRADICT this hypothesis\n'+
-      '3. Search for the most recent relevant news or data (last 12 months)\n\n'+
-      'After searching, write a brief evidence summary. Be specific — cite company names, numbers, dates.\n'+
-      'Format: 3-5 sentences. Then on a new line write exactly: VERDICT_JSON: followed by valid JSON:\n'+
-      '{"verdict":"Supported|Partially supported|Refuted|Unresolvable","note":"one sentence citing the strongest piece of evidence found"}';
-
-    var searchData=await callAPI({
+    var data=await callAPI({
       model:'claude-sonnet-4-6',
-      max_tokens:1500,
-      tools:[{type:'web_search_20250305',name:'web_search'}],
-      messages:[{role:'user',content:searchPrompt}]
+      max_tokens:2000,
+      messages:[{role:'user',content:prompt}]
     });
 
-    if(statusEl) statusEl.textContent='Step 2/2 — Evaluating verdict...';
+    var text=(data.content||[]).filter(function(b){return b.type==='text';}).map(function(b){return b.text;}).join('');
+    var clean=text.replace(/```json\s*/gi,'').replace(/```\s*/g,'').trim();
+    var m=clean.match(/\{[\s\S]*\}/);
+    var result=null;
+    if(m){try{result=JSON.parse(m[0]);}catch(e){
+      // Try cleanLit approach
+      function cl(s){var o='',inS=false,esc=false;for(var i=0;i<s.length;i++){var c=s[i];if(esc){o+=c;esc=false;continue;}if(c==='\\'){o+=c;esc=true;continue;}if(c==='"'){inS=!inS;o+=c;continue;}if(inS&&(c==='\n'||c==='\r'||c==='\t')){o+=' ';continue;}o+=c;}return o;}
+      try{result=JSON.parse(cl(m[0]));}catch(e2){}
+    }}
 
-    // Extract text from search response
-    var searchText=(searchData.content||[]).filter(function(b){return b.type==='text';}).map(function(b){return b.text;}).join('');
-
-    // Extract any URLs found during search
-    var newSources=[];
-    (searchData.content||[]).forEach(function(block){
-      if(block.type==='tool_result'||block.type==='web_search_tool_result'){
-        var cnt=block.content;
-        if(Array.isArray(cnt)){
-          cnt.forEach(function(c){
-            if(c.url) newSources.push(c.url);
-            else if(c.text) newSources=newSources.concat((c.text.match(/https?:\/\/[^\s"'<>]{15,}/g)||[]).slice(0,2));
-          });
-        }
-      }
-    });
-
-    // Parse verdict from response
-    var verdict='Unresolvable';
-    var note='Could not find sufficient new evidence to evaluate this hypothesis.';
-    var verdictMatch=searchText.match(/VERDICT_JSON:\s*(\{[\s\S]*?\})/);
-    if(verdictMatch){
-      try{
-        var vr=JSON.parse(verdictMatch[1].split("\'").join("'"));
-        verdict=vr.verdict||verdict;
-        note=vr.note||note;
-      }catch(e){}
+    if(!result){
+      if(statusEl) statusEl.textContent='Could not parse analysis — try again';
+      if(btn){btn.textContent='Analyse hypothesis';btn.disabled=false;}
+      return;
     }
 
-    // Derive new confidence — never downgrade from original
-    var newConf=originalConf;
-    if(verdict==='Supported') newConf='high';
-    else if(verdict==='Partially supported') newConf=originalConf==='low'?'medium':originalConf;
-    // Refuted or Unresolvable — keep original
+    S.bqResults[bqId].hypotheses[hypIdx]=Object.assign({},h,{hyp_analysis:result});
 
-    // Store result
-    if(!S.bqResults[bqId].hypotheses) S.bqResults[bqId].hypotheses=[];
-    S.bqResults[bqId].hypotheses[hypIdx]=Object.assign({},h,{
-      reeval_verdict:verdict,
-      reeval_note:note,
-      reeval_evidence:searchText.replace(/VERDICT_JSON:[\s\S]*/,'').trim(),
-      reeval_sources:newSources.slice(0,4),
-      confidence_level:newConf
-    });
-
-    // Update UI in place — no full re-render
     if(evidenceEl){
-      var vBg=verdict==='Supported'?'#E0F5EE':verdict==='Refuted'?'#FCEBEB':'#FEF5E4';
-      var vTxt=verdict==='Supported'?'#085041':verdict==='Refuted'?'#A32D2D':'#633806';
-      var srcHtml=newSources.slice(0,3).map(function(url){
-        var domain=url.replace(/^https?:\/\//,'').split('/')[0];
-        return '<a href="'+escH(url)+'" target="_blank" style="font-size:10px;color:#534AB7;background:#EEEDFE;padding:2px 8px;border-radius:10px;text-decoration:none;white-space:nowrap">'+escH(domain)+'</a>';
-      }).join('');
-      evidenceEl.innerHTML=
-        '<div style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#6B7280;margin-bottom:8px">New evidence found</div>'+
-        '<div style="font-size:12px;color:#374151;line-height:1.65;margin-bottom:10px">'+escH(searchText.replace(/VERDICT_JSON:[\s\S]*/,'').trim().slice(0,600))+'</div>'+
-        (srcHtml?'<div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px">'+srcHtml+'</div>':'')+
-        '<div style="padding:10px 14px;border-radius:8px;background:'+vBg+';border:.5px solid '+vBg+'">'+
-          '<div style="font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:'+vTxt+';margin-bottom:4px">Verdict</div>'+
-          '<div style="font-size:13px;font-weight:700;color:'+vTxt+'">'+escH(verdict)+'</div>'+
-          '<div style="font-size:11px;color:'+vTxt+';margin-top:4px;opacity:.85">'+escH(note)+'</div>'+
-        '</div>'+
-        (verdict==='Supported'?'<div style="margin-top:8px;font-size:11px;color:#166534;background:#F0FDF4;padding:8px 12px;border-radius:6px">Next step: Elevate to confirmed finding — include in deliverable with source citation.</div>':'')+
-        (verdict==='Refuted'?'<div style="margin-top:8px;font-size:11px;color:#92400E;background:#FFF7ED;padding:8px 12px;border-radius:6px">Next step: Document the counter-evidence as a finding. Update the client decision frame.</div>':'')+
-        (verdict==='Unresolvable'||verdict==='Partially supported'?'<div style="margin-top:8px;font-size:11px;color:#3730A3;background:#EEF2FF;padding:8px 12px;border-radius:6px">Next step: Add to primary research gaps — requires expert interview to resolve.</div>':'');
+      var asBg=result.assessability==='Can assess'?'#E1F5EE':result.assessability==='Partially assessable'?'#FEF9C3':'#F3F4F6';
+      var asTx=result.assessability==='Can assess'?'#085041':result.assessability==='Partially assessable'?'#92400E':'#6B7280';
+
+      function evidRows(arr,color){
+        if(!arr||!arr.length) return '<div style="font-size:11px;color:#9CA3AF;font-style:italic;padding:4px 0">No relevant evidence found in research</div>';
+        return arr.map(function(e){
+          var sBg=e.strength==='strong'?'#E1F5EE':e.strength==='moderate'?'#FEF9C3':'#F3F4F6';
+          var sTx=e.strength==='strong'?'#085041':e.strength==='moderate'?'#92400E':'#6B7280';
+          return '<div style="padding:7px 10px;background:#FAFAFA;border-left:3px solid '+color+';border-radius:0 5px 5px 0;margin-bottom:5px">'+
+            '<div style="font-size:11px;color:#1A2B4A;line-height:1.5">'+escH(e.finding||'')+'</div>'+
+            '<div style="display:flex;gap:8px;margin-top:4px">'+
+              (e.source&&e.source!=='Unknown'?'<span style="font-size:9px;color:#9CA3AF">'+escH(e.source)+'</span>':'') +
+              '<span style="font-size:9px;font-weight:600;padding:1px 7px;border-radius:8px;background:'+sBg+';color:'+sTx+'">'+escH(e.strength||'')+'</span>'+
+            '</div>'+
+          '</div>';
+        }).join('');
+      }
+
+      var html='';
+
+      // Hypothesis banner
+      html+='<div style="background:#1A2B4A;border-radius:8px;padding:12px 16px;margin-bottom:12px">'+
+        '<div style="font-size:9px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:#6B7280;margin-bottom:5px">Hypothesis to test</div>'+
+        '<div style="font-size:13px;font-weight:600;color:#fff;line-height:1.6">'+escH(result.sharpened_hypothesis||statement)+'</div>'+
+      '</div>';
+
+      // Assessability
+      html+='<div style="padding:10px 12px;background:'+asBg+';border-radius:8px;border:.5px solid '+asTx+';margin-bottom:12px">'+
+        '<div style="font-size:11px;font-weight:700;color:'+asTx+'">'+escH(result.assessability||'')+'</div>'+
+        '<div style="font-size:11px;color:'+asTx+';margin-top:3px;opacity:.85">'+escH(result.assessability_reason||'')+'</div>'+
+      '</div>';
+
+      // Why this hypothesis
+      if(result.why_this_hypothesis){
+        html+='<div style="margin-bottom:12px">'+
+          '<div style="font-size:9px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:#9CA3AF;margin-bottom:5px">Why this hypothesis</div>'+
+          '<div style="font-size:12px;color:#374151;line-height:1.65">'+escH(result.why_this_hypothesis)+'</div>'+
+        '</div>';
+      }
+
+      // Evidence two-column
+      html+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">'+
+        '<div><div style="font-size:9px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:#0F6E56;margin-bottom:6px">Evidence supporting</div>'+evidRows(result.evidence_for,'#0F6E56')+'</div>'+
+        '<div><div style="font-size:9px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:#A32D2D;margin-bottom:6px">Evidence against</div>'+evidRows(result.evidence_against,'#A32D2D')+'</div>'+
+      '</div>';
+
+      // Impact if proved
+      if(result.impact_if_proved){
+        var magBg=result.impact_if_proved.magnitude==='high'?'#E1F5EE':result.impact_if_proved.magnitude==='medium'?'#FEF9C3':'#F3F4F6';
+        var magTx=result.impact_if_proved.magnitude==='high'?'#085041':result.impact_if_proved.magnitude==='medium'?'#92400E':'#6B7280';
+        html+='<div style="background:#F0FDF4;border:.5px solid #86EFAC;border-radius:8px;padding:12px 14px;margin-bottom:10px">'+
+          '<div style="display:flex;align-items:center;gap:8px;margin-bottom:7px">'+
+            '<div style="font-size:9px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:#0F6E56">Impact if proved</div>'+
+            '<span style="font-size:9px;font-weight:600;padding:2px 8px;border-radius:8px;background:'+magBg+';color:'+magTx+'">'+escH(result.impact_if_proved.magnitude||'')+'</span>'+
+          '</div>'+
+          '<div style="font-size:12px;color:#085041;font-weight:600;line-height:1.6;margin-bottom:5px">'+escH(result.impact_if_proved.for_client||'')+'</div>'+
+          (result.impact_if_proved.for_recommendation?'<div style="font-size:11px;color:#166534;line-height:1.5">Recommendation: '+escH(result.impact_if_proved.for_recommendation)+'</div>':'')+
+        '</div>';
+      }
+
+      // Impact if not proved
+      if(result.impact_if_not_proved){
+        html+='<div style="background:#FFF5F5;border:.5px solid #FCA5A5;border-radius:8px;padding:12px 14px;margin-bottom:10px">'+
+          '<div style="font-size:9px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:#A32D2D;margin-bottom:7px">Impact if not proved</div>'+
+          (result.impact_if_not_proved.alternative?'<div style="font-size:12px;color:#7F1D1D;font-weight:600;margin-bottom:5px">Alternative: '+escH(result.impact_if_not_proved.alternative)+'</div>':'')+
+          (result.impact_if_not_proved.for_client?'<div style="font-size:11px;color:#A32D2D;line-height:1.5">'+escH(result.impact_if_not_proved.for_client)+'</div>':'')+
+        '</div>';
+      }
+
+      // Resolution path
+      if(result.resolution_path){
+        var dtBg={'Public but unfound':'#EEEDFE','Expert network call':'#FEF9C3','Primary research':'#FEF2F2','Paid database':'#E1F5EE'}[result.resolution_path.data_type]||'#F3F4F6';
+        var dtTx={'Public but unfound':'#534AB7','Expert network call':'#92400E','Primary research':'#A32D2D','Paid database':'#085041'}[result.resolution_path.data_type]||'#6B7280';
+        html+='<div style="background:#F8F9FC;border:.5px solid #DBDBDD;border-radius:8px;padding:12px 14px;margin-bottom:10px">'+
+          '<div style="font-size:9px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:#6B7280;margin-bottom:7px">How to resolve this hypothesis</div>'+
+          '<span style="font-size:9px;font-weight:600;padding:2px 8px;border-radius:8px;background:'+dtBg+';color:'+dtTx+';display:inline-block;margin-bottom:7px">'+escH(result.resolution_path.data_type||'')+'</span>'+
+          '<div style="font-size:12px;color:#1A2B4A;font-weight:600;margin-bottom:5px">'+escH(result.resolution_path.critical_data_point||'')+'</div>'+
+          (result.resolution_path.suggested_approach?'<div style="font-size:11px;color:#4B5563;line-height:1.5">→ '+escH(result.resolution_path.suggested_approach)+'</div>':'')+
+        '</div>';
+      }
+
+      // BQ & project value
+      if(result.bq_project_value){
+        html+='<div style="background:#EEEDFE;border-radius:8px;padding:10px 14px">'+
+          '<div style="font-size:9px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:#534AB7;margin-bottom:5px">Value to BQ &amp; project</div>'+
+          '<div style="font-size:12px;color:#26215C;line-height:1.6">'+escH(result.bq_project_value)+'</div>'+
+        '</div>';
+      }
+
+      evidenceEl.innerHTML=html;
       evidenceEl.style.display='block';
     }
+
     if(statusEl) statusEl.textContent='';
-    if(btn){btn.textContent='Search again';btn.disabled=false;}
+    if(btn){btn.textContent='Re-analyse';btn.disabled=false;}
 
   }catch(e){
     console.error('findEvidenceAndEvaluate:',e);
-    if(statusEl) statusEl.textContent='Search failed — try again';
-    if(btn){btn.textContent='Retry';btn.disabled=false;}
+    if(statusEl) statusEl.textContent='Analysis failed — try again';
+    if(btn){btn.textContent='Analyse hypothesis';btn.disabled=false;}
   }
 }
 
-// Keep old name as alias for any remaining references
+// Keep old name as alias
 async function reEvaluateHypothesis(bqId, hypIdx){
   return findEvidenceAndEvaluate(bqId, hypIdx);
 }
+
 
 function formatParas(text){
   if(!text) return '';
@@ -2658,7 +2753,7 @@ function renderResults(){
           actionHtml+
           '<div id="hypevidence-'+bqId+'-'+fi+'" style="display:none;margin-top:10px;padding:12px 14px;background:#F8FAFC;border:.5px solid #E2E8F0;border-radius:8px"></div>'+
           '<div style="margin-top:10px;display:flex;align-items:center;gap:10px">'+
-            '<button class="btn btn-sm" id="reevalbtn-'+bqId+'-'+fi+'" style="font-size:10px;padding:5px 12px;background:#534AB7;color:#fff;border:none">🔍 Find evidence &amp; evaluate</button>'+
+            '<button class="btn btn-sm" id="reevalbtn-'+bqId+'-'+fi+'" style="font-size:10px;padding:5px 12px;background:#534AB7;color:#fff;border:none">🔬 Analyse hypothesis</button>'+
             '<span id="hypstatus-'+bqId+'-'+fi+'" style="font-size:10px;color:#9CA3AF;font-style:italic"></span>'+
           '</div>'+
         '</div>';
@@ -3493,12 +3588,13 @@ function buildSynthesisPrompt(p, allBQResults, engType) {
     sectionList,
     '',
     'For each section:',
-    '- Draw on ALL relevant findings across ALL BQs — do not limit to one BQ per section',
-    '- Write a 2-3 sentence synthesis that names specific companies and numbers',
-    '- List 2-4 key points as bullet_points array — each named, numbered, client-framed',
-    '- State the coverage_level: "complete" / "partial" / "gap" based on research available',
-    '- If coverage is partial or gap, state what is missing and which paid source or primary research would fill it',
-    '- The "Strategic options" section must give Option A and Option B explicitly for ' + client,
+    '- Draw on ALL relevant findings across ALL BQs',
+    '- synthesis: MAX 2 sentences. Must name specific companies and numbers. No generic statements.',
+    '- bullet_points: 2-3 items ONLY. Each max 15 words. Format: [Named entity]: [specific finding with number].',
+    '- coverage_level: "complete" / "partial" / "gap"',
+    '- coverage_note: one sentence only if partial/gap — what is missing and which source fills it',
+    '- source_bqs: array of BQ IDs that contributed data to this section',
+    '- Skip sections with zero relevant data — set coverage_level to "gap" and bullet_points to []',
     '',
     'Respond with ONLY valid JSON:',
     '{',
@@ -3531,13 +3627,14 @@ function buildSynthesisPrompt(p, allBQResults, engType) {
     '}',
     '',
     'RULES:',
-    '- Every section must appear in the output, even if coverage is gap',
-    '- bullet_points: 2-4 items per section, each specific and named',
-    '- coverage_level "gap" = data not available from web research at all',
-    '- coverage_level "partial" = some data found but country-level or primary data missing',
-    '- Never invent data — if a section has no research, say so in coverage_note',
-    '- strategic_analogies: 2-4 entries drawn from creative_angles across all BQs. De-duplicate. Pick only the most powerful cross-engagement analogies. Write the_analogy and what_client_can_learn as prose paragraphs, not bullet points. This is the most differentiated section in the deliverable.',
+    '- Every section must appear. Sections with no data: synthesis="No data found", bullet_points=[], coverage_level="gap"',
+    '- bullet_points: 2-3 SHORT items per section. Each under 15 words. Named entity + specific number.',
+    '- synthesis: max 2 sentences per section. Specific, named, numbered. Never generic.',
+    '- coverage_note: one sentence max. Only if partial or gap.',
+    '- strategic_analogies: 2-3 entries only. the_analogy max 2 sentences. what_client_can_learn max 2 sentences.',
+    '- cross_cutting.key_insight: one sentence, the single most important finding',
     '- APOSTROPHES: escape every apostrophe with backslash in string values',
+    '- OUTPUT MUST BE COMPLETE VALID JSON — do not truncate. If running long, shorten bullet_points.',
     '- Respond ONLY with valid JSON. No markdown. No text before or after.',
   ].join('\n');
 }
@@ -3573,8 +3670,8 @@ async function runSynthesis() {
       headers:{'Content-Type':'application/json','anthropic-version':'2023-06-01','x-api-key':getApiKey()},
       body: JSON.stringify({
         model: 'claude-sonnet-4-6',
-        max_tokens: 6000,
-        system: 'You are a senior FutureBridge consultant. Synthesise research into structured deliverable sections. Respond ONLY with valid JSON. Escape all apostrophes with backslash. No markdown fences.',
+        max_tokens: 10000,
+        system: 'You are a senior FutureBridge consultant. Synthesise research into structured deliverable sections. Respond ONLY with valid JSON. Escape all apostrophes with backslash. No markdown fences. Be concise — each synthesis field max 2 sentences, each bullet_point max 20 words.',
         messages: [{ role: 'user', content: prompt }]
       })
     });
@@ -3637,18 +3734,47 @@ function parseSynthesis(text) {
     if(p1 && (p1.sections || p1.cross_cutting)) return p1;
   } catch(e) {}
 
+  // Extended fallback — try progressively shorter truncations
+  var suffs = [
+    ']}',
+    ']}]}',
+    ']}]}]}',
+    ']}]}]}]}',
+    '"]}]}]}',
+    '","coverage_note":"","source_bqs":[]]}]}',
+    '","coverage_level":"partial","coverage_note":"","source_bqs":[]]}]}',
+  ];
+
+  // Try trimming from last complete string value
   var lastB = raw.lastIndexOf('"}');
-  var suffs = [']}',']}]}',']}]}]}',']}]}]}]}'];
-  while(lastB > raw.length * 0.2){
+  while(lastB > raw.length * 0.15){
     var cand = cleanLit(raw.slice(0, lastB+2));
     for(var si=0; si<suffs.length; si++){
       try{
         var p2 = JSON.parse(cand + suffs[si]);
-        if(p2 && (p2.sections || p2.cross_cutting)) return p2;
+        if(p2 && (p2.sections || p2.cross_cutting)){
+          console.warn('parseSynthesis: recovered truncated JSON at pos', lastB);
+          return p2;
+        }
       }catch(e){}
     }
     lastB = raw.lastIndexOf('"}', lastB-1);
   }
+
+  // Last resort — try to extract just the sections array
+  try {
+    var secMatch = raw.match(/"sections"\s*:\s*(\[[\s\S]*?\])\s*[,}]/);
+    var ccMatch = raw.match(/"cross_cutting"\s*:\s*(\{[\s\S]*?\})\s*[,}]/);
+    if(secMatch || ccMatch){
+      var partial = {sections:[], cross_cutting:{}, strategic_analogies:[]};
+      if(secMatch){ try{ partial.sections = JSON.parse(cleanLit(secMatch[1])); }catch(e){} }
+      if(ccMatch){ try{ partial.cross_cutting = JSON.parse(cleanLit(ccMatch[1])); }catch(e){} }
+      if(partial.sections.length > 0 || partial.cross_cutting.key_insight){
+        console.warn('parseSynthesis: partial extraction succeeded');
+        return partial;
+      }
+    }
+  } catch(e) {}
 
   return null;
 }
