@@ -2541,6 +2541,59 @@ function formatParas(text){
     .join('');
 }
 
+// ─────────────────────────────────────────────────────────────
+// resolveExecBrief — single source of truth for executive-brief fields
+// across all 4 renderers (HTML screen, HTML download, CSV, PPTX).
+// Returns normalised fields. If the rich executive_brief block exists,
+// uses that; otherwise falls back to the legacy cross_cutting fields.
+// ─────────────────────────────────────────────────────────────
+function resolveExecBrief(synth) {
+  var eb = synth && synth.executive_brief;
+  var cc = (synth && synth.cross_cutting) || {};
+  var hasFull = !!(eb && (eb.headline_insight || eb.engagement_narrative || eb.opportunity_sizing || (eb.strategic_options && eb.strategic_options.length)));
+  return {
+    has_full_brief: hasFull,
+    headline: (eb && eb.headline_insight) || cc.key_insight || '',
+    narrative: (eb && eb.engagement_narrative) || '',
+    opportunity: (eb && eb.opportunity_sizing) || '',
+    options: (eb && eb.strategic_options) || [],
+    threat: (eb && eb.competitive_threat) || '',
+    next_step: (eb && eb.recommended_next_step) || cc.recommended_next_step || '',
+    gap: (eb && eb.biggest_gap) || cc.biggest_gap || '',
+    // legacy fields kept for any downstream code that still reads them
+    legacy_key_insight: cc.key_insight || (eb && eb.headline_insight) || ''
+  };
+}
+
+// Builds a multi-paragraph executive summary string from the brief.
+// Used for S.summary (flat text) and anywhere a single-string summary is needed.
+function buildExecSummaryText(synth) {
+  var b = resolveExecBrief(synth);
+  if (!b.has_full_brief) return b.headline || '';
+  var paras = [];
+  if (b.headline) paras.push(b.headline);
+  if (b.narrative) paras.push(b.narrative);
+  if (b.opportunity) paras.push('Opportunity at stake: ' + b.opportunity);
+  if (b.options && b.options.length) {
+    var optLines = b.options.map(function(o){
+      var bits = [];
+      if (o.label) bits.push(o.label);
+      if (o.thesis) bits.push(o.thesis);
+      var tags = [];
+      if (o.risk) tags.push('risk: ' + o.risk);
+      if (o.time_to_value) tags.push(o.time_to_value);
+      if (o.key_dependency) tags.push('depends on: ' + o.key_dependency);
+      if (tags.length) bits.push('(' + tags.join(' | ') + ')');
+      return bits.join(' — ');
+    });
+    paras.push('Strategic options: ' + optLines.join('  ||  '));
+  }
+  if (b.threat) paras.push('If client does nothing: ' + b.threat);
+  if (b.next_step) paras.push('Recommended next step: ' + b.next_step);
+  if (b.gap) paras.push('Biggest remaining gap: ' + b.gap);
+  return paras.join('\n\n');
+}
+
 function renderResults(){
   var p=S.proposal;
   var bqIds=S.selBQs.map(function(i){return p.bqs[i].id;});
@@ -2979,8 +3032,8 @@ function renderResults(){
 
   // Summary: use cross-cutting key_insight from synthesis if available, else build from findings
   var parts=[];
-  if(S.synthesis&&S.synthesis.cross_cutting&&S.synthesis.cross_cutting.key_insight){
-    S.summary=S.synthesis.cross_cutting.key_insight;
+  if(S.synthesis && (S.synthesis.executive_brief || (S.synthesis.cross_cutting && S.synthesis.cross_cutting.key_insight))){
+    S.summary=buildExecSummaryText(S.synthesis);
   } else {
     bqIds.forEach(function(id){
       var d2=S.bqResults[id];
@@ -3333,7 +3386,35 @@ function dlReport(){
   h+='<p style="font-size:11px;color:#6B7280">'+p.practice+' \xb7 '+p.geography+' \xb7 '+p.period+' \xb7 Generated '+new Date().toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'})+'</p>';
 
   // Cross-engagement executive summary
-  if(S.summary){
+  var ebData = resolveExecBrief(S.synthesis);
+  if(ebData.has_full_brief){
+    h+='<h2>Executive Summary</h2>';
+    var ebHtml = '<div class="sum">';
+    if(ebData.headline) ebHtml += '<p style="margin:0 0 10px;font-weight:700;font-size:14px;color:#26215C">'+escH(ebData.headline)+'</p>';
+    if(ebData.narrative) ebHtml += '<p style="margin:0 0 10px">'+escH(ebData.narrative)+'</p>';
+    if(ebData.opportunity) ebHtml += '<p style="margin:0 0 10px;padding:8px 12px;background:#E1F5EE;border-left:3px solid #0F6E56;border-radius:0 4px 4px 0"><strong>Opportunity at stake:</strong> '+escH(ebData.opportunity)+'</p>';
+    if(ebData.options && ebData.options.length){
+      ebHtml += '<div style="margin:10px 0"><strong style="display:block;margin-bottom:6px;font-size:11px;letter-spacing:1px;color:#534AB7;text-transform:uppercase">Strategic options</strong>';
+      ebHtml += '<table style="width:100%;border-collapse:collapse;margin:0"><tr>';
+      ebData.options.slice(0,2).forEach(function(o){
+        var rBg = o.risk==='lower'?'#DCFCE7':o.risk==='higher'?'#FEE2E2':'#FEF9C3';
+        var rTx = o.risk==='lower'?'#15803D':o.risk==='higher'?'#B91C1C':'#92400E';
+        ebHtml += '<td style="width:50%;vertical-align:top;padding:10px 12px;border:1px solid #E5E9F0;border-radius:6px;background:#fff">' +
+          '<div style="font-weight:700;font-size:12px;color:#1A2B4A;margin-bottom:4px">'+escH(o.label||'')+'</div>' +
+          (o.thesis?'<div style="font-size:12px;color:#374151;margin-bottom:6px">'+escH(o.thesis)+'</div>':'') +
+          (o.risk?'<span style="font-size:9px;font-weight:700;padding:2px 6px;border-radius:3px;background:'+rBg+';color:'+rTx+';margin-right:6px">RISK: '+escH(String(o.risk).toUpperCase())+'</span>':'') +
+          (o.time_to_value?'<span style="font-size:10px;color:#6B7280">'+escH(o.time_to_value)+'</span>':'') +
+          (o.key_dependency?'<div style="font-size:10px;color:#6B7280;margin-top:4px;font-style:italic">Depends on: '+escH(o.key_dependency)+'</div>':'') +
+        '</td>';
+      });
+      ebHtml += '</tr></table></div>';
+    }
+    if(ebData.threat) ebHtml += '<p style="margin:10px 0;padding:8px 12px;background:#FEF2F2;border-left:3px solid #B91C1C;border-radius:0 4px 4px 0"><strong>If '+escH(p.client||'the client')+' does nothing:</strong> '+escH(ebData.threat)+'</p>';
+    if(ebData.next_step) ebHtml += '<p style="margin:10px 0;padding:10px 12px;background:#fff;border:1px solid #AFA9EC;border-radius:6px;color:#534AB7"><strong>Recommended next step:</strong> '+escH(ebData.next_step)+'</p>';
+    if(ebData.gap) ebHtml += '<p style="margin:8px 0 0;padding-top:8px;border-top:1px solid #E5E9F0;font-size:11px;color:#6B7280"><strong>Biggest remaining gap:</strong> '+escH(ebData.gap)+'</p>';
+    ebHtml += '</div><hr>';
+    h += ebHtml;
+  } else if(S.summary){
     h+='<h2>Executive Summary</h2><div class="sum">'+paraBreak(S.summary)+'</div><hr>';
   }
 
@@ -3934,7 +4015,35 @@ function renderSectionView(parsed) {
   container.appendChild(hdr);
 
   // ── KEY INSIGHT BANNER ───────────────────────────────────────
-  if (cc.key_insight || cc.recommended_next_step) {
+  var sbvEb = resolveExecBrief(parsed);
+  if (sbvEb.has_full_brief) {
+    var banner = document.createElement('div');
+    banner.style.cssText = 'background:#EEEDFE;border:.5px solid #7F77DD;border-radius:10px;padding:16px 20px;margin-bottom:14px';
+    var bhtml = '<div style="font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#534AB7;margin-bottom:10px">Headline insight</div>';
+    if (sbvEb.headline) bhtml += '<div style="font-size:14px;font-weight:600;color:#26215C;line-height:1.6;margin-bottom:10px">' + escH(sbvEb.headline) + '</div>';
+    if (sbvEb.narrative) bhtml += '<div style="font-size:12px;color:#374151;line-height:1.65;margin-bottom:10px">' + escH(sbvEb.narrative) + '</div>';
+    if (sbvEb.opportunity) bhtml += '<div style="font-size:12px;color:#085041;background:#E1F5EE;border-left:3px solid #0F6E56;padding:8px 12px;border-radius:0 6px 6px 0;margin-bottom:10px"><strong>Opportunity at stake:</strong> ' + escH(sbvEb.opportunity) + '</div>';
+    if (sbvEb.options && sbvEb.options.length) {
+      bhtml += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">';
+      sbvEb.options.slice(0,2).forEach(function(o){
+        var rBg=o.risk==='lower'?'#DCFCE7':o.risk==='higher'?'#FEE2E2':'#FEF9C3';
+        var rTx=o.risk==='lower'?'#15803D':o.risk==='higher'?'#B91C1C':'#92400E';
+        bhtml += '<div style="background:#fff;border:.5px solid #AFA9EC;border-radius:6px;padding:10px 12px">'+
+          '<div style="font-size:11px;font-weight:700;color:#1A2B4A;margin-bottom:4px">'+escH(o.label||'')+'</div>'+
+          '<div style="font-size:11px;color:#374151;line-height:1.55;margin-bottom:6px">'+escH(o.thesis||'')+'</div>'+
+          (o.risk?'<span style="font-size:8px;font-weight:700;padding:1px 6px;border-radius:3px;background:'+rBg+';color:'+rTx+';margin-right:6px">RISK: '+escH(String(o.risk).toUpperCase())+'</span>':'')+
+          (o.time_to_value?'<span style="font-size:9px;color:#6B7280">'+escH(o.time_to_value)+'</span>':'')+
+          (o.key_dependency?'<div style="font-size:10px;color:#6B7280;margin-top:4px;font-style:italic">Depends on: '+escH(o.key_dependency)+'</div>':'')+
+        '</div>';
+      });
+      bhtml += '</div>';
+    }
+    if (sbvEb.threat) bhtml += '<div style="font-size:12px;color:#991B1B;background:#FEF2F2;border-left:3px solid #B91C1C;padding:8px 12px;border-radius:0 6px 6px 0;margin-bottom:10px"><strong>If the client does nothing:</strong> ' + escH(sbvEb.threat) + '</div>';
+    if (sbvEb.next_step) bhtml += '<div style="font-size:12px;color:#534AB7;padding:10px 12px;background:#fff;border-radius:6px;border:.5px solid #AFA9EC;margin-bottom:6px"><strong>Recommended next step:</strong> ' + escH(sbvEb.next_step) + '</div>';
+    if (sbvEb.gap) bhtml += '<div style="font-size:11px;color:#888;margin-top:8px;padding-top:8px;border-top:.5px solid #AFA9EC"><strong>Biggest gap:</strong> ' + escH(sbvEb.gap) + '</div>';
+    banner.innerHTML = bhtml;
+    container.appendChild(banner);
+  } else if (cc.key_insight || cc.recommended_next_step) {
     var banner = document.createElement('div');
     banner.style.cssText = 'background:#EEEDFE;border:.5px solid #7F77DD;border-radius:10px;padding:16px 20px;margin-bottom:14px';
     banner.innerHTML =
@@ -4311,7 +4420,30 @@ function dlSectionReport() {
   h += '<h1>' + p.client + ' — Research Intelligence: Section View</h1>';
   h += '<div class="meta">' + (p.title||'') + ' · ' + (p.geography||'') + ' · Generated ' + new Date().toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'}) + '</div>';
 
-  if (cc.key_insight) {
+  var esvEb = resolveExecBrief(parsed);
+  if (esvEb.has_full_brief) {
+    var bh = '<div class="banner">';
+    if (esvEb.headline) bh += '<div class="banner-label">Headline insight</div><div class="banner-insight">' + esvEb.headline + '</div>';
+    if (esvEb.narrative) bh += '<div style="font-size:12px;color:#374151;line-height:1.65;margin:8px 0">' + esvEb.narrative + '</div>';
+    if (esvEb.opportunity) bh += '<div style="font-size:12px;color:#085041;background:#E1F5EE;border-left:3px solid #0F6E56;padding:8px 12px;border-radius:0 4px 4px 0;margin:8px 0"><strong>Opportunity at stake:</strong> ' + esvEb.opportunity + '</div>';
+    if (esvEb.options && esvEb.options.length) {
+      bh += '<table style="width:100%;border-collapse:separate;border-spacing:6px 0;margin:8px 0"><tr>';
+      esvEb.options.slice(0,2).forEach(function(o){
+        bh += '<td style="width:50%;vertical-align:top;padding:10px 12px;border:1px solid #AFA9EC;border-radius:6px;background:#fff">' +
+          '<div style="font-weight:700;font-size:12px;color:#1A2B4A;margin-bottom:4px">' + (o.label||'') + '</div>' +
+          (o.thesis?'<div style="font-size:11px;color:#374151;margin-bottom:6px">' + o.thesis + '</div>':'') +
+          (o.risk?'<div style="font-size:10px;color:#6B7280"><strong>Risk:</strong> ' + o.risk + (o.time_to_value?' · ' + o.time_to_value:'') + '</div>':'') +
+          (o.key_dependency?'<div style="font-size:10px;color:#6B7280;font-style:italic;margin-top:4px">Depends on: ' + o.key_dependency + '</div>':'') +
+        '</td>';
+      });
+      bh += '</tr></table>';
+    }
+    if (esvEb.threat) bh += '<div style="font-size:12px;color:#991B1B;background:#FEF2F2;border-left:3px solid #B91C1C;padding:8px 12px;border-radius:0 4px 4px 0;margin:8px 0"><strong>If ' + (p.client||'client') + ' does nothing:</strong> ' + esvEb.threat + '</div>';
+    if (esvEb.next_step) bh += '<div style="font-size:12px;color:#534AB7;margin:8px 0"><strong>Recommended next step:</strong> ' + esvEb.next_step + '</div>';
+    if (esvEb.gap) bh += '<div style="font-size:11px;color:#888;margin-top:6px"><strong>Biggest gap:</strong> ' + esvEb.gap + '</div>';
+    bh += '</div>';
+    h += bh;
+  } else if (cc.key_insight) {
     h += '<div class="banner"><div class="banner-label">Key insight</div><div class="banner-insight">' + cc.key_insight + '</div>' +
       (cc.recommended_next_step ? '<div style="font-size:12px;color:#534AB7"><strong>Next step:</strong> ' + cc.recommended_next_step + '</div>' : '') +
       (cc.biggest_gap ? '<div style="font-size:11px;color:#888;margin-top:6px"><strong>Biggest gap:</strong> ' + cc.biggest_gap + '</div>' : '') +
@@ -4357,10 +4489,25 @@ function dlSectionCSV() {
     }
   });
   var cc = parsed.cross_cutting||{};
+  var csvEb = resolveExecBrief(parsed);
   rows.push('');
-  rows.push(['"KEY INSIGHT"',e(cc.key_insight||'')].join(','));
-  rows.push(['"BIGGEST GAP"',e(cc.biggest_gap||'')].join(','));
-  rows.push(['"NEXT STEP"',e(cc.recommended_next_step||'')].join(','));
+  if (csvEb.has_full_brief) {
+    rows.push(['"EXECUTIVE BRIEF"','""'].join(','));
+    rows.push(['"Headline insight"',e(csvEb.headline)].join(','));
+    if (csvEb.narrative) rows.push(['"Engagement narrative"',e(csvEb.narrative)].join(','));
+    if (csvEb.opportunity) rows.push(['"Opportunity at stake"',e(csvEb.opportunity)].join(','));
+    (csvEb.options||[]).forEach(function(o,i){
+      var combined = [o.label,o.thesis,o.risk?'Risk:'+o.risk:'',o.time_to_value,o.key_dependency?'Depends on: '+o.key_dependency:''].filter(Boolean).join(' | ');
+      rows.push(['"Strategic option '+(i+1)+'"',e(combined)].join(','));
+    });
+    if (csvEb.threat) rows.push(['"Competitive threat"',e(csvEb.threat)].join(','));
+    if (csvEb.next_step) rows.push(['"Recommended next step"',e(csvEb.next_step)].join(','));
+    if (csvEb.gap) rows.push(['"Biggest gap"',e(csvEb.gap)].join(','));
+  } else {
+    rows.push(['"KEY INSIGHT"',e(cc.key_insight||'')].join(','));
+    rows.push(['"BIGGEST GAP"',e(cc.biggest_gap||'')].join(','));
+    rows.push(['"NEXT STEP"',e(cc.recommended_next_step||'')].join(','));
+  }
   var b = new Blob([rows.join('\n')],{type:'text/csv'});
   var a = document.createElement('a');
   a.href = URL.createObjectURL(b);
@@ -4438,8 +4585,86 @@ async function buildSectionDeck(){
   cover.addText(date,{x:3.3,y:2.78,w:6.3,h:0.25,fontSize:10,fontFace:FONT,color:FB.grey2,bold:true,margin:0});
   cover.addText('FutureBridge',{x:8.30,y:5.20,w:1.50,h:0.28,fontSize:12,fontFace:FONT,color:FB.white,bold:true,align:'right',margin:0});
 
-  // KEY INSIGHT BANNER (if present)
-  if(cc.key_insight||cc.recommended_next_step){
+  // ── EXECUTIVE BRIEF (rich, multi-slide) or legacy Key Insight (single) ──
+  var pptEb = resolveExecBrief(parsed);
+  if(pptEb.has_full_brief){
+    // SLIDE A: Headline + Narrative + Opportunity
+    var eb1 = pres.addSlide();
+    addNav(eb1);
+    eb1.addText('Executive Brief',{x:0.17,y:0.16,w:9.67,h:0.22,fontSize:9,fontFace:FONT,color:FB.purple,bold:true,margin:0});
+    // Headline
+    eb1.addShape('rect',{x:0.17,y:0.44,w:9.66,h:1.30,fill:{color:FB.purpleLight},line:{color:'AFA9EC',width:0.5}});
+    eb1.addShape('rect',{x:0.17,y:0.44,w:0.08,h:1.30,fill:{color:FB.purple},line:{color:FB.purple,width:0}});
+    eb1.addText('Headline insight',{x:0.40,y:0.50,w:9.20,h:0.22,fontSize:9,fontFace:FONT,color:FB.purple,bold:true,margin:0});
+    eb1.addText(safe(pptEb.headline,400),{x:0.40,y:0.74,w:9.20,h:0.96,fontSize:11,fontFace:FONT,color:'26215C',bold:true,margin:0,valign:'top'});
+    // Narrative
+    if(pptEb.narrative){
+      eb1.addText('The story across the research',{x:0.17,y:1.88,w:9.66,h:0.22,fontSize:9,fontFace:FONT,color:FB.charcoal,bold:true,margin:0});
+      eb1.addText(safe(pptEb.narrative,900),{x:0.17,y:2.12,w:9.66,h:1.50,fontSize:10,fontFace:FONT,color:FB.grey1,margin:0,valign:'top'});
+    }
+    // Opportunity
+    if(pptEb.opportunity){
+      eb1.addShape('rect',{x:0.17,y:3.75,w:9.66,h:1.35,fill:{color:'E1F5EE'},line:{color:'0F6E56',width:0.5}});
+      eb1.addShape('rect',{x:0.17,y:3.75,w:0.08,h:1.35,fill:{color:'0F6E56'},line:{color:'0F6E56',width:0}});
+      eb1.addText('Opportunity at stake',{x:0.40,y:3.80,w:9.20,h:0.22,fontSize:9,fontFace:FONT,color:'085041',bold:true,margin:0});
+      eb1.addText(safe(pptEb.opportunity,600),{x:0.40,y:4.04,w:9.20,h:1.00,fontSize:10,fontFace:FONT,color:'085041',margin:0,valign:'top'});
+    }
+    addFooter(eb1,++pg,docName);
+
+    // SLIDE B: Strategic Options (A vs B) + Competitive Threat
+    if((pptEb.options && pptEb.options.length) || pptEb.threat){
+      var eb2 = pres.addSlide();
+      addNav(eb2);
+      eb2.addText('Executive Brief — Strategic Options',{x:0.17,y:0.16,w:9.67,h:0.22,fontSize:9,fontFace:FONT,color:FB.purple,bold:true,margin:0});
+      // Two option cards side by side
+      var opts = (pptEb.options||[]).slice(0,2);
+      opts.forEach(function(o,i){
+        var ox=0.17+i*4.88, ow=4.78;
+        eb2.addShape('rect',{x:ox,y:0.50,w:ow,h:2.80,fill:{color:FB.white},line:{color:'AFA9EC',width:0.5}});
+        eb2.addShape('rect',{x:ox,y:0.50,w:ow,h:0.08,fill:{color:FB.purple},line:{color:FB.purple,width:0}});
+        eb2.addText(safe(o.label||'',80),{x:ox+0.14,y:0.66,w:ow-0.28,h:0.32,fontSize:12,fontFace:FONT,color:FB.charcoal,bold:true,margin:0});
+        eb2.addText(safe(o.thesis||'',400),{x:ox+0.14,y:1.02,w:ow-0.28,h:1.20,fontSize:10,fontFace:FONT,color:FB.grey1,margin:0,valign:'top'});
+        // Risk badge
+        var riskTxt = o.risk ? 'Risk: '+String(o.risk).toUpperCase() : '';
+        var ttv = o.time_to_value ? ' · '+o.time_to_value : '';
+        if(riskTxt || ttv){
+          eb2.addText(riskTxt+ttv,{x:ox+0.14,y:2.32,w:ow-0.28,h:0.22,fontSize:9,fontFace:FONT,color:FB.purple,bold:true,margin:0});
+        }
+        if(o.key_dependency){
+          eb2.addText('Depends on: '+safe(o.key_dependency,200),{x:ox+0.14,y:2.58,w:ow-0.28,h:0.60,fontSize:9,fontFace:FONT,color:FB.grey1,italic:true,margin:0,valign:'top'});
+        }
+      });
+      // Competitive threat
+      if(pptEb.threat){
+        eb2.addShape('rect',{x:0.17,y:3.55,w:9.66,h:1.50,fill:{color:'FEF2F2'},line:{color:'B91C1C',width:0.5}});
+        eb2.addShape('rect',{x:0.17,y:3.55,w:0.08,h:1.50,fill:{color:'B91C1C'},line:{color:'B91C1C',width:0}});
+        eb2.addText('If '+safe(client,40)+' does nothing',{x:0.40,y:3.60,w:9.20,h:0.22,fontSize:9,fontFace:FONT,color:'991B1B',bold:true,margin:0});
+        eb2.addText(safe(pptEb.threat,700),{x:0.40,y:3.84,w:9.20,h:1.15,fontSize:10,fontFace:FONT,color:'991B1B',margin:0,valign:'top'});
+      }
+      addFooter(eb2,++pg,docName);
+    }
+
+    // SLIDE C: Recommended Next Step + Biggest Gap
+    if(pptEb.next_step || pptEb.gap){
+      var eb3 = pres.addSlide();
+      addNav(eb3);
+      eb3.addText('Executive Brief — Next Steps',{x:0.17,y:0.16,w:9.67,h:0.22,fontSize:9,fontFace:FONT,color:FB.purple,bold:true,margin:0});
+      if(pptEb.next_step){
+        eb3.addShape('rect',{x:0.17,y:0.50,w:9.66,h:2.20,fill:{color:FB.white},line:{color:'AFA9EC',width:0.8}});
+        eb3.addShape('rect',{x:0.17,y:0.50,w:9.66,h:0.10,fill:{color:FB.purple},line:{color:FB.purple,width:0}});
+        eb3.addText('Recommended next step',{x:0.40,y:0.72,w:9.20,h:0.30,fontSize:12,fontFace:FONT,color:FB.purple,bold:true,margin:0});
+        eb3.addText(safe(pptEb.next_step,700),{x:0.40,y:1.06,w:9.20,h:1.50,fontSize:11,fontFace:FONT,color:FB.charcoal,margin:0,valign:'top'});
+      }
+      if(pptEb.gap){
+        eb3.addShape('rect',{x:0.17,y:3.00,w:9.66,h:1.50,fill:{color:'FFFBEB'},line:{color:'FCD34D',width:0.5}});
+        eb3.addShape('rect',{x:0.17,y:3.00,w:0.08,h:1.50,fill:{color:'92400E'},line:{color:'92400E',width:0}});
+        eb3.addText('Biggest remaining gap',{x:0.40,y:3.06,w:9.20,h:0.22,fontSize:9,fontFace:FONT,color:'92400E',bold:true,margin:0});
+        eb3.addText(safe(pptEb.gap,500),{x:0.40,y:3.30,w:9.20,h:1.15,fontSize:10,fontFace:FONT,color:'78350F',margin:0,valign:'top'});
+      }
+      addFooter(eb3,++pg,docName);
+    }
+  } else if(cc.key_insight||cc.recommended_next_step){
+    // LEGACY: single Key Insight slide for old baselines
     var ki=pres.addSlide();
     addNav(ki);
     ki.addShape('rect',{x:0.17,y:0.30,w:9.66,h:1.20,fill:{color:FB.purpleLight},line:{color:'AFA9EC',width:0.5}});
