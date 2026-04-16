@@ -1514,6 +1514,7 @@ function buildResearchPrompt(bq, p, plan) {
     '    If you genuinely cannot identify 2+ gaps, the research is too thin — go back and be more specific about what is missing.',
     '  - creative_angles: never empty — always find the adjacent industry analog.',
     '  - NAMED INNOVATIONS: for innovation-scanning BQs (iem_monitoring, innovation_funnel, innovation_competitor, scientific_landscape), every finding about a technology innovation MUST include: (a) the innovation\'s specific name as used in its source paper or press (e.g. "HB-ATTCC", "Dysprosia-stabilised zirconia abradable", "MoSi2 self-healing TBC", "Honeycomb Tip Design"), (b) the research institution or company that produced it (e.g. "NASA Glenn Research Center", "TU Delft", "Harbin Institute of Technology"), (c) the TRL if stated or inferable (TRL 1-9), and (d) one specific performance metric (e.g. "26.7% tip leakage reduction", "operates at 1800°C"). Generic category descriptions without these four specifics are NOT acceptable for innovation-scanning BQs.',
+    '  - NAMED STARTUPS: for BQs mentioning startups, new entrants, or spin-offs, every startup finding MUST include: (a) company name, (b) HQ location, (c) founding year or funding stage (seed/Series A/B/C), (d) the specific technology claim (not the category), and (e) a link to the primary source (company site, SBIR award, Crunchbase, dealroom, TechCrunch article). Examples of acceptable shape: "Destinus Energy (Switzerland, founded 2022 via OPRA Turbines acquisition, hydrogen-focused radial gas turbines, 140+ installed units)" — NOT "several startups working on novel turbine designs."',
     '  - APOSTROPHES: escape with backslash. No trailing commas. Double quotes only.',
   ].join('\n');
 
@@ -1980,39 +1981,93 @@ async function researchBQ(bq, p, onLog, analystInput){
         regUrls.forEach(function(u){sb.push('  '+u);});
       }
 
-      // ── ACADEMIC LITERATURE MODE ──────────────────────────────
-      // Fires automatically (no toggle needed) when the BQ is innovation-scanning type.
-      // Targets journal papers, preprints, and conference proceedings to catch
-      // named innovations at TRL 3-6 level that do not appear in company press releases.
+      // ── INNOVATION-SCAN RESEARCH MODE ──────────────────────────
+      // Fires automatically when BQ is innovation-scanning type. Targets three source families
+      // in parallel: (A) academic literature, (B) universities/research labs/public grant databases,
+      // (C) startup/new-entrant sources. All public, all free. Targets the gap revealed in the
+      // Siemens audit — named innovations at TRL 3-6, research institutions, and early-stage startups.
+      //
+      // Pass 1 URL hygiene: this block intentionally offers a menu of high-value URLs but
+      // instructs Pass 1 to PRIORITISE and CAP, rather than dump all 20+ into direct_urls.
+      // Pass 3A only fetches ~12 pages, so an uncapped list is planning noise.
       var INNOVATION_SCAN_TYPES = ['iem_monitoring','innovation_funnel','innovation_competitor','scientific_landscape'];
-      if (INNOVATION_SCAN_TYPES.indexOf(bqType) >= 0) {
+      var bqTextLower = (bq.text||'').toLowerCase();
+      var isStartupScanBQ = /\b(startup|start-up|new entrant|spin-?off|emerging compan)/i.test(bq.text||'');
+
+      if (INNOVATION_SCAN_TYPES.indexOf(bqType) >= 0 || isStartupScanBQ) {
         var scopeQ3 = (bq.scope_nouns||[]).slice(0,3).join(' ').trim();
         if (!scopeQ3) scopeQ3 = (bq.kw||[]).slice(0,3).join(' ').trim();
         var encQ3 = encodeURIComponent(scopeQ3);
+        var encQ3p = scopeQ3.replace(/\s+/g,'+');
 
-        sb.push('\n── ACADEMIC LITERATURE MODE (auto-enabled for innovation scanning) ──');
-        sb.push('This BQ is an innovation-scanning type. The tool must target journal papers and preprints, not just corporate press releases.');
+        sb.push('\n── INNOVATION-SCAN RESEARCH MODE (auto-enabled) ──');
+        sb.push('This BQ requires innovation scanning. Company press releases and aggregator summaries are NOT sufficient — the analyst expects named innovations, named research institutions, and named startups, each with a specific technology claim and a TRL or funding-stage anchor.');
         sb.push('');
-        sb.push('MANDATORY: Add AT LEAST 3 search queries targeting academic sources, phrased to extract NAMED innovations with TRL or performance metrics. Example phrasing:');
-        sb.push('  - "' + scopeQ3 + ' TRL 4 5 6 site:asmedigitalcollection.asme.org OR site:sciencedirect.com OR site:ieeexplore.ieee.org"');
-        sb.push('  - "' + scopeQ3 + ' novel approach demonstrated arxiv.org OR techrxiv.org"');
+
+        // ── (A) ACADEMIC LITERATURE ──────────────────────────────
+        sb.push('(A) ACADEMIC LITERATURE (journal papers, preprints, conference proceedings)');
+        sb.push('Use at least 2 queries phrased to surface named innovations with TRL or performance metrics. Examples:');
+        sb.push('  - "' + scopeQ3 + ' TRL 4 5 6 site:asmedigitalcollection.asme.org OR site:sciencedirect.com"');
+        sb.push('  - "' + scopeQ3 + ' novel approach demonstrated site:arxiv.org OR site:techrxiv.org"');
         sb.push('  - "' + scopeQ3 + ' conference proceedings 2023 2024 2025"');
+        sb.push('Top-priority academic-source URLs (pick the 2-3 most relevant for direct_urls):');
+        sb.push('  https://scholar.google.com/scholar?q=' + encQ3);
+        sb.push('  https://www.semanticscholar.org/search?q=' + encQ3);
+        sb.push('  https://asmedigitalcollection.asme.org/search-results?page=1&q=' + encQ3);
+        sb.push('  https://www.sciencedirect.com/search?qs=' + encQ3);
+        sb.push('  https://ieeexplore.ieee.org/search/searchresult.jsp?queryText=' + encQ3);
+        sb.push('  https://arxiv.org/search/?searchtype=all&query=' + encQ3);
+        sb.push('  https://www.researchgate.net/search/publication?q=' + encQ3);
         sb.push('');
-        sb.push('MANDATORY: when a paper is found, extract the NAMED innovation (e.g. "HB-ATTCC", "DySZ abradable coating", "Honeycomb Tip Design"), not just the topic. Record the research institution (e.g. "NASA Glenn", "TU Delft", "Harbin Institute"), the TRL level if stated or inferable, and the specific performance metric claimed.');
+
+        // ── (B) UNIVERSITIES AND RESEARCH LABS (#4) ───────────────
+        sb.push('(B) UNIVERSITIES, NATIONAL LABS, AND PUBLIC GRANT DATABASES');
+        sb.push('These sources surface named research institutions (e.g. NASA Glenn, TU Delft, Harbin Institute, Fraunhofer, KIT) that do NOT reliably appear in general web search for technology topics. They are the primary gap in current tool output for innovation-scanning BQs.');
+        sb.push('Use at least 1 query targeting grant databases and lab-direct pages. Examples:');
+        sb.push('  - "' + scopeQ3 + ' ARPA-E OR DOE NETL award"');
+        sb.push('  - "' + scopeQ3 + ' Horizon Europe project CORDIS"');
+        sb.push('  - "' + scopeQ3 + ' Fraunhofer OR NREL OR Oak Ridge"');
+        sb.push('Top-priority lab/grant URLs (pick 2-3 most relevant for direct_urls):');
+        sb.push('  https://cordis.europa.eu/search?q=%27' + encQ3 + '%27&p=1&num=10&srt=Relevance:decreasing');
+        sb.push('  https://www.sbir.gov/search?search_api_fulltext=' + encQ3);
+        sb.push('  https://arpa-e.energy.gov/search?search_api_fulltext=' + encQ3);
+        sb.push('  https://www.netl.doe.gov/search?s=' + encQ3);
+        sb.push('  https://www.nsf.gov/awardsearch/simpleSearchResult?queryText=' + encQ3);
+        sb.push('  https://www.osti.gov/search/semantic:' + encQ3);
+        sb.push('  https://www.fraunhofer.de/en/search.html?q=' + encQ3);
+        sb.push('Also consider university tech transfer pages: Stanford OTL, MIT TLO, Cambridge Enterprise, ETH Transfer, KIT ITM — these publish licensable technologies publicly.');
         sb.push('');
-        sb.push('Add these academic-source URLs to direct_urls:');
-        var academicUrls = [
-          'https://asmedigitalcollection.asme.org/search-results?page=1&q=' + encQ3,
-          'https://www.sciencedirect.com/search?qs=' + encQ3,
-          'https://ieeexplore.ieee.org/search/searchresult.jsp?queryText=' + encQ3,
-          'https://scholar.google.com/scholar?q=' + encQ3,
-          'https://arxiv.org/search/?searchtype=all&query=' + encQ3,
-          'https://www.researchgate.net/search/publication?q=' + encQ3,
-          'https://www.semanticscholar.org/search?q=' + encQ3
-        ];
-        academicUrls.forEach(function(u){ sb.push('  ' + u); });
+
+        // ── (C) STARTUPS AND NEW ENTRANTS (#3) ────────────────────
+        if (isStartupScanBQ || bqType === 'innovation_funnel' || bqType === 'iem_monitoring') {
+          sb.push('(C) STARTUPS, NEW ENTRANTS, AND SPIN-OFFS');
+          sb.push('Target public startup databases and deal-flow sources. Goal: identify named companies at seed/Series A/B stage with a specific technology claim relevant to the BQ scope.');
+          sb.push('Use at least 1 query targeting startup-specific sources. Examples:');
+          sb.push('  - "' + scopeQ3 + ' startup Series A OR Series B 2023 2024"');
+          sb.push('  - "' + scopeQ3 + ' spin-out OR spinoff university commercialization"');
+          sb.push('  - "' + scopeQ3 + ' Y Combinator OR Techstars OR Greentown Labs"');
+          sb.push('Top-priority startup URLs (pick 2-3 most relevant for direct_urls):');
+          sb.push('  https://www.crunchbase.com/textsearch?q=' + encQ3);
+          sb.push('  https://www.ycombinator.com/companies?query=' + encQ3);
+          sb.push('  https://dealroom.co/companies.startups.anycorp?search=' + encQ3);
+          sb.push('  https://pitchbook.com/profiles/search?q=' + encQ3);
+          sb.push('  https://angel.co/search?q=' + encQ3);
+          sb.push('  https://www.sbir.gov/sbirsearch/award/all?f%5B0%5D=&search_api_fulltext=' + encQ3);
+          sb.push('  https://cordis.europa.eu/search?q=%27' + encQ3 + '%27&p=1&num=10');
+          sb.push('Also search Greentown Labs, Plug and Play, 500 Startups cohort pages, and venture news outlets (TechCrunch, VentureBeat, The Information) for named companies.');
+          sb.push('');
+        }
+
+        // ── EXTRACTION + PRIORITISATION RULES ─────────────────────
+        sb.push('EXTRACTION RULES for all three source families:');
+        sb.push('  1. Extract named entities, not topics. "HB-ATTCC by NASA Glenn at TRL 5" not "active clearance control is being researched."');
+        sb.push('  2. For academic papers: innovation name, institution, TRL (stated or inferable), specific performance metric.');
+        sb.push('  3. For startups: company name, HQ, founding year, funding stage, specific technology claim, named competitor or customer if stated.');
+        sb.push('  4. For grant records: project name, PI/institution, award amount, technology area, year.');
         sb.push('');
-        sb.push('If any paper is paywalled beyond the abstract, flag it as a paid_source — the abstract is usually enough to identify the named innovation and its claim.');
+        sb.push('direct_urls CAP: Pass 3A fetches ~12 pages. Select the HIGHEST-SIGNAL 10-15 URLs from the menus above plus any others you identify. Do NOT dump all menu URLs — prioritise based on BQ specifics. The menus are a source library, not a checklist.');
+        sb.push('');
+        sb.push('Paywalled content: flag as paid_source. Abstracts and public summaries are usually sufficient to identify the named entity and its claim.');
       }
 
       if(sb.length>0){
