@@ -618,6 +618,14 @@ async function extractBQsFromFile(file,extracted){
     '  "period": "time period e.g. 2023-2030 or Last 5 years",',
     '  "competitors": ["named competitor 1", "named competitor 2"],',
     '  "scope_exclusions": ["any topics explicitly OUT of scope"],',
+    '  "scope_topics": [',
+    '    {',
+    '      "topic": "explicit focus area named in the proposal scope/objectives (e.g. Clearance Control between rotating blade tip and stator, Static Sealings between assembled parts under thermal expansion)",',
+    '      "source_phrase": "verbatim phrase from the proposal where this topic was stated",',
+    '      "priority": "primary|secondary",',
+    '      "keywords": ["3-5 specific terms that identify this topic in content, used to verify BQ coverage"]',
+    '    }',
+    '  ],',
     '  "engagement_type": "one of: value_chain_pricing | value_chain_market | ip_patent | innovation_funnel | iem_monitoring | scientific_landscape | competitor_intelligence | market_sizing | supply_entry | opportunity_assessment | regulatory_intelligence | general",',
     '  "modules": [{"id": "M1", "name": "module name from TOC"}],',
     '  "bqs": [',
@@ -653,6 +661,13 @@ async function extractBQsFromFile(file,extracted){
     '  For "what are the biocide regulations in APAC": scope_nouns = ["K-BPR", "MEE Order No.12", "registration threshold", "IECSC", "GHS classification"]',
     '',
     'BQs: Extract ALL explicit business questions verbatim from the proposal. If BQs are not numbered, infer them from the research scope, TOC sections, or engagement objectives. A typical proposal has 3-8 BQs.',
+    'SCOPE_TOPICS: This is CRITICAL. Separately from BQs, extract every focus area the proposal names as part of the deliverable scope. If the proposal says "we will cover X and Y" where X and Y are distinct technical areas, both are scope_topics. Common patterns:',
+    '  - "Focus Areas: [A], [B]" → two scope_topics, both primary',
+    '  - "Scope of Work includes [A] and [B]" → two scope_topics',
+    '  - Bulleted scope lists → one scope_topic per bullet',
+    '  - "Primary focus on [A], secondary focus on [B]" → [A] primary, [B] secondary',
+    '  Extract scope_topics VERBATIM from proposal language, do NOT collapse similar-sounding topics into one. If the proposal distinguishes them, you must too.',
+    '  Later, the tool will verify every scope_topic is covered by at least one BQ. Missing coverage is the single most common cause of incomplete deliverables.',
     'MODULES: Group BQs by proposal module/section if present. If no module structure, use M1 for all.',
     'COMPETITORS: Extract ALL named companies mentioned as competitors, benchmarks, or key players.',
     'Do not invent data. If a field is not present, use empty string or empty array.',
@@ -717,11 +732,74 @@ async function extractBQsFromFile(file,extracted){
         kw:Array.isArray(bq.kw)?bq.kw:[],
         scope_nouns:Array.isArray(bq.scope_nouns)?bq.scope_nouns:[],
         bq_type:bq.bq_type||parsed.engagement_type||'general',
-        gap:bq.gap||false
+        gap:bq.gap||false,
+        auto_generated: !!bq.auto_generated,
+        auto_generated_reason: bq.auto_generated_reason || ''
       };
     }).filter(function(bq){return bq.text.length>5;});
 
     if(!parsed.bqs.length) return null;
+
+    // ── SCOPE COVERAGE CHECK + AUTO-GENERATE ───────────────────
+    // Every scope_topic the proposal named must be covered by at least one BQ.
+    // If a scope_topic has no BQ covering it, auto-generate one and flag it for analyst review.
+    parsed.scope_topics = Array.isArray(parsed.scope_topics) ? parsed.scope_topics.map(function(t){
+      return {
+        topic: (t && t.topic) || '',
+        source_phrase: (t && t.source_phrase) || '',
+        priority: (t && (t.priority==='secondary' ? 'secondary' : 'primary')) || 'primary',
+        keywords: Array.isArray(t && t.keywords) ? t.keywords : []
+      };
+    }).filter(function(t){ return t.topic && t.topic.length > 2; }) : [];
+
+    // For each scope_topic, find which BQs cover it. Matching = any keyword or the topic itself appearing in BQ text or scope_nouns.
+    function topicCoveredByBQ(topic, bq) {
+      var haystack = ((bq.text || '') + ' ' + (bq.scope_nouns || []).join(' ') + ' ' + (bq.kw || []).join(' ')).toLowerCase();
+      var needles = [topic.topic.toLowerCase()].concat((topic.keywords || []).map(function(k){ return String(k).toLowerCase(); }));
+      return needles.some(function(n){
+        if (!n || n.length < 3) return false;
+        // Match if any substantive word (4+ chars) from the needle appears — covers phrase-level matches
+        var words = n.split(/\s+/).filter(function(w){ return w.length >= 4; });
+        if (!words.length) return haystack.indexOf(n) >= 0;
+        return words.every(function(w){ return haystack.indexOf(w) >= 0; });
+      });
+    }
+
+    parsed.scope_coverage = parsed.scope_topics.map(function(topic){
+      var coveringBqs = parsed.bqs.filter(function(bq){ return topicCoveredByBQ(topic, bq); }).map(function(bq){ return bq.id; });
+      return { topic: topic.topic, priority: topic.priority, covering_bqs: coveringBqs, covered: coveringBqs.length > 0 };
+    });
+
+    // Auto-generate a BQ for every uncovered scope_topic — flagged so analyst sees and reviews.
+    var autoGenerated = [];
+    parsed.scope_coverage.forEach(function(cov, idx){
+      if (cov.covered) return;
+      var topic = parsed.scope_topics[idx];
+      if (!topic) return;
+      var nextId = 'BQ' + (parsed.bqs.length + autoGenerated.length + 1);
+      var autoBq = {
+        id: nextId,
+        module: (parsed.modules[0] && parsed.modules[0].id) || 'M1',
+        text: 'What innovations, players, and developments exist in ' + topic.topic + '? (auto-generated: proposal named this as a scope focus area but no BQ covered it)',
+        kw: (topic.keywords || []).slice(0, 4),
+        scope_nouns: (topic.keywords || []).slice(0, 6),
+        bq_type: parsed.engagement_type || 'general',
+        gap: false,
+        auto_generated: true,
+        auto_generated_reason: 'Proposal scope included "' + topic.topic + '" (source: "' + (topic.source_phrase || '').slice(0, 120) + '") but no existing BQ covered it. Review and refine before running research.'
+      };
+      autoGenerated.push(autoBq);
+    });
+
+    if (autoGenerated.length) {
+      parsed.bqs = parsed.bqs.concat(autoGenerated);
+      // Re-run coverage so UI shows correct state
+      parsed.scope_coverage = parsed.scope_topics.map(function(topic){
+        var coveringBqs = parsed.bqs.filter(function(bq){ return topicCoveredByBQ(topic, bq); }).map(function(bq){ return bq.id; });
+        return { topic: topic.topic, priority: topic.priority, covering_bqs: coveringBqs, covered: coveringBqs.length > 0 };
+      });
+    }
+
     return parsed;
 
   }catch(e){
@@ -936,6 +1014,45 @@ function renderReview(){
      ['Competitors',p.competitors.slice(0,5).join(', ')+(p.competitors.length>5?' +'+(p.competitors.length-5):'')]
     ].map(function(x){return'<div class="sb-item"><div class="sb-lbl">'+x[0]+'</div><div class="sb-val">'+(x[1]||'—')+'</div></div>';}).join('');
   var area=document.getElementById('bqReview'); area.innerHTML='';
+
+  // ── SCOPE COVERAGE PANEL ─────────────────────────────────
+  var cov = p.scope_coverage || [];
+  var autoBqs = (p.bqs||[]).filter(function(b){return b.auto_generated;});
+  if (cov.length || autoBqs.length) {
+    var covPanel = document.createElement('div');
+    covPanel.style.cssText = 'background:#fff;border:1px solid #E5E9F0;border-radius:10px;padding:14px 18px;margin-bottom:16px';
+    var anyUncovered = cov.some(function(c){return !c.covered;});
+    var anyAuto = autoBqs.length > 0;
+    var headerColor = (anyUncovered || anyAuto) ? '#92400E' : '#0F6E56';
+    var headerBg = (anyUncovered || anyAuto) ? '#FEF9C3' : '#E1F5EE';
+    covPanel.innerHTML =
+      '<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">' +
+        '<div style="font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:'+headerColor+';background:'+headerBg+';padding:3px 8px;border-radius:3px">Scope coverage check</div>' +
+        '<div style="font-size:11px;color:#6B7280">' + cov.length + ' scope topic' + (cov.length===1?'':'s') + ' extracted from proposal</div>' +
+      '</div>';
+    if (cov.length) {
+      var rows = cov.map(function(c){
+        var ok = c.covered;
+        var bg = ok ? '#F0FDF4' : '#FEF2F2';
+        var border = ok ? '#86EFAC' : '#FCA5A5';
+        var tag = ok ? '<span style="font-size:9px;font-weight:700;color:#15803D;background:#DCFCE7;padding:2px 6px;border-radius:3px">Covered</span>'
+                     : '<span style="font-size:9px;font-weight:700;color:#B91C1C;background:#FEE2E2;padding:2px 6px;border-radius:3px">Auto-added</span>';
+        var by = ok ? 'Covered by: ' + c.covering_bqs.join(', ') : 'No BQ covered this — auto-generated BQ added below for your review';
+        return '<div style="display:flex;align-items:flex-start;gap:10px;padding:8px 10px;background:'+bg+';border-left:3px solid '+border+';border-radius:0 6px 6px 0;margin-bottom:6px">' +
+          '<div style="flex:1">' +
+            '<div style="font-size:12px;font-weight:600;color:#1A2B4A;margin-bottom:3px">' + (c.topic||'') + (c.priority==='secondary'?' <span style="font-size:9px;font-weight:400;color:#9CA3AF">(secondary)</span>':'') + '</div>' +
+            '<div style="font-size:11px;color:#6B7280">' + by + '</div>' +
+          '</div>' + tag +
+        '</div>';
+      }).join('');
+      covPanel.innerHTML += rows;
+    }
+    if (anyAuto) {
+      covPanel.innerHTML += '<div style="font-size:11px;color:#92400E;background:#FEF9C3;border-left:3px solid #F59E0B;padding:8px 12px;border-radius:0 4px 4px 0;margin-top:8px"><strong>Review before running research:</strong> ' + autoBqs.length + ' BQ' + (autoBqs.length===1?'':'s') + ' below were auto-generated to cover missing scope topics. Edit or refine them to match what you actually want to research.</div>';
+    }
+    area.appendChild(covPanel);
+  }
+
   var mods={};
   p.bqs.forEach(function(bq){if(!mods[bq.module])mods[bq.module]=[];mods[bq.module].push(bq);});
   p.modules.forEach(function(mod){
@@ -945,9 +1062,13 @@ function renderReview(){
     bqs.forEach(function(bq){
       var idx=p.bqs.indexOf(bq);
       var d=document.createElement('div'); d.className='bq-row'; d.id='bqr-'+idx;
+      var autoFlag = bq.auto_generated
+        ? '<div style="font-size:10px;color:#92400E;background:#FEF9C3;border:1px solid #F59E0B;padding:4px 8px;border-radius:4px;margin-top:6px;line-height:1.45"><strong>⚠ Auto-generated — review before running.</strong> ' + (bq.auto_generated_reason||'') + '</div>'
+        : '';
       d.innerHTML='<div class="chk on" id="chk-'+idx+'" onclick="togBQ('+idx+')">✓</div>'+
-        '<div style="flex:1;min-width:0"><div class="bq-id">'+bq.id+'</div>'+
+        '<div style="flex:1;min-width:0"><div class="bq-id">'+bq.id+(bq.auto_generated?' <span style="font-size:9px;color:#92400E;background:#FEF9C3;padding:1px 5px;border-radius:3px;font-weight:700;letter-spacing:0.5px">AUTO</span>':'')+'</div>'+
         '<div class="bq-text">'+bq.text+'</div>'+
+        autoFlag +
         '<div class="bq-kws">'+(bq.kw||[]).map(function(k){return'<span class="kw">'+k+'</span>';}).join('')+'</div>'+
         renderAIPanel(idx)+'</div>'+
         (bq.gap?'<span class="gap-pill">Gap likely</span>':'');
