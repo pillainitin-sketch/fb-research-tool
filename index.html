@@ -816,12 +816,16 @@ function renderAIPanel(idx){
       '<textarea class="ai-free" id="sci-free-'+idx+'" placeholder="e.g. Prof. John Smith MIT, EFSA 2024 probiotic opinion, Cochrane IBS review"></textarea>' +
     '</div>' +
 
-    // Patent Landscape
+    // IP Landscape (public sources)
     '<div class="ai-toggle-row">' +
       '<label class="ai-toggle"><input type="checkbox" id="tog-pat-'+idx+'" onchange="toggleAISub('+idx+',\'pat\')"><span class="ai-toggle-slider"></span></label>' +
-      '<span class="ai-toggle-label">Patent Landscape</span>' +
+      '<span class="ai-toggle-label">IP Landscape <span style="font-weight:400;color:#6B7280;font-size:11px">(public sources)</span></span>' +
     '</div>' +
     '<div class="ai-pat-sub" id="sub-pat-'+idx+'" style="display:none">' +
+      '<div style="font-size:11px;color:#92400E;background:#FEF9C3;border-left:3px solid #F59E0B;padding:6px 10px;border-radius:0 4px 4px 0;margin-bottom:8px;line-height:1.5">' +
+        '<strong>What this does:</strong> searches Google Patents, Espacenet, WIPO, USPTO, J-PlatPat public pages for assignees, IPC codes, filing trends, and whitespace signals.<br>' +
+        '<strong>What this does NOT replace:</strong> a Derwent Innovation or PatSnap analytics scan. For full patent-family citation analysis, freedom-to-operate mapping, or filing-velocity benchmarking, commission a paid patent database search — the tool will flag this as a paid-source gap.' +
+      '</div>' +
       '<div class="ai-sub-q">Key companies, technologies, or inventors to focus on? <span style="font-weight:400;color:#6B7280">(optional — leave blank for full landscape scan)</span></div>' +
       '<textarea class="ai-free" id="pat-free-'+idx+'" placeholder="e.g. Schaeffler, SKF, NSK — wind bearing applications"></textarea>' +
     '</div>' +
@@ -1388,6 +1392,7 @@ function buildResearchPrompt(bq, p, plan) {
     '      * priority: high|medium|low based on decision impact for the client',
     '    If you genuinely cannot identify 2+ gaps, the research is too thin — go back and be more specific about what is missing.',
     '  - creative_angles: never empty — always find the adjacent industry analog.',
+    '  - NAMED INNOVATIONS: for innovation-scanning BQs (iem_monitoring, innovation_funnel, innovation_competitor, scientific_landscape), every finding about a technology innovation MUST include: (a) the innovation\'s specific name as used in its source paper or press (e.g. "HB-ATTCC", "Dysprosia-stabilised zirconia abradable", "MoSi2 self-healing TBC", "Honeycomb Tip Design"), (b) the research institution or company that produced it (e.g. "NASA Glenn Research Center", "TU Delft", "Harbin Institute of Technology"), (c) the TRL if stated or inferable (TRL 1-9), and (d) one specific performance metric (e.g. "26.7% tip leakage reduction", "operates at 1800°C"). Generic category descriptions without these four specifics are NOT acceptable for innovation-scanning BQs.',
     '  - APOSTROPHES: escape with backslash. No trailing commas. Double quotes only.',
   ].join('\n');
 
@@ -1852,6 +1857,41 @@ async function researchBQ(bq, p, onLog, analystInput){
         }
         sb.push('Add these regulatory database URLs to direct_urls:');
         regUrls.forEach(function(u){sb.push('  '+u);});
+      }
+
+      // ── ACADEMIC LITERATURE MODE ──────────────────────────────
+      // Fires automatically (no toggle needed) when the BQ is innovation-scanning type.
+      // Targets journal papers, preprints, and conference proceedings to catch
+      // named innovations at TRL 3-6 level that do not appear in company press releases.
+      var INNOVATION_SCAN_TYPES = ['iem_monitoring','innovation_funnel','innovation_competitor','scientific_landscape'];
+      if (INNOVATION_SCAN_TYPES.indexOf(bqType) >= 0) {
+        var scopeQ3 = (bq.scope_nouns||[]).slice(0,3).join(' ').trim();
+        if (!scopeQ3) scopeQ3 = (bq.kw||[]).slice(0,3).join(' ').trim();
+        var encQ3 = encodeURIComponent(scopeQ3);
+
+        sb.push('\n── ACADEMIC LITERATURE MODE (auto-enabled for innovation scanning) ──');
+        sb.push('This BQ is an innovation-scanning type. The tool must target journal papers and preprints, not just corporate press releases.');
+        sb.push('');
+        sb.push('MANDATORY: Add AT LEAST 3 search queries targeting academic sources, phrased to extract NAMED innovations with TRL or performance metrics. Example phrasing:');
+        sb.push('  - "' + scopeQ3 + ' TRL 4 5 6 site:asmedigitalcollection.asme.org OR site:sciencedirect.com OR site:ieeexplore.ieee.org"');
+        sb.push('  - "' + scopeQ3 + ' novel approach demonstrated arxiv.org OR techrxiv.org"');
+        sb.push('  - "' + scopeQ3 + ' conference proceedings 2023 2024 2025"');
+        sb.push('');
+        sb.push('MANDATORY: when a paper is found, extract the NAMED innovation (e.g. "HB-ATTCC", "DySZ abradable coating", "Honeycomb Tip Design"), not just the topic. Record the research institution (e.g. "NASA Glenn", "TU Delft", "Harbin Institute"), the TRL level if stated or inferable, and the specific performance metric claimed.');
+        sb.push('');
+        sb.push('Add these academic-source URLs to direct_urls:');
+        var academicUrls = [
+          'https://asmedigitalcollection.asme.org/search-results?page=1&q=' + encQ3,
+          'https://www.sciencedirect.com/search?qs=' + encQ3,
+          'https://ieeexplore.ieee.org/search/searchresult.jsp?queryText=' + encQ3,
+          'https://scholar.google.com/scholar?q=' + encQ3,
+          'https://arxiv.org/search/?searchtype=all&query=' + encQ3,
+          'https://www.researchgate.net/search/publication?q=' + encQ3,
+          'https://www.semanticscholar.org/search?q=' + encQ3
+        ];
+        academicUrls.forEach(function(u){ sb.push('  ' + u); });
+        sb.push('');
+        sb.push('If any paper is paywalled beyond the abstract, flag it as a paid_source — the abstract is usually enough to identify the named innovation and its claim.');
       }
 
       if(sb.length>0){
@@ -4098,7 +4138,7 @@ function renderSectionView(parsed) {
   nav.className = 'sv-nav';
   var navBtns = [{id:'sv-overview', label:'Research Sections', cls:''}];
   if(hasSpecSci) navBtns.push({id:'sv-scientific', label:'Scientific Landscape', cls:'spec-sci'});
-  if(hasSpecPat) navBtns.push({id:'sv-patent', label:'Patent Landscape', cls:'spec-pat'});
+  if(hasSpecPat) navBtns.push({id:'sv-patent', label:'IP Landscape (public)', cls:'spec-pat'});
   if(hasSpecReg) navBtns.push({id:'sv-regulatory', label:'Regulatory Overview', cls:'spec-reg'});
 
   navBtns.forEach(function(btn, i){
@@ -4304,8 +4344,9 @@ function renderSectionView(parsed) {
     var patHdr = document.createElement('div');
     patHdr.style.cssText = 'background:#92400E;border-radius:10px;padding:14px 20px;margin-bottom:10px';
     patHdr.innerHTML = '<div style="font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#FCD34D;margin-bottom:4px">Specialist Output</div>' +
-      '<div style="font-size:17px;font-weight:700;color:#fff">Patent Landscape</div>' +
-      '<div style="font-size:11px;color:#FDE68A;margin-top:3px">Assignee map, whitespace, technology evolution, and FTO signals</div>';
+      '<div style="font-size:17px;font-weight:700;color:#fff">IP Landscape — public sources</div>' +
+      '<div style="font-size:11px;color:#FDE68A;margin-top:3px">Assignee map, whitespace, technology evolution, FTO signals — from Google Patents, Espacenet, USPTO, WIPO</div>' +
+      '<div style="font-size:10px;color:#FCD34D;margin-top:6px;font-style:italic">Does not replace a Derwent/PatSnap analytics scan — paid-source gaps are flagged below where relevant</div>';
     patPanel.appendChild(patHdr);
 
     S.selBQs.forEach(function(i){
