@@ -1063,19 +1063,179 @@ function renderReview(){
       var idx=p.bqs.indexOf(bq);
       var d=document.createElement('div'); d.className='bq-row'; d.id='bqr-'+idx;
       var autoFlag = bq.auto_generated
-        ? '<div style="font-size:10px;color:#92400E;background:#FEF9C3;border:1px solid #F59E0B;padding:4px 8px;border-radius:4px;margin-top:6px;line-height:1.45"><strong>⚠ Auto-generated — review before running.</strong> ' + (bq.auto_generated_reason||'') + '</div>'
+        ? '<div style="font-size:10px;color:#92400E;background:#FEF9C3;border:1px solid #F59E0B;padding:4px 8px;border-radius:4px;margin-top:6px;line-height:1.45"><strong>⚠ Auto-generated — review before running.</strong> ' + escBQ(bq.auto_generated_reason||'') + '</div>'
         : '';
+      var editBtn = '<button class="bq-edit-btn" onclick="editBQ('+idx+')" style="font-size:10px;padding:3px 10px;background:#fff;border:1px solid #D0D7E3;border-radius:4px;color:#534AB7;cursor:pointer;font-weight:500;margin-left:6px">✎ Edit</button>';
       d.innerHTML='<div class="chk on" id="chk-'+idx+'" onclick="togBQ('+idx+')">✓</div>'+
-        '<div style="flex:1;min-width:0"><div class="bq-id">'+bq.id+(bq.auto_generated?' <span style="font-size:9px;color:#92400E;background:#FEF9C3;padding:1px 5px;border-radius:3px;font-weight:700;letter-spacing:0.5px">AUTO</span>':'')+'</div>'+
-        '<div class="bq-text">'+bq.text+'</div>'+
-        autoFlag +
-        '<div class="bq-kws">'+(bq.kw||[]).map(function(k){return'<span class="kw">'+k+'</span>';}).join('')+'</div>'+
-        renderAIPanel(idx)+'</div>'+
+        '<div style="flex:1;min-width:0">'+
+          '<div style="display:flex;align-items:center;gap:8px">'+
+            '<div class="bq-id">'+bq.id+(bq.auto_generated?' <span style="font-size:9px;color:#92400E;background:#FEF9C3;padding:1px 5px;border-radius:3px;font-weight:700;letter-spacing:0.5px">AUTO</span>':'')+'</div>'+
+            editBtn +
+          '</div>'+
+          '<div id="bq-view-'+idx+'">'+
+            '<div class="bq-text">'+escBQ(bq.text)+'</div>'+
+            autoFlag +
+            '<div class="bq-kws">'+(bq.kw||[]).map(function(k){return'<span class="kw">'+escBQ(k)+'</span>';}).join('')+'</div>'+
+            renderAIPanel(idx)+
+          '</div>'+
+          '<div id="bq-edit-'+idx+'" style="display:none"></div>'+
+        '</div>'+
         (bq.gap?'<span class="gap-pill">Gap likely</span>':'');
       area.appendChild(d);
     });
   });
+
+  // ── ADD BQ BUTTON ────────────────────────────────────────
+  var addWrap = document.createElement('div');
+  addWrap.style.cssText = 'margin-top:16px;text-align:center';
+  addWrap.innerHTML = '<button onclick="addBQ()" style="font-size:12px;padding:10px 22px;background:#fff;border:1px dashed #7F77DD;border-radius:8px;color:#534AB7;cursor:pointer;font-weight:600">+ Add new BQ</button>' +
+    '<div style="font-size:10px;color:#9CA3AF;margin-top:6px">Add a custom business question not extracted from the proposal</div>';
+  area.appendChild(addWrap);
 }
+
+// Escape a string for safe insertion into HTML attribute or text contexts used in renderReview.
+function escBQ(s){
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// Reveal the edit form for a BQ. Hides the view panel, populates editable fields from the BQ object.
+function editBQ(i){
+  var bq = S.proposal.bqs[i];
+  if(!bq) return;
+  var viewEl = document.getElementById('bq-view-'+i);
+  var editEl = document.getElementById('bq-edit-'+i);
+  if(!viewEl || !editEl) return;
+  viewEl.style.display = 'none';
+  editEl.style.display = 'block';
+  editEl.innerHTML =
+    '<div style="background:#F4F6F9;border:1px solid #D0D7E3;border-radius:8px;padding:12px 14px;margin-top:6px">'+
+      '<div style="font-size:9px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:#534AB7;margin-bottom:4px">Question</div>'+
+      '<textarea id="bqed-text-'+i+'" style="width:100%;min-height:60px;padding:8px 10px;font-size:12px;border:1px solid #D0D7E3;border-radius:5px;font-family:inherit;line-height:1.5;resize:vertical;box-sizing:border-box">'+escBQ(bq.text)+'</textarea>'+
+      '<div style="font-size:9px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:#534AB7;margin:10px 0 4px">Keywords <span style="font-weight:400;color:#6B7280;letter-spacing:0">(comma-separated, 2-4 short search terms)</span></div>'+
+      '<input id="bqed-kw-'+i+'" type="text" style="width:100%;padding:7px 10px;font-size:12px;border:1px solid #D0D7E3;border-radius:5px;font-family:inherit;box-sizing:border-box" value="'+escBQ((bq.kw||[]).join(', '))+'">'+
+      '<div style="font-size:9px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:#534AB7;margin:10px 0 4px">Scope nouns <span style="font-weight:400;color:#6B7280;letter-spacing:0">(comma-separated, 3-6 specific terms that MUST appear in research)</span></div>'+
+      '<input id="bqed-sn-'+i+'" type="text" style="width:100%;padding:7px 10px;font-size:12px;border:1px solid #D0D7E3;border-radius:5px;font-family:inherit;box-sizing:border-box" value="'+escBQ((bq.scope_nouns||[]).join(', '))+'">'+
+      '<div style="margin-top:12px;display:flex;gap:8px;justify-content:flex-end">'+
+        '<button onclick="cancelBQ('+i+')" style="font-size:11px;padding:6px 14px;background:#fff;border:1px solid #D0D7E3;border-radius:5px;color:#6B7280;cursor:pointer">Cancel</button>'+
+        (bq.auto_generated || bq._isNew ? '<button onclick="deleteBQ('+i+')" style="font-size:11px;padding:6px 14px;background:#fff;border:1px solid #FCA5A5;border-radius:5px;color:#B91C1C;cursor:pointer">Delete BQ</button>' : '')+
+        '<button onclick="saveBQ('+i+')" style="font-size:11px;padding:6px 16px;background:#534AB7;border:1px solid #534AB7;border-radius:5px;color:#fff;cursor:pointer;font-weight:600">Save changes</button>'+
+      '</div>'+
+    '</div>';
+}
+
+// Save edits back to the BQ object and re-render the row.
+function saveBQ(i){
+  var bq = S.proposal.bqs[i];
+  if(!bq) return;
+  var txt = (document.getElementById('bqed-text-'+i).value || '').trim();
+  var kwStr = (document.getElementById('bqed-kw-'+i).value || '').trim();
+  var snStr = (document.getElementById('bqed-sn-'+i).value || '').trim();
+  if(txt.length < 10){
+    alert('BQ text must be at least 10 characters');
+    return;
+  }
+  bq.text = txt;
+  bq.kw = kwStr.split(/[,;]/).map(function(s){return s.trim();}).filter(function(s){return s.length>0;});
+  bq.scope_nouns = snStr.split(/[,;]/).map(function(s){return s.trim();}).filter(function(s){return s.length>0;});
+  // Once edited by a human, remove the auto flag — analyst has taken ownership.
+  if(bq.auto_generated){
+    bq.auto_generated = false;
+    bq.auto_generated_reason = '';
+  }
+  if(bq._isNew){ delete bq._isNew; }
+  // Recompute scope coverage panel since text/scope_nouns changed.
+  recomputeScopeCoverage();
+  renderReview();
+}
+
+// Cancel: just re-render the row from state.
+function cancelBQ(i){
+  var viewEl = document.getElementById('bq-view-'+i);
+  var editEl = document.getElementById('bq-edit-'+i);
+  if(!viewEl || !editEl) return;
+  // If this BQ was newly added and never saved, remove it outright.
+  var bq = S.proposal.bqs[i];
+  if(bq && bq._isNew){
+    S.proposal.bqs.splice(i, 1);
+    // Remove from selection if present
+    S.selBQs = S.selBQs.filter(function(x){return x!==i;}).map(function(x){return x>i?x-1:x;});
+    renderReview();
+    return;
+  }
+  editEl.style.display = 'none';
+  editEl.innerHTML = '';
+  viewEl.style.display = 'block';
+}
+
+// Delete a BQ (auto-generated or newly-added only). Shift selBQs accordingly.
+function deleteBQ(i){
+  var bq = S.proposal.bqs[i];
+  if(!bq) return;
+  if(!bq.auto_generated && !bq._isNew){
+    alert('Only auto-generated or newly-added BQs can be deleted from the review screen.');
+    return;
+  }
+  if(!confirm('Delete '+bq.id+'? This cannot be undone.')) return;
+  S.proposal.bqs.splice(i, 1);
+  S.selBQs = S.selBQs.filter(function(x){return x!==i;}).map(function(x){return x>i?x-1:x;});
+  recomputeScopeCoverage();
+  renderReview();
+}
+
+// Add a new, empty BQ to the proposal and open it in edit mode.
+function addBQ(){
+  var p = S.proposal;
+  var nextNum = p.bqs.length + 1;
+  // Find next available BQ id (avoid collisions if some have been deleted)
+  var usedIds = {};
+  p.bqs.forEach(function(b){usedIds[b.id] = true;});
+  var newId = 'BQ' + nextNum;
+  while(usedIds[newId]){ nextNum++; newId = 'BQ' + nextNum; }
+  var newBq = {
+    id: newId,
+    module: (p.modules[0] && p.modules[0].id) || 'M1',
+    text: '',
+    kw: [],
+    scope_nouns: [],
+    bq_type: p.engagement_type || 'general',
+    gap: false,
+    auto_generated: false,
+    auto_generated_reason: '',
+    _isNew: true
+  };
+  p.bqs.push(newBq);
+  var newIdx = p.bqs.length - 1;
+  S.selBQs.push(newIdx);
+  renderReview();
+  // Open the new BQ in edit mode
+  setTimeout(function(){ editBQ(newIdx); }, 50);
+  // Scroll it into view
+  setTimeout(function(){
+    var el = document.getElementById('bqr-'+newIdx);
+    if(el) el.scrollIntoView({behavior:'smooth', block:'center'});
+  }, 100);
+}
+
+// After edits/adds/deletes, rerun the scope coverage check so the panel stays accurate.
+function recomputeScopeCoverage(){
+  var p = S.proposal;
+  if(!p || !Array.isArray(p.scope_topics)) return;
+  function topicCoveredByBQ(topic, bq){
+    var haystack = ((bq.text||'') + ' ' + (bq.scope_nouns||[]).join(' ') + ' ' + (bq.kw||[]).join(' ')).toLowerCase();
+    var needles = [String(topic.topic||'').toLowerCase()].concat((topic.keywords||[]).map(function(k){return String(k).toLowerCase();}));
+    return needles.some(function(n){
+      if(!n || n.length < 3) return false;
+      var words = n.split(/\s+/).filter(function(w){return w.length >= 4;});
+      if(!words.length) return haystack.indexOf(n) >= 0;
+      return words.every(function(w){return haystack.indexOf(w) >= 0;});
+    });
+  }
+  p.scope_coverage = p.scope_topics.map(function(topic){
+    var coveringBqs = p.bqs.filter(function(bq){return topicCoveredByBQ(topic, bq);}).map(function(bq){return bq.id;});
+    return { topic: topic.topic, priority: topic.priority, covering_bqs: coveringBqs, covered: coveringBqs.length > 0 };
+  });
+}
+
 function togBQ(i){
   var chk=document.getElementById('chk-'+i),card=document.getElementById('bqr-'+i);
   if(S.selBQs.indexOf(i)>=0){S.selBQs=S.selBQs.filter(function(x){return x!==i;});chk.className='chk';chk.textContent='';card.classList.add('excl');}
