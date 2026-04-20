@@ -703,19 +703,33 @@ async function extractBQsFromFile(file,extracted){
     '  ]',
     '}',
     '',
-    'ENGAGEMENT TYPE DETECTION GUIDE — pick the closest match per BQ:',
-    '- value_chain_pricing: asks about manufacturing process, make-vs-buy, ex-works price, cost breakdown, localisation %, DDP',
-    '- value_chain_market: asks about who are the players at each node, distributor ecosystem, value chain flow',
-    '- ip_patent: asks about patents, IP landscape, assignees, chemical categories, whitespace, TRL of technologies',
-    '- innovation_funnel: asks about ingredients/solutions universe, best-fit scoring, supplier landscape for actives',
-    '- iem_monitoring: asks about innovation scanning, horizon map, Act/Prepare/Track framework, emerging technologies',
-    '- scientific_landscape: asks about scientific evidence, clinical data, microbes, metabolites, health claims',
-    '- competitor_intelligence: asks about competitor initiatives, sustainability claims, certifications, design approaches',
-    '- market_sizing: asks about market size, material share, segment split, replacement rates, volume by unit/weight',
-    '- supply_entry: asks about global production footprint, capacity utilisation, grades, trade flows, entry barriers',
-    '- opportunity_assessment: asks where should client focus, application scoring, attractiveness, CTQ parameters',
-    '- regulatory_intelligence: asks about regulations, compliance, registration requirements, chemical inventories',
-    '- general: none of the above clearly apply',
+    'ENGAGEMENT TYPE DETECTION GUIDE — assign bq_type per BQ independently based on what THAT BQ is asking for:',
+    '',
+    '- regulatory_intelligence: BQ asks about regulations, compliance, registration requirements, REACH equivalents, biocide rules, chemical inventories, what rules apply in which country, K-BPR, MEE Order, ANVISA, GHS classification, registration thresholds, approval timelines. EXAMPLES: "What biocide regulations apply in APAC?" / "What are the registration requirements for our chemicals in Brazil?" / "What REACH-equivalent laws exist in South Korea?"',
+    '',
+    '- opportunity_assessment: BQ asks about market opportunities, where client should focus, most attractive applications, TAM/SAM/SOM, addressable market, application scoring, CTQ parameters, entry barriers, growth potential, CAGR by application, penetration rate, volume potential. EXAMPLES: "What are the most attractive applications for PPO?" / "Which segments offer the highest TAM for our material?" / "What is the addressable market for Noryl in EV batteries?"',
+    '',
+    '- innovation_funnel: BQ asks for a solutions universe, natural alternatives, ingredient options, best-fit scoring, shortlist of actives, replace synthetic with natural, benchmarking of ingredients, supplier landscape for specific actives. EXAMPLES: "What natural antioxidants can replace BHA/BHT?" / "What are the best-fit preservative solutions for frying oils?" / "Which natural ingredients meet our functionality criteria?"',
+    '',
+    '- scientific_landscape: BQ asks about scientific evidence, clinical validation, health claims, RCT data, in-vitro studies, mechanism of action, what the science says, microbes, metabolites, strain-level evidence, EFSA opinions on health claims. EXAMPLES: "What is the clinical evidence for probiotic strain X?" / "What health claims are scientifically validated for polyphenols?" / "What does the science say about antioxidant mechanism in frying?"',
+    '',
+    '- ip_patent: BQ asks explicitly about patent landscape, IP landscape, assignees, patent filing trends, whitespace analysis, freedom to operate, chemical categories in patents, who holds IP. Must contain patent/IP language explicitly. EXAMPLES: "What is the patent landscape for hair fixative polymers?" / "Who are the top patent assignees in acrylate film-formers?" / "Where are the whitespace opportunities in fixative IP?"',
+    '',
+    '- iem_monitoring: BQ asks about new entrants, startups, spin-offs, emerging companies, who is active, horizon map, TRL landscape, innovation scanning across industries, Act/Prepare/Track framework, technology maturity mapping. EXAMPLES: "What new entrants are active in large gas turbines?" / "What startups are disrupting the compressor space?" / "Map the innovation horizon for clearance control technologies."',
+    '',
+    '- competitor_intelligence: BQ asks about what a NAMED competitor is doing — their strategy, R&D programmes, sustainability claims, certifications, recent moves, technology focus, partnerships. EXAMPLES: "What is GE Vernova innovation strategy for HA-class turbines?" / "What sustainability certifications does Henkel hold?" / "What is BASF approach to natural polymers?"',
+    '',
+    '- value_chain_pricing: BQ asks about ex-works price, DDP price, cost breakdown, manufacturing cost structure, localisation %, make-vs-buy, value-add %, component cost share, freight and tariff costs. EXAMPLES: "What is the ex-works price of SRBs by turbine MW?" / "What is the cost breakdown for bearing manufacturing in India?" / "What is the DDP price from Germany to China?"',
+    '',
+    '- value_chain_market: BQ asks about who are the players at each node of the value chain, distributor ecosystem, market structure, player roles, tier structure. EXAMPLES: "Who are the key players in the Indian wind bearing value chain?" / "What is the distributor ecosystem for hair care actives?"',
+    '',
+    '- market_sizing: BQ asks about market size, market volume, revenue by segment, CAGR, material share %, country-level split, growth forecast. EXAMPLES: "What is the global market size for industrial gas turbines?" / "What is the CAGR for EV battery demand 2025-2030?"',
+    '',
+    '- supply_entry: BQ asks about production capacity, capacity utilisation, global supply footprint, trade flows, export/import data, grades and specifications, entry barriers for a new supplier. EXAMPLES: "Who produces PPE powder globally and at what capacity?" / "What are the trade flows for bearing steel from China?"',
+    '',
+    '- general: none of the above clearly apply — use only as last resort.',
+    '',
+    'CRITICAL: Assign bq_type to each BQ independently based on what THAT BQ asks. A single engagement can have BQs of different types. Do not default to the engagement-level type for all BQs.',
     '',
     'SCOPE NOUNS — these are the MOST IMPORTANT field. Extract 3-6 specific technical or commercial terms per BQ that any good research answer MUST cover. Examples:',
     '  For "what is the value chain for wind turbine bearings in India": scope_nouns = ["spherical roller bearing", "SKF India", "Schaeffler India", "ring forging", "ex-works price"]',
@@ -1227,23 +1241,49 @@ function selAll(v){
 // ═══ LIVE RESEARCH ════════════════════════════════
 // Research prompt — instructs Claude to do 8-12 web searches, read pages, synthesise
 function detectEngagementType(p, bq) {
-  var text = ((p.title||'') + ' ' + (p.practice||'') + ' ' + (bq.text||'')).toLowerCase();
-  if (/backwash|player ecosystem|hair salon|salon equipment|equipment manufacturer/.test(text)) return 'value_chain_market';
-  if (/purchasing journey|after.?sales/.test(text)) return 'value_chain_market';
-  if (/market siz|volume.*unit|unit.*volume|segmentation.*premium/.test(text) && /value chain|player|distributor/.test(text)) return 'value_chain_market';
-  if (/bearing|spherical roller|tapered roller|ex.works|ddp price|locali[sz]ation.*%/.test(text)) return 'value_chain_pricing';
-  if (/manufacturing strateg|supplier network|make.*buy|outsourc.*%/.test(text)) return 'value_chain_pricing';
-  if (/value chain/.test(text) && /player|ecosystem|distributor/.test(text)) return 'value_chain_market';
-  if (/patent|ip landscape|fixative|film.form|polymer|acrylate|ingredient supplier/.test(text)) return 'ip_patent';
-  if (/clinical|microbe|probiotic|kefir|ferment|scientific|metabolite|ingredient landscape/.test(text)) return 'scientific_landscape';
-  if (/recyclability|sustainability|certif|waste|circular|pvc|polyolefin/.test(text)) return 'competitor_intelligence';
-  if (/gas turbine|trl.*clearance|trl.*material|clearance control|abradable|superalloy/.test(text)) return 'innovation_competitor';
-  if (/innovation.*competitor intel|competitor.*innovation scan/.test(text)) return 'innovation_competitor';
-  if (/antioxidant|preservative|best.fit|solution universe|funnel|ingredient.*scan/.test(text)) return 'innovation_funnel';
-  if (/innovation scanning/.test(text) && /ingredient|food|formul|portfolio/.test(text)) return 'innovation_funnel';
-  if (/trl|innovation scanning/.test(text)) return 'innovation_competitor';
-  if (/iem|identify.*evaluat|monitor|supply chain.*trend|horizon map/.test(text)) return 'iem_monitoring';
-  if (/affordability|r&d center|regional center|scale.*nutrition|cost of production/.test(text)) return 'internal_strategy';
+  // Run on BQ text only — not engagement title — to avoid cross-BQ contamination
+  var t = (bq.text||'').toLowerCase();
+
+  // ── REGULATORY INTELLIGENCE ─────────────────────────────────
+  if (/regulat|compliance|registration.*requirement|biocide|reach.*equivalent|tsca|k-bpr|mee order|anvisa|echa|ghs classif|chemical.*inventor|registr.*threshold|biocidal|notification.*regulat/.test(t)) return 'regulatory_intelligence';
+
+  // ── OPPORTUNITY ASSESSMENT ───────────────────────────────────
+  if (/most attractive|addressable market|tam|sam|som|application.*scoring|attractiveness|ctq|critical.*quality|where.*should.*focus|which.*application.*best|entry barrier.*opportun|market.*opportun.*for|opportun.*for.*client|highest.*potential|application.*priorit/.test(t)) return 'opportunity_assessment';
+
+  // ── INNOVATION FUNNEL (solutions universe, best-fit, ingredient shortlisting) ─
+  if (/natural alternative|solution universe|best.fit|replace.*synthetic|shortlist.*ingredient|benchmark.*solution|which.*ingredient.*meet|natural.*preserv|antioxidant.*alternative|best.*natural|ingredient.*option|identify.*solution.*for|funnel.*ingredient/.test(t)) return 'innovation_funnel';
+  if (/antioxidant|preservative/.test(t) && /alternative|replace|natural|option|best/.test(t)) return 'innovation_funnel';
+
+  // ── SCIENTIFIC LANDSCAPE ─────────────────────────────────────
+  if (/clinical.*evidence|health claim|rct|randomis|randomiz|in.vitro|in.vivo|mechanism.*action|scientific.*evidence|what.*science|microbe|probiotic|kefir|ferment.*evidence|metabolite|scientific.*valid|efsa.*opinion|strain.*evidence|clinical.*trial/.test(t)) return 'scientific_landscape';
+
+  // ── IP / PATENT — requires explicit patent language ──────────
+  if (/patent.*landscape|ip.*landscape|patent.*assignee|filing.*trend|whitespace.*patent|freedom.*operate|patent.*filing|who.*hold.*patent|patent.*categor|ip.*whitespace|patent.*map|assignee.*landscape/.test(t)) return 'ip_patent';
+
+  // ── IEM MONITORING / NEW ENTRANTS ────────────────────────────
+  if (/new entrant|start.?up|spin.?off|who.*active.*in|emerging.*compan|horizon map|trl.*landscape|act.*prepare.*track|innovation.*scanning|innovation.*horizon|emerging.*technolog.*map|new.*player.*active|disrupt.*compan/.test(t)) return 'iem_monitoring';
+  if (/innovation scanning/.test(t) && !/ingredient|food|formul|portfolio|natural/.test(t)) return 'iem_monitoring';
+
+  // ── COMPETITOR INTELLIGENCE — named company deep dive ────────
+  if (/what.*is.*doing|competitor.*strateg|what.*ge |what.*siemens|what.*basf|what.*henkel|what.*sabic|what.*unilever|what.*nestle|benchmarking.*competitor|competitive.*intelligence.*on|named.*competitor|strateg.*of.*competitor/.test(t)) return 'competitor_intelligence';
+  if (/recyclability|sustainability.*certif|circular.*economy.*strateg|esg.*competitor/.test(t)) return 'competitor_intelligence';
+
+  // ── VALUE CHAIN PRICING ──────────────────────────────────────
+  if (/ex.works.*price|ddp.*price|cost.*breakdown|manufacturing.*cost|locali[sz]ation.*%|make.*vs.*buy|cost.*build.up|value.*add.*%|component.*cost.*share|freight.*tariff|bearing.*price|what.*does.*it.*cost.*to.*manufacture/.test(t)) return 'value_chain_pricing';
+  if (/spherical roller|tapered roller/.test(t) && /price|cost|manufactur/.test(t)) return 'value_chain_pricing';
+
+  // ── VALUE CHAIN MARKET ───────────────────────────────────────
+  if (/value chain/.test(t) && /player|ecosystem|distributor|who.*at.*each/.test(t)) return 'value_chain_market';
+  if (/player ecosystem|distributor.*ecosystem|who.*key.*player|market.*structure.*player|who.*supply/.test(t)) return 'value_chain_market';
+
+  // ── MARKET SIZING ────────────────────────────────────────────
+  if (/market size|market.*volume|how big.*market|cagr.*market|revenue.*segment|segment.*split|material.*share.*%|market.*growth.*forecast|market.*value.*usd|how large.*market/.test(t)) return 'market_sizing';
+
+  // ── SUPPLY / ENTRY ───────────────────────────────────────────
+  if (/production.*capacity|capacity.*utilisation|trade.*flow|import.*export.*data|global.*supply.*footprint|who.*produce.*globally|entry.*barrier.*supply|supply.*landscape/.test(t)) return 'supply_entry';
+
+  // ── FALLBACK — use engagement-level type if available ────────
+  if (p && p.engagement_type && p.engagement_type !== 'general') return p.engagement_type;
   return 'general';
 }
 
@@ -2484,17 +2524,36 @@ async function buildProfiles(bqId){
   var btn=document.getElementById('pbtn-'+bqId);
   if(btn){btn.textContent='Building...';btn.disabled=true;}
   var client=S.proposal?S.proposal.client:'the client';
-  var context=((d.executive_summary||'')+' '+(d.findings||[]).map(function(f){
-    return f.headline+' '+f.body;}).join(' ')).slice(0,3000);
-  var prompt='Find 4-6 named companies relevant to this BQ for '+client+'. '+
-    'BQ: '+(bq?bq.text:bqId)+'. Geography: '+(S.proposal?S.proposal.geography:'Global')+'. '+
-    'Context: '+context+'. '+
-    'Return ONLY a JSON array: [{name,hq,founded,type,role,geography,key_product,key_fact,client_relevance,source_url}]. '+
-    'type must be competitor, startup, or supplier. Include at least 1 startup and 1 supplier.';
+  var geo=S.proposal?S.proposal.geography:'Global';
+  var engType=bq?(bq.bq_type||detectEngagementType(S.proposal,bq)):'general';
+  var context=((d.executive_summary||'')+' '+(d.findings||[]).slice(0,6).map(function(f){return (f.headline||'')+' '+(f.body||'');}).join(' ')).slice(0,2500);
+
+  var profileSchema,profileInstructions;
+  if(engType==='innovation_funnel'){
+    profileSchema='[{name,hq,geography,type,key_product,key_fact,role,client_relevance,source_url}]';
+    profileInstructions='Find 5-8 ingredient suppliers or solution providers for this BQ. For each: commercial ingredient name, supplier company, HQ country, regulatory status (FDA GRAS/EFSA/Self-affirmed/Not approved), key functionality, format compatibility, scalability (High/Medium/Low), why relevant for '+client+'. type=supplier|startup|competitor.';
+  } else if(engType==='iem_monitoring'){
+    profileSchema='[{name,hq,founded,type,key_product,key_fact,role,client_relevance,source_url}]';
+    profileInstructions='Find 5-8 startups, new entrants, or emerging players active in this space. For each: company name, year founded, HQ, funding raised, specific technology, TRL estimate (1-9), commercial status, relevance for '+client+'. type=startup|competitor|academic. Prioritise companies with recent funding or traction.';
+  } else if(engType==='regulatory_intelligence'){
+    profileSchema='[{name,hq,geography,type,key_product,key_fact,role,client_relevance,source_url}]';
+    profileInstructions='Find 4-6 regulatory authorities or compliance consultancies relevant for '+client+' in this jurisdiction. Include main regulatory body per country plus any specialist registration consultancies. type=regulator|consultant|industry_body.';
+  } else if(engType==='opportunity_assessment'){
+    profileSchema='[{name,hq,geography,type,key_product,key_fact,role,client_relevance,source_url}]';
+    profileInstructions='Find 5-7 companies active in the applications identified for '+client+'. For each: company, HQ, application they serve, product/material, market position, why relevant as customer/partner/competitor for '+client+'. type=potential_customer|competitor|partner.';
+  } else {
+    profileSchema='[{name,hq,founded,type,role,geography,key_product,key_fact,client_relevance,source_url}]';
+    profileInstructions='Find 5-7 named companies relevant to this BQ for '+client+'. Geography: '+geo+'. type=competitor|startup|supplier. Include at least 1 startup. For each: HQ, what they make, one specific fact, why they matter for '+client+'.';
+  }
+
+  var prompt='You are a senior FutureBridge research analyst. '+profileInstructions+
+    '\nBQ: '+(bq?bq.text:bqId)+
+    '\nContext from research: '+context+
+    '\nReturn ONLY valid JSON array. No markdown. Schema: '+profileSchema;
+
   try{
-    console.log('buildProfiles: running for',bqId);
     var data=await callAPI({
-      model:'claude-sonnet-4-6',max_tokens:2000,
+      model:'claude-sonnet-4-6',max_tokens:3000,
       tools:[{type:'web_search_20250305',name:'web_search'}],
       messages:[{role:'user',content:prompt}]
     });
@@ -2502,17 +2561,82 @@ async function buildProfiles(bqId){
     text=text.replace(/```json\s*/gi,'').replace(/```\s*/g,'').trim();
     var m=text.match(/\[[\s\S]*\]/);
     if(m){
-      var profs=JSON.parse(m[0].split("\'").join("'"));
-      if(Array.isArray(profs)&&profs.length>0){
-        if(!S.bqResults[bqId]) S.bqResults[bqId]={};
-        S.bqResults[bqId].profiles=profs;
-        renderResults(); return;
-      }
+      try{
+        var profs=JSON.parse(m[0].split("\'").join("'"));
+        if(Array.isArray(profs)&&profs.length>0){
+          if(!S.bqResults[bqId]) S.bqResults[bqId]={};
+          S.bqResults[bqId].profiles=profs;
+          renderResults(); return;
+        }
+      }catch(pe){console.warn('Profile parse error:',pe);}
     }
     if(btn){btn.textContent='Retry';btn.disabled=false;}
   }catch(e){
     console.error('buildProfiles:',e);
     if(btn){btn.textContent='Error — retry';btn.disabled=false;}
+  }
+}
+
+async function deepDiveProfile(bqId, profileIdx){
+  var panelId='dd-'+bqId+'-'+profileIdx;
+  var panel=document.getElementById(panelId);
+  if(!panel) return;
+  var d=normaliseResult(S.bqResults&&S.bqResults[bqId]?S.bqResults[bqId]:null)||{};
+  var pr=(d.profiles||[])[profileIdx];
+  if(!pr) return;
+  var profileName=pr.name||'';
+  panel.style.display='block';
+  panel.innerHTML='<div style="font-size:11px;color:#9CA3AF;padding:8px 0;font-style:italic">⟳ Researching '+escH(profileName)+'...</div>';
+
+  var bq=null;
+  if(S.proposal&&S.proposal.bqs){for(var j=0;j<S.proposal.bqs.length;j++){if(S.proposal.bqs[j].id===bqId){bq=S.proposal.bqs[j];break;}}}
+  var client=S.proposal?S.proposal.client:'the client';
+
+  var prompt='You are a senior FutureBridge research analyst. Research '+profileName+' in depth for '+client+'.'+
+    '\nBQ context: '+(bq?bq.text:'')+
+    '\nReturn ONLY valid JSON (no markdown):\n'+
+    '{"revenue":"latest annual revenue with year","employees":"headcount or range",'+
+    '"recent_news":["3 most recent significant developments — named and dated"],'+
+    '"technology_focus":"what specific technologies or products they are betting on",'+
+    '"key_contacts":["name and title of 1-2 relevant executives if publicly known"],'+
+    '"competitive_position":"where they sit vs competitors — specific",'+
+    '"relevance_for_client":"why '+client+' should care — 2 sentences"}';
+
+  try{
+    var data=await callAPI({
+      model:'claude-sonnet-4-6',max_tokens:1500,
+      tools:[{type:'web_search_20250305',name:'web_search'}],
+      messages:[{role:'user',content:prompt}]
+    });
+    var text=(data.content||[]).filter(function(b){return b.type==='text';}).map(function(b){return b.text;}).join('');
+    text=text.replace(/```json\s*/gi,'').replace(/```\s*/g,'').trim();
+    var m=text.match(/\{[\s\S]*\}/);
+    var dd=null;
+    if(m){try{dd=JSON.parse(m[0]);}catch(e){}}
+    if(dd){
+      var dh='<div style="padding:10px 0">';
+      if(dd.revenue) dh+='<div style="margin-bottom:7px"><div style="font-size:8px;font-weight:700;color:#9CA3AF;letter-spacing:.8px;text-transform:uppercase">Revenue</div><div style="font-size:11px;color:#374151;margin-top:2px">'+escH(dd.revenue)+'</div></div>';
+      if(dd.employees) dh+='<div style="margin-bottom:7px"><div style="font-size:8px;font-weight:700;color:#9CA3AF;letter-spacing:.8px;text-transform:uppercase">Employees</div><div style="font-size:11px;color:#374151;margin-top:2px">'+escH(dd.employees)+'</div></div>';
+      if(dd.technology_focus) dh+='<div style="margin-bottom:7px"><div style="font-size:8px;font-weight:700;color:#9CA3AF;letter-spacing:.8px;text-transform:uppercase">Technology focus</div><div style="font-size:11px;color:#374151;margin-top:2px">'+escH(dd.technology_focus)+'</div></div>';
+      if(dd.recent_news&&dd.recent_news.length){
+        dh+='<div style="margin-bottom:7px"><div style="font-size:8px;font-weight:700;color:#9CA3AF;letter-spacing:.8px;text-transform:uppercase">Recent developments</div>';
+        dd.recent_news.forEach(function(n){dh+='<div style="font-size:11px;color:#374151;margin-top:4px;padding-left:8px;border-left:2px solid #E85520">'+escH(n)+'</div>';});
+        dh+='</div>';
+      }
+      if(dd.key_contacts&&dd.key_contacts.length){
+        dh+='<div style="margin-bottom:7px"><div style="font-size:8px;font-weight:700;color:#9CA3AF;letter-spacing:.8px;text-transform:uppercase">Key contacts</div>';
+        dd.key_contacts.forEach(function(c){dh+='<div style="font-size:11px;color:#374151;margin-top:2px">'+escH(c)+'</div>';});
+        dh+='</div>';
+      }
+      if(dd.competitive_position) dh+='<div style="margin-bottom:7px"><div style="font-size:8px;font-weight:700;color:#9CA3AF;letter-spacing:.8px;text-transform:uppercase">Competitive position</div><div style="font-size:11px;color:#374151;margin-top:2px">'+escH(dd.competitive_position)+'</div></div>';
+      if(dd.relevance_for_client) dh+='<div style="background:#EEEDFE;border-radius:6px;padding:8px 10px"><div style="font-size:8px;font-weight:700;color:#534AB7;letter-spacing:.8px;text-transform:uppercase;margin-bottom:3px">Why this matters for '+escH(client)+'</div><div style="font-size:11px;color:#26215C;font-weight:500">'+escH(dd.relevance_for_client)+'</div></div>';
+      dh+='</div>';
+      panel.innerHTML=dh;
+    } else {
+      panel.innerHTML='<div style="font-size:11px;color:#A32D2D;padding:8px 0">Could not retrieve profile — try again</div>';
+    }
+  }catch(e){
+    panel.innerHTML='<div style="font-size:11px;color:#A32D2D;padding:8px 0">Error: '+escH(e.message)+'</div>';
   }
 }
 
@@ -2754,6 +2878,311 @@ function formatParas(text){
   return paras.filter(function(p){return p.trim().length>0;})
     .map(function(p){return '<p style="margin:0 0 8px;last-child:margin-bottom:0">'+escH(p.trim())+'</p>';})
     .join('');
+}
+
+// ── TYPE-SPECIFIC SECTION RENDERING ─────────────────────────────
+// Returns HTML for type-specific sections, inserted after findings, before gaps.
+// Each type shows the sections that match what the deliverable for that type looks like.
+// If engType has no special layout, returns '' and existing rendering handles it.
+
+function renderTypeSections(bqId, bq, d, engType){
+  var client = S.proposal ? S.proposal.client : 'the client';
+  var html = '';
+
+  // ── REGULATORY INTELLIGENCE ─────────────────────────────────
+  if(engType === 'regulatory_intelligence'){
+    var findings = d.findings || [];
+    // Group findings by jurisdiction (geo field)
+    var byJur = {};
+    findings.forEach(function(f){
+      var jur = f.geo || 'General';
+      if(!byJur[jur]) byJur[jur] = [];
+      byJur[jur].push(f);
+    });
+    var jurs = Object.keys(byJur);
+    if(!jurs.length) return '';
+
+    html += '<div style="margin-bottom:14px">';
+    html += '<div style="background:#166534;border-radius:10px 10px 0 0;padding:12px 18px">';
+    html += '<div style="font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#86EFAC;margin-bottom:3px">Regulatory Intelligence</div>';
+    html += '<div style="font-size:14px;font-weight:700;color:#fff">Jurisdiction-by-Jurisdiction Regulatory Summary</div>';
+    html += '<div style="font-size:11px;color:#BBF7D0;margin-top:3px">Current framework · Registration requirements · Action required for '+escH(client)+'</div>';
+    html += '</div>';
+
+    jurs.forEach(function(jur, ji){
+      var jurFindings = byJur[jur];
+      var isLast = ji === jurs.length - 1;
+      html += '<div style="background:#fff;border:.5px solid #86EFAC;border-top:none;padding:14px 18px;'+(isLast?'border-radius:0 0 10px 10px':'border-bottom:.5px solid #E5E9F0')+'"">';
+      html += '<div style="font-size:13px;font-weight:700;color:#166534;margin-bottom:10px">'+escH(jur)+'</div>';
+
+      // Render regulatory metrics as a structured table per jurisdiction
+      jurFindings.forEach(function(f){
+        var metrics = f.metrics || [];
+        var regName = (metrics.find(function(m){return m.label==='regulation_name';}) || {}).value || '';
+        var authority = (metrics.find(function(m){return m.label==='governing_body';}) || {}).value || '';
+        var threshold = (metrics.find(function(m){return m.label==='registration_threshold';}) || {}).value || '';
+        var deadline = (metrics.find(function(m){return m.label==='deadline';}) || {}).value || '';
+        var action = (metrics.find(function(m){return m.label==='action_required';}) || {}).value || '';
+
+        html += '<div style="border:1px solid #E5E9F0;border-radius:8px;padding:12px 14px;margin-bottom:8px;background:#F9FAFB">';
+        html += '<div style="font-size:12px;font-weight:600;color:#1A2B4A;margin-bottom:6px">'+escH(f.headline||f.subject||'')+'</div>';
+        if(f.body) html += '<div style="font-size:11px;color:#374151;line-height:1.65;margin-bottom:8px">'+escH(f.body)+'</div>';
+
+        var metaRows = [
+          regName ? ['Regulation',regName] : null,
+          authority ? ['Authority',authority] : null,
+          threshold ? ['Registration threshold',threshold] : null,
+          deadline ? ['Deadline',deadline] : null,
+        ].filter(Boolean);
+
+        if(metaRows.length){
+          html += '<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:6px;margin-bottom:8px">';
+          metaRows.forEach(function(row){
+            html += '<div style="background:#F0FDF4;border-radius:5px;padding:5px 8px"><div style="font-size:8px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:#166534;margin-bottom:2px">'+escH(row[0])+'</div><div style="font-size:11px;color:#14532D;font-weight:500">'+escH(row[1])+'</div></div>';
+          });
+          html += '</div>';
+        }
+        if(action){
+          html += '<div style="background:#FFF7ED;border-left:3px solid #F59E0B;border-radius:0 6px 6px 0;padding:8px 12px">';
+          html += '<div style="font-size:8px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:#92400E;margin-bottom:3px">Action required for '+escH(client)+'</div>';
+          html += '<div style="font-size:11px;color:#78350F;font-weight:600">'+escH(action)+'</div>';
+          html += '</div>';
+        } else if(f.client_implication){
+          html += '<div style="background:#FFF7ED;border-left:3px solid #F59E0B;border-radius:0 6px 6px 0;padding:8px 12px">';
+          html += '<div style="font-size:8px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:#92400E;margin-bottom:3px">Action for '+escH(client)+'</div>';
+          html += '<div style="font-size:11px;color:#78350F;font-weight:600">'+escH(f.client_implication)+'</div>';
+          html += '</div>';
+        }
+        html += '</div>';
+      });
+      html += '</div>';
+    });
+    html += '</div>';
+    return html;
+  }
+
+  // ── OPPORTUNITY ASSESSMENT ───────────────────────────────────
+  if(engType === 'opportunity_assessment'){
+    var findings = d.findings || [];
+    if(!findings.length) return '';
+
+    html += '<div style="margin-bottom:14px">';
+    html += '<div style="background:#1A2B4A;border-radius:10px 10px 0 0;padding:12px 18px">';
+    html += '<div style="font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#9CA3AF;margin-bottom:3px">Opportunity Assessment</div>';
+    html += '<div style="font-size:14px;font-weight:700;color:#fff">Application Opportunity Scorecard</div>';
+    html += '<div style="font-size:11px;color:#9CA3AF;margin-top:3px">Market potential · Attractiveness · Entry barriers — ranked for '+escH(client)+'</div>';
+    html += '</div>';
+
+    // Table header
+    html += '<div style="background:#F9FAFB;border:.5px solid #DBDBDD;border-top:none;overflow:hidden">';
+    html += '<div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1fr;gap:0;background:#E8EBF0;padding:7px 14px">';
+    ['Application','CAGR','Volume potential','Attractiveness','Entry barrier'].forEach(function(h){
+      html += '<div style="font-size:9px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:#4B5563">'+h+'</div>';
+    });
+    html += '</div>';
+
+    findings.forEach(function(f, fi){
+      var metrics = f.metrics || [];
+      var cagr = (metrics.find(function(m){return /cagr/i.test(m.label);}) || {}).value || '—';
+      var vol = (metrics.find(function(m){return /potential|volume|mt|ton/i.test(m.label);}) || {}).value || '—';
+      var attract = (metrics.find(function(m){return /attractiveness/i.test(m.label);}) || {}).value || '';
+      var barrier = (metrics.find(function(m){return /barrier|entry/i.test(m.label);}) || {}).value || '—';
+      var aBg = attract.toLowerCase()==='high'?'#E1F5EE':attract.toLowerCase()==='medium'?'#FEF9C3':'#FDECEA';
+      var aTx = attract.toLowerCase()==='high'?'#085041':attract.toLowerCase()==='medium'?'#92400E':'#A32D2D';
+      var bg = fi%2===0?'#fff':'#FAFAFA';
+      html += '<div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1fr;gap:0;padding:10px 14px;background:'+bg+';border-bottom:.5px solid #F2F4F7">';
+      html += '<div><div style="font-size:12px;font-weight:600;color:#1A2B4A">'+escH(f.subject||f.headline||'')+'</div><div style="font-size:10px;color:#6B7280;margin-top:2px">'+escH((f.body||'').slice(0,80))+'</div></div>';
+      html += '<div style="font-size:11px;color:#374151;padding-top:3px">'+escH(cagr)+'</div>';
+      html += '<div style="font-size:11px;color:#374151;padding-top:3px">'+escH(vol)+'</div>';
+      html += '<div style="padding-top:3px">'+(attract?'<span style="font-size:9px;font-weight:700;padding:2px 8px;border-radius:8px;background:'+aBg+';color:'+aTx+'">'+escH(attract.toUpperCase())+'</span>':'—')+'</div>';
+      html += '<div style="font-size:11px;color:#374151;padding-top:3px">'+escH(barrier)+'</div>';
+      html += '</div>';
+    });
+
+    // Client implication per top opportunity
+    var topOpps = findings.filter(function(f){ var a=(f.metrics||[]).find(function(m){return /attractiveness/i.test(m.label);}); return a&&/high/i.test(a.value||''); }).slice(0,3);
+    if(topOpps.length){
+      html += '<div style="padding:12px 14px;border-top:.5px solid #E5E9F0;background:#EEEDFE">';
+      html += '<div style="font-size:9px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:#534AB7;margin-bottom:8px">Top opportunities for '+escH(client)+'</div>';
+      topOpps.forEach(function(f){
+        if(f.client_implication) html += '<div style="font-size:11px;color:#26215C;padding:5px 0;border-bottom:.5px solid #DDD6FE"><strong>'+escH(f.subject||'')+':</strong> '+escH(f.client_implication)+'</div>';
+      });
+      html += '</div>';
+    }
+    html += '</div></div>';
+    return html;
+  }
+
+  // ── INNOVATION FUNNEL ────────────────────────────────────────
+  if(engType === 'innovation_funnel'){
+    var profiles = d.profiles || [];
+    if(!profiles.length) return '';
+
+    html += '<div style="margin-bottom:14px">';
+    html += '<div style="background:#0F6E56;border-radius:10px 10px 0 0;padding:12px 18px">';
+    html += '<div style="font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#5DCAA5;margin-bottom:3px">Innovation Funnel</div>';
+    html += '<div style="font-size:14px;font-weight:700;color:#fff">Solutions Identified — '+profiles.length+' options profiled</div>';
+    html += '<div style="font-size:11px;color:#A7F3D0;margin-top:3px">Source · Supplier · Regulatory status · Functionality · Scalability</div>';
+    html += '</div>';
+
+    profiles.forEach(function(pr, pi){
+      var isLast = pi===profiles.length-1;
+      var typeBg = pr.type==='startup'?'#EDE9FE':pr.type==='supplier'?'#FEF9C3':'#E1F5EE';
+      var typeTx = pr.type==='startup'?'#5B21B6':pr.type==='supplier'?'#854D0E':'#085041';
+
+      // Extract innovation-funnel specific fields from key_fact
+      html += '<div style="background:#fff;border:.5px solid #86EFAC;border-top:none;padding:14px 18px;'+(isLast?'border-radius:0 0 10px 10px':'border-bottom:.5px solid #E5E9F0')+'"">';
+      html += '<div style="display:flex;align-items:flex-start;gap:12px">';
+      html += '<div style="flex:1">';
+      html += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">';
+      html += '<div style="font-size:13px;font-weight:700;color:#1A2B4A">'+escH(pr.name||'')+'</div>';
+      if(pr.type) html += '<span style="font-size:8px;font-weight:700;padding:2px 8px;border-radius:8px;background:'+typeBg+';color:'+typeTx+'">'+escH(pr.type.toUpperCase())+'</span>';
+      html += '</div>';
+      if(pr.hq||pr.geography) html += '<div style="font-size:10px;color:#9CA3AF;margin-bottom:5px">'+escH(pr.hq||'')+(pr.geography?' · '+escH(pr.geography):'')+'</div>';
+      if(pr.key_product) html += '<div style="font-size:11px;color:#0F6E56;font-weight:600;margin-bottom:4px">'+escH(pr.key_product)+'</div>';
+      if(pr.key_fact) html += '<div style="font-size:11px;color:#374151;line-height:1.6;margin-bottom:6px">'+escH(pr.key_fact)+'</div>';
+      if(pr.role) html += '<div style="font-size:11px;color:#6B7280;margin-bottom:6px">'+escH(pr.role)+'</div>';
+      if(pr.client_relevance){
+        html += '<div style="background:#F0FDF4;border-left:3px solid #5DCAA5;padding:6px 10px;border-radius:0 5px 5px 0;font-size:11px;color:#085041">';
+        html += '<strong>Fit for '+escH(client)+':</strong> '+escH(pr.client_relevance)+'</div>';
+      }
+      if(pr.source_url&&pr.source_url!=='#'){
+        html += '<div style="margin-top:7px"><a href="'+escH(pr.source_url)+'" target="_blank" style="font-size:10px;color:#534AB7;background:#EEEDFE;padding:2px 9px;border-radius:10px;text-decoration:none">Source ↗</a></div>';
+      }
+      html += '</div>';
+      html += '</div></div>';
+    });
+    html += '</div>';
+    return html;
+  }
+
+  // ── IEM MONITORING / NEW ENTRANTS ────────────────────────────
+  if(engType === 'iem_monitoring'){
+    var profiles = d.profiles || [];
+    var findings = d.findings || [];
+    if(!profiles.length && !findings.length) return '';
+
+    // Group findings by TRL label if available
+    var actFindings=[], prepFindings=[], trackFindings=[], otherFindings=[];
+    findings.forEach(function(f){
+      var metrics=f.metrics||[];
+      var trlLabel=(metrics.find(function(m){return m.label==='trl_label';}) || {}).value || '';
+      var trlLevel=parseInt((metrics.find(function(m){return m.label==='trl_level';}) || {}).value || '0');
+      if(/act/i.test(trlLabel) || trlLevel>=7) actFindings.push(f);
+      else if(/prepare/i.test(trlLabel) || (trlLevel>=4&&trlLevel<=6)) prepFindings.push(f);
+      else if(/track/i.test(trlLabel) || (trlLevel>=1&&trlLevel<=3)) trackFindings.push(f);
+      else otherFindings.push(f);
+    });
+
+    html += '<div style="margin-bottom:14px">';
+    html += '<div style="background:#1A2B4A;border-radius:10px 10px 0 0;padding:12px 18px">';
+    html += '<div style="font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#9CA3AF;margin-bottom:3px">Innovation Horizon Map</div>';
+    html += '<div style="font-size:14px;font-weight:700;color:#fff">Act · Prepare · Track</div>';
+    html += '<div style="font-size:11px;color:#9CA3AF;margin-top:3px">TRL-mapped innovation landscape relevant to '+escH(client)+'</div>';
+    html += '</div>';
+
+    var bands = [
+      {label:'ACT — Deploy now (TRL 7-9)', items:actFindings, bg:'#E1F5EE', hdr:'#0F6E56', pill:'#085041'},
+      {label:'PREPARE — Invest now, deploy in 2-4 years (TRL 4-6)', items:prepFindings, bg:'#FEF9C3', hdr:'#92400E', pill:'#633806'},
+      {label:'TRACK — Monitor, too early to act (TRL 1-3)', items:trackFindings, bg:'#F3F4F6', hdr:'#6B7280', pill:'#374151'},
+    ];
+    if(otherFindings.length) bands.push({label:'Other signals', items:otherFindings, bg:'#F3F4F6', hdr:'#6B7280', pill:'#374151'});
+
+    bands.forEach(function(band){
+      if(!band.items.length) return;
+      html += '<div style="background:#fff;border:.5px solid #DBDBDD;border-top:none;padding:12px 18px;border-bottom:.5px solid #E5E9F0">';
+      html += '<div style="font-size:9px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:'+band.hdr+';margin-bottom:8px">'+escH(band.label)+'</div>';
+      band.items.forEach(function(f){
+        var metrics=f.metrics||[];
+        var player=(metrics.find(function(m){return m.label==='key_player';}) || {}).value || '';
+        var ttm=(metrics.find(function(m){return /time.*market/i.test(m.label);}) || {}).value || '';
+        var di=(metrics.find(function(m){return /disruption/i.test(m.label);}) || {}).value || '';
+        html += '<div style="padding:8px 10px;background:'+band.bg+';border-radius:6px;margin-bottom:6px">';
+        html += '<div style="font-size:12px;font-weight:600;color:#1A2B4A;margin-bottom:3px">'+escH(f.headline||f.subject||'')+'</div>';
+        if(f.body) html += '<div style="font-size:11px;color:#374151;line-height:1.5;margin-bottom:4px">'+escH(f.body.slice(0,180))+'</div>';
+        var tags=[];
+        if(player) tags.push('Key player: '+player);
+        if(ttm) tags.push('Time to market: '+ttm);
+        if(di) tags.push('Disruption: '+di);
+        if(tags.length) html += '<div style="font-size:10px;color:'+band.pill+';margin-top:4px">'+tags.join(' · ')+'</div>';
+        if(f.client_implication) html += '<div style="margin-top:5px;font-size:10px;color:#534AB7;font-style:italic">→ '+escH(f.client_implication)+'</div>';
+        html += '</div>';
+      });
+      html += '</div>';
+    });
+
+    // Player profiles if present
+    if(profiles.length){
+      html += '<div style="background:#fff;border:.5px solid #DBDBDD;border-top:none;border-radius:0 0 10px 10px;padding:12px 18px">';
+      html += '<div style="font-size:9px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:#9CA3AF;margin-bottom:8px">Active players — startups, new entrants, spin-offs</div>';
+      html += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:8px">';
+      profiles.forEach(function(pr){
+        var typeBg=pr.type==='startup'?'#EDE9FE':pr.type==='supplier'?'#FEF9C3':'#E1F5EE';
+        var typeTx=pr.type==='startup'?'#5B21B6':pr.type==='supplier'?'#854D0E':'#085041';
+        html += '<div style="border:1px solid #E5E9F0;border-radius:8px;padding:10px 12px">';
+        html += '<div style="display:flex;align-items:center;gap:6px;margin-bottom:5px">';
+        html += '<div style="font-size:12px;font-weight:700;color:#1A2B4A">'+escH(pr.name||'')+'</div>';
+        if(pr.type) html += '<span style="font-size:8px;font-weight:700;padding:1px 7px;border-radius:8px;background:'+typeBg+';color:'+typeTx+'">'+escH(pr.type.toUpperCase())+'</span>';
+        html += '</div>';
+        if(pr.hq||pr.founded) html += '<div style="font-size:10px;color:#9CA3AF;margin-bottom:4px">'+escH(pr.hq||'')+(pr.founded?' · Est. '+pr.founded:'')+'</div>';
+        if(pr.key_product) html += '<div style="font-size:10px;color:#0F6E56;font-weight:600;margin-bottom:3px">'+escH(pr.key_product)+'</div>';
+        if(pr.key_fact) html += '<div style="font-size:10px;color:#374151;line-height:1.5;margin-bottom:4px">'+escH(pr.key_fact)+'</div>';
+        if(pr.client_relevance) html += '<div style="font-size:10px;color:#534AB7;font-style:italic">'+escH(pr.client_relevance)+'</div>';
+        html += '</div>';
+      });
+      html += '</div></div>';
+    }
+    html += '</div>';
+    return html;
+  }
+
+  // ── IP PATENT — specialist block (module inside larger engagement) ─
+  if(engType === 'ip_patent'){
+    var findings = d.findings || [];
+    if(!findings.length) return '';
+
+    html += '<div style="margin-bottom:14px">';
+    html += '<div style="background:#92400E;border-radius:10px 10px 0 0;padding:12px 18px">';
+    html += '<div style="font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#FCD34D;margin-bottom:3px">Patent & IP Landscape</div>';
+    html += '<div style="font-size:14px;font-weight:700;color:#fff">Assignee map · Filing trends · Whitespace</div>';
+    html += '</div>';
+
+    // Group by category if available
+    var byCat = {};
+    findings.forEach(function(f){
+      var metrics=f.metrics||[];
+      var cat=(metrics.find(function(m){return /categor/i.test(m.label);}) || {}).value || 'General';
+      if(!byCat[cat]) byCat[cat]=[];
+      byCat[cat].push(f);
+    });
+
+    Object.keys(byCat).forEach(function(cat, ci, arr){
+      var isLast = ci===arr.length-1;
+      var catFindings = byCat[cat];
+      html += '<div style="background:#fff;border:.5px solid #FCD34D;border-top:none;padding:12px 18px;'+(isLast?'border-radius:0 0 10px 10px':'border-bottom:.5px solid #FEF3C7')+'"">';
+      html += '<div style="font-size:10px;font-weight:700;color:#92400E;margin-bottom:8px">'+escH(cat)+'</div>';
+      catFindings.forEach(function(f){
+        var metrics=f.metrics||[];
+        var assignee=(metrics.find(function(m){return /assignee/i.test(m.label);}) || {}).value || '';
+        var count=(metrics.find(function(m){return /count/i.test(m.label);}) || {}).value || '';
+        var trend=(metrics.find(function(m){return /trend/i.test(m.label);}) || {}).value || '';
+        html += '<div style="padding:7px 0;border-bottom:.5px solid #FEF3C7">';
+        html += '<div style="font-size:12px;font-weight:600;color:#1A2B4A">'+escH(f.headline||'')+'</div>';
+        if(f.body) html += '<div style="font-size:11px;color:#374151;margin:3px 0">'+escH(f.body.slice(0,150))+'</div>';
+        var tags=[];
+        if(assignee) tags.push('Assignee: '+assignee);
+        if(count) tags.push('Patents: '+count);
+        if(trend) tags.push('Trend: '+trend);
+        if(tags.length) html += '<div style="font-size:10px;color:#92400E;margin-top:3px">'+tags.join(' · ')+'</div>';
+        html += '</div>';
+      });
+      html += '</div>';
+    });
+    html += '</div>';
+    return html;
+  }
+
+  return ''; // All other types: existing rendering handles it
 }
 
 function renderResults(){
@@ -3043,8 +3472,14 @@ function renderResults(){
       }).join('');
     }
     html+='</div>';
+    // ── TYPE-SPECIFIC SECTIONS ────────────────────────────────
+    var engType=bq.bq_type||detectEngagementType(S.proposal,bq);
+    var typeSectionsHtml=renderTypeSections(bqId,bq,d,engType);
+    if(typeSectionsHtml) html+=typeSectionsHtml;
+
     // ── ADJACENT INTELLIGENCE — from creative_angles, no synthesis required ──
-    var ca=d.creative_angles||[];
+    // Suppress for regulatory and opportunity types — not relevant
+    var ca=(engType==='regulatory_intelligence'||engType==='opportunity_assessment')?[]:d.creative_angles||[];
     if(ca.length){
       html+='<div style="background:#2E1065;border-radius:10px 10px 0 0;padding:12px 18px;margin-top:4px">'+
         '<div style="font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#C4B5FD;margin-bottom:2px">Adjacent Intelligence</div>'+
@@ -3169,7 +3604,7 @@ function renderResults(){
     }
     if(profiles.length){
       html+='<div class="bq-profiles"><div class="profiles-lbl">Profiles — competitors, startups, suppliers</div>'+
-        profiles.map(function(pr){
+        profiles.map(function(pr,pi){
           return '<div class="profile-card">'+
             '<div style="flex:1">'+
               '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">'+
@@ -3181,7 +3616,10 @@ function renderResults(){
               (pr.key_fact?'<div class="profile-fact">'+escH(pr.key_fact)+'</div>':'')+
               (pr.key_product?'<div class="profile-fact" style="color:var(--mgray)">'+escH(pr.key_product)+'</div>':'')+
               (pr.client_relevance?'<div class="profile-rel">'+escH(pr.client_relevance)+'</div>':'')+
-              '<a class="profile-deep" onclick="alert(\'Profile Builder agent — coming in Stage 2\')">Deep dive ↗</a>'+
+              '<div>'+
+              '<button class="profile-deep" onclick="deepDiveProfile(\''+escH(bqId)+'\','+pi+')">Deep dive ↗</button>'+
+              '<div id="dd-'+escH(bqId)+'-'+pi+'" style="display:none;margin-top:8px;padding:10px 12px;background:#F8F9FC;border:.5px solid #DBDBDD;border-radius:7px"></div>'+
+            '</div>'+
             '</div>'+
           '</div>';
         }).join('')+'</div>';
