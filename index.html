@@ -92,6 +92,23 @@ input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;h
 .kw{font-size:9px;padding:2px 7px;background:#F2F4F7;color:#6B7280;border-radius:4px}
 .gap-pill{font-size:9px;padding:2px 7px;background:#FFF5F2;color:#E85520;border-radius:4px;flex-shrink:0;margin-top:2px}
     .inferred-pill{font-size:9px;padding:2px 7px;background:#EEF2FF;color:#534AB7;border-radius:4px;flex-shrink:0;margin-top:2px;border:1px dashed #C4B5FD;}
+    .bq-edit-btn{font-size:9px;padding:2px 9px;background:#F2F4F7;color:#6B7280;border:none;border-radius:4px;cursor:pointer;flex-shrink:0;margin-top:2px;font-family:inherit;transition:.15s;}
+    .bq-edit-btn:hover{background:#E0E7FF;color:#534AB7;}
+    .bq-del-btn{font-size:9px;padding:2px 7px;background:#FFF5F2;color:#E85520;border:none;border-radius:4px;cursor:pointer;flex-shrink:0;margin-top:2px;font-family:inherit;transition:.15s;}
+    .bq-del-btn:hover{background:#FDECEA;color:#A32D2D;}
+    .bq-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:2000;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:.2s;}
+    .bq-modal-overlay.open{opacity:1;pointer-events:all;}
+    .bq-modal{background:#fff;border-radius:12px;padding:24px;width:100%;max-width:560px;max-height:90vh;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,.18);}
+    .bq-modal-title{font-size:15px;font-weight:700;color:#1A2B4A;margin-bottom:18px;}
+    .bq-modal-field{margin-bottom:14px;}
+    .bq-modal-label{font-size:10px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:#9CA3AF;margin-bottom:5px;}
+    .bq-modal-input{width:100%;box-sizing:border-box;padding:8px 11px;border:1px solid #E5E9F0;border-radius:7px;font-size:12px;color:#1A2B4A;font-family:inherit;outline:none;transition:.15s;}
+    .bq-modal-input:focus{border-color:#534AB7;}
+    .bq-modal-textarea{width:100%;box-sizing:border-box;padding:8px 11px;border:1px solid #E5E9F0;border-radius:7px;font-size:12px;color:#1A2B4A;font-family:inherit;outline:none;resize:vertical;min-height:80px;transition:.15s;}
+    .bq-modal-textarea:focus{border-color:#534AB7;}
+    .bq-modal-acts{display:flex;gap:8px;justify-content:flex-end;margin-top:20px;padding-top:16px;border-top:.5px solid #F2F4F7;}
+    .add-bq-btn{font-size:11px;padding:6px 14px;background:#EEEDFE;color:#534AB7;border:1.5px solid #C4B5FD;border-radius:7px;cursor:pointer;font-family:inherit;font-weight:500;display:inline-flex;align-items:center;gap:5px;transition:.15s;}
+    .add-bq-btn:hover{background:#E0E7FF;border-color:#534AB7;}
 .ai-panel{margin-top:8px;border:1px solid #E0E7FF;border-radius:8px;overflow:hidden;background:#FAFBFF;}
 .ai-panel-hdr{padding:7px 12px;background:#EEF2FF;cursor:pointer;display:flex;align-items:center;justify-content:space-between;font-size:11px;font-weight:600;color:#534AB7;letter-spacing:.4px;user-select:none;}
 .ai-panel-hdr:hover{background:#E0E7FF;}
@@ -436,6 +453,29 @@ input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;h
 </div></div>
 </div>
 
+<!-- BQ EDIT / ADD MODAL -->
+<div class="bq-modal-overlay" id="bqModalOverlay">
+<div class="bq-modal">
+  <div class="bq-modal-title" id="bqModalTitle">Edit Business Question</div>
+  <div class="bq-modal-field">
+    <div class="bq-modal-label">BQ ID</div>
+    <input class="bq-modal-input" id="bqModalId" placeholder="e.g. BQ1" style="width:120px">
+  </div>
+  <div class="bq-modal-field">
+    <div class="bq-modal-label">Business Question</div>
+    <textarea class="bq-modal-textarea" id="bqModalText" placeholder="Enter the business question..."></textarea>
+  </div>
+  <div class="bq-modal-field">
+    <div class="bq-modal-label">Keywords <span style="font-weight:400;color:#9CA3AF;text-transform:none;letter-spacing:0">(comma-separated, optional)</span></div>
+    <input class="bq-modal-input" id="bqModalKw" placeholder="e.g. bearing, ex-works price, SKF India">
+  </div>
+  <div class="bq-modal-acts">
+    <button class="btn btn-out btn-sm" onclick="closeBQModal()">Cancel</button>
+    <button class="btn btn-red" onclick="saveBQModal()">Save</button>
+  </div>
+</div>
+</div>
+
 <!-- S2 PARSE -->
 <div class="stage" id="s2">
 <div class="parse-wrap"><div class="parse-box">
@@ -456,6 +496,7 @@ input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;h
     <div class="rw-acts">
       <button class="btn btn-out btn-sm" onclick="selAll(1)">Select all</button>
       <button class="btn btn-out btn-sm" onclick="selAll(0)">Deselect all</button>
+      <button class="add-bq-btn" onclick="openAddBQModal()">+ Add BQ</button>
       <button class="btn btn-red" onclick="runResearch()">Run live research →</button>
     </div>
   </div>
@@ -1037,6 +1078,100 @@ function getAnalystInput(idx){
   return hasAny?result:null;
 }
 
+// ── BQ EDIT / ADD MODAL ──────────────────────────────────────────
+var bqModalMode = null; // 'edit' or 'add'
+var bqModalIdx  = null; // index in S.proposal.bqs for edit
+
+function openEditBQModal(idx){
+  var bq = S.proposal.bqs[idx];
+  if(!bq) return;
+  bqModalMode = 'edit';
+  bqModalIdx  = idx;
+  document.getElementById('bqModalTitle').textContent = 'Edit Business Question';
+  document.getElementById('bqModalId').value   = bq.id   || '';
+  document.getElementById('bqModalText').value = bq.text || '';
+  document.getElementById('bqModalKw').value   = (bq.kw||[]).join(', ');
+  document.getElementById('bqModalOverlay').classList.add('open');
+  setTimeout(function(){document.getElementById('bqModalText').focus();},80);
+}
+
+function openAddBQModal(){
+  bqModalMode = 'add';
+  bqModalIdx  = null;
+  document.getElementById('bqModalTitle').textContent = 'Add Business Question';
+  // Suggest next BQ id
+  var existing = S.proposal.bqs.map(function(b){return b.id;});
+  var next = 'BQ' + (S.proposal.bqs.length + 1);
+  document.getElementById('bqModalId').value   = next;
+  document.getElementById('bqModalText').value = '';
+  document.getElementById('bqModalKw').value   = '';
+  document.getElementById('bqModalOverlay').classList.add('open');
+  setTimeout(function(){document.getElementById('bqModalText').focus();},80);
+}
+
+function closeBQModal(){
+  document.getElementById('bqModalOverlay').classList.remove('open');
+  bqModalMode = null;
+  bqModalIdx  = null;
+}
+
+function saveBQModal(){
+  var id   = document.getElementById('bqModalId').value.trim();
+  var text = document.getElementById('bqModalText').value.trim();
+  var kwRaw= document.getElementById('bqModalKw').value.trim();
+  if(!text){ alert('Business question text cannot be empty.'); return; }
+  if(!id)   { alert('BQ ID cannot be empty.'); return; }
+
+  var kw = kwRaw ? kwRaw.split(',').map(function(k){return k.trim();}).filter(Boolean) : [];
+
+  if(bqModalMode === 'edit' && bqModalIdx !== null){
+    // Update existing BQ
+    var bq = S.proposal.bqs[bqModalIdx];
+    bq.id   = id;
+    bq.text = text;
+    bq.kw   = kw;
+    bq.source = 'extracted'; // edited by analyst — treat as confirmed
+  } else if(bqModalMode === 'add'){
+    // Check for duplicate ID
+    if(S.proposal.bqs.some(function(b){return b.id===id;})){
+      alert('A BQ with ID "' + id + '" already exists. Please use a different ID.');
+      return;
+    }
+    // Determine module — use first module or M1
+    var module = (S.proposal.modules&&S.proposal.modules.length) ? S.proposal.modules[0].id : 'M1';
+    S.proposal.bqs.push({
+      id: id,
+      text: text,
+      kw: kw,
+      scope_nouns: [],
+      bq_type: S.proposal.engagement_type || 'general',
+      gap: false,
+      source: 'extracted', // manually added by analyst
+      module: module
+    });
+    // Add new index to selBQs
+    S.selBQs.push(S.proposal.bqs.length - 1);
+  }
+
+  closeBQModal();
+  renderReview(); // re-render cards with updated data
+}
+
+function deleteBQ(idx){
+  if(!confirm('Remove this business question? This cannot be undone.')) return;
+  S.proposal.bqs.splice(idx, 1);
+  // Rebuild selBQs — remap indices, remove deleted
+  S.selBQs = [];
+  S.proposal.bqs.forEach(function(_,i){ S.selBQs.push(i); });
+  renderReview();
+}
+
+// Close modal on overlay click
+document.addEventListener('click', function(e){
+  var overlay = document.getElementById('bqModalOverlay');
+  if(overlay && e.target === overlay) closeBQModal();
+});
+
 function renderReview(){
   var p=S.proposal;
   document.getElementById('rwTitle').textContent=p.client+' · '+p.title;
@@ -1063,6 +1198,8 @@ function renderReview(){
         '<div style="display:flex;flex-direction:column;gap:3px;align-items:flex-end">'+
         (bq.gap?'<span class="gap-pill">Gap likely</span>':'')+
         (bq.source==='inferred'?'<span class="inferred-pill" title="This BQ was inferred from the proposal structure — not stated verbatim. Review and edit if needed.">⚠ Inferred BQ</span>':'')+
+        '<button class="bq-edit-btn" onclick="openEditBQModal('+idx+')" title="Edit this BQ">✎ Edit</button>'+
+        '<button class="bq-del-btn" onclick="deleteBQ('+idx+')" title="Remove this BQ">✕</button>'+
         '</div>';
       area.appendChild(d);
     });
