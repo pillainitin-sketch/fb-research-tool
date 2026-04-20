@@ -496,12 +496,17 @@ input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;h
     <div class="rw-acts">
       <button class="btn btn-out btn-sm" onclick="selAll(1)">Select all</button>
       <button class="btn btn-out btn-sm" onclick="selAll(0)">Deselect all</button>
-      <button class="add-bq-btn" onclick="openAddBQModal()">+ Add BQ</button>
       <button class="btn btn-red" onclick="runResearch()">Run live research →</button>
     </div>
   </div>
   <div class="scope-bar" id="scopeBar"></div>
   <div id="bqReview"></div>
+  <div style="margin-top:12px;padding-top:12px;border-top:.5px dashed #E0E7FF;">
+    <button class="add-bq-btn" onclick="openAddBQModal()">
+      <span style="font-size:14px;line-height:1">+</span> Add a new Business Question
+    </button>
+    <div style="font-size:10px;color:#9CA3AF;margin-top:6px">Use this to add a BQ that was not extracted from the proposal</div>
+  </div>
 </div>
 </div>
 
