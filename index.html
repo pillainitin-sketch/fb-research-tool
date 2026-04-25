@@ -592,7 +592,11 @@ input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;h
 <script>
 // ═══ STATE ═══════════════════════════════════════
 // ── PROXY & API KEY ──────────────────────────────────────────
-window.FB_PROXY_URL='https://fb-proxy-swart.vercel.app/api/proxy';
+// ── PROXY & API KEY ──────────────────────────────────────────
+// Proxy required when hosted on GitHub Pages or any non-localhost domain
+// because browsers block direct calls to api.anthropic.com (CORS policy)
+var _isLocalhost = (location.hostname === 'localhost' || location.hostname === '127.0.0.1' || location.hostname === '');
+window.FB_PROXY_URL = _isLocalhost ? '' : 'https://fb-proxy-swart.vercel.app/api/proxy';
 var FB_API_KEY='';
 try{FB_API_KEY=localStorage.getItem('fb_api_key')||'';}catch(e){}
 function getApiKey(){try{return(localStorage.getItem('fb_api_key')||'').trim();}catch(e){return FB_API_KEY.trim();}}
@@ -698,8 +702,22 @@ async function extractBQsFromFile(file,extracted){
     '  "competitors": ["named competitor 1", "named competitor 2"],',
     '  "scope_exclusions": ["any topics explicitly OUT of scope"],',
     '  "engagement_type": "one of: value_chain_pricing | value_chain_market | ip_patent | innovation_funnel | iem_monitoring | scientific_landscape | competitor_intelligence | market_sizing | supply_entry | opportunity_assessment | regulatory_intelligence | general",',
+    '  "central_decision": "The single most important strategic question or decision this engagement is designed to answer. This is often buried in the narrative or executive summary — NOT the same as the BQ list. It is the reason the client commissioned the work. Example: Can sliding bearings disrupt roller bearings in wind turbine main shaft applications on total cost?",',
+    '  "priority_outputs": ["Ordered list of what the client needs to walk away with — extracted from the deliverables section, priority table, or most important takeaway section. List them in priority order as stated or implied. Example: Competitor value chain mapping, In-house vs outsourced split, Supplier network, Cost drivers by node, Ex-works pricing, India vs Europe comparison, Sliding bearing positioning implications"],',
+    '  "client_hypothesis": "Any explicit hypothesis or belief the client holds that needs to be tested. Example: Sliding bearings can be cost-competitive with roller bearings at 10MW+ turbine scale.",',
     '  "modules": [{"id": "M1", "name": "module name from TOC"}],',
     '  "bqs": [',
+    '    {',
+    '      "id": "BQ0",',
+    '      "module": "M0",',
+    '      "text": "CENTRAL STRATEGIC QUESTION — the primary decision the engagement serves. Add this as BQ0 always. Extract it from the central_decision field above.",',
+    '      "kw": ["2-4 key search terms"],',
+    '      "scope_nouns": ["3-6 specific technical or commercial terms"],',
+    '      "bq_type": "engagement type for this BQ",',
+    '      "gap": false,',
+    '      "source": "inferred",',
+    '      "priority": "critical"',
+    '    },',
     '    {',
     '      "id": "BQ1",',
     '      "module": "M1",',
@@ -708,48 +726,49 @@ async function extractBQsFromFile(file,extracted){
     '      "scope_nouns": ["3-6 specific technical/commercial terms that MUST appear in research e.g. ex-works price, SKF India, 100Cr6 steel, K-BPR, polycarbonate ban"],',
     '      "bq_type": "one of the engagement_type values above — per BQ, can differ from engagement_type",',
     '      "gap": false,',
-    '      "source": "extracted|inferred"',
+    '      "source": "extracted|inferred",',
+    '      "priority": "high|medium|low"',
     '    }',
     '  ]',
     '}',
     '',
-    'ENGAGEMENT TYPE DETECTION GUIDE — assign bq_type per BQ independently based on what THAT BQ is asking for:',
+    'CRITICAL BQ EXTRACTION RULES — READ CAREFULLY:',
     '',
-    '- regulatory_intelligence: BQ asks about regulations, compliance, registration requirements, REACH equivalents, biocide rules, chemical inventories, what rules apply in which country, K-BPR, MEE Order, ANVISA, GHS classification, registration thresholds, approval timelines. EXAMPLES: "What biocide regulations apply in APAC?" / "What are the registration requirements for our chemicals in Brazil?" / "What REACH-equivalent laws exist in South Korea?"',
+    '(1) EXTRACT EVERY QUESTION — do not stop at 6 or 8. If a proposal has 10, 12, or 14 distinct research questions, extract all of them. Never merge questions that are asking different things just to keep the list short.',
     '',
-    '- opportunity_assessment: BQ asks about market opportunities, where client should focus, most attractive applications, TAM/SAM/SOM, addressable market, application scoring, CTQ parameters, entry barriers, growth potential, CAGR by application, penetration rate, volume potential. EXAMPLES: "What are the most attractive applications for PPO?" / "Which segments offer the highest TAM for our material?" / "What is the addressable market for Noryl in EV batteries?"',
+    '(2) ALWAYS ADD BQ0 — before any other BQ, add BQ0 which is the central strategic question. This is the reason the client commissioned the work. For Miba it would be: "Can sliding bearings compete with or disrupt existing roller bearing solutions in wind turbine main shaft applications on total cost?" Extract this from the narrative, executive summary, or most important takeaway — not from the numbered question list.',
     '',
-    '- innovation_funnel: BQ asks for a solutions universe, natural alternatives, ingredient options, best-fit scoring, shortlist of actives, replace synthetic with natural, benchmarking of ingredients, supplier landscape for specific actives. EXAMPLES: "What natural antioxidants can replace BHA/BHT?" / "What are the best-fit preservative solutions for frying oils?" / "Which natural ingredients meet our functionality criteria?"',
+    '(3) SPLIT COMPOUND QUESTIONS — if one question covers multiple distinct research tasks, split it into separate BQs. Example: "What is the cost breakdown and how does DDP pricing work?" = two BQs, not one.',
     '',
-    '- scientific_landscape: BQ asks about scientific evidence, clinical validation, health claims, RCT data, in-vitro studies, mechanism of action, what the science says, microbes, metabolites, strain-level evidence, EFSA opinions on health claims. EXAMPLES: "What is the clinical evidence for probiotic strain X?" / "What health claims are scientifically validated for polyphenols?" / "What does the science say about antioxidant mechanism in frying?"',
+    '(4) CHECK ALL SECTIONS — questions appear in multiple places: numbered lists, table rows, scope tables, deliverables tables, TOC sections, executive summaries, and narrative paragraphs. Check every section.',
     '',
-    '- ip_patent: BQ asks explicitly about patent landscape, IP landscape, assignees, patent filing trends, whitespace analysis, freedom to operate, chemical categories in patents, who holds IP. Must contain patent/IP language explicitly. EXAMPLES: "What is the patent landscape for hair fixative polymers?" / "Who are the top patent assignees in acrylate film-formers?" / "Where are the whitespace opportunities in fixative IP?"',
+    '(5) MARK PRIORITY — BQ0 is always "critical". BQs directly related to the central decision are "high". Supporting BQs are "medium". Context BQs are "low".',
     '',
-    '- iem_monitoring: BQ asks about new entrants, startups, spin-offs, emerging companies, who is active, horizon map, TRL landscape, innovation scanning across industries, Act/Prepare/Track framework, technology maturity mapping. EXAMPLES: "What new entrants are active in large gas turbines?" / "What startups are disrupting the compressor space?" / "Map the innovation horizon for clearance control technologies."',
+    '(6) DO NOT MERGE GEOGRAPHY-SPECIFIC BQs — if the proposal asks the same question for India AND Europe separately, these are TWO BQs not one.',
     '',
-    '- competitor_intelligence: BQ asks about what a NAMED competitor is doing — their strategy, R&D programmes, sustainability claims, certifications, recent moves, technology focus, partnerships. EXAMPLES: "What is GE Vernova innovation strategy for HA-class turbines?" / "What sustainability certifications does Henkel hold?" / "What is BASF approach to natural polymers?"',
+    'ENGAGEMENT TYPE DETECTION GUIDE — assign bq_type per BQ independently:',
     '',
-    '- value_chain_pricing: BQ asks about ex-works price, DDP price, cost breakdown, manufacturing cost structure, localisation %, make-vs-buy, value-add %, component cost share, freight and tariff costs. EXAMPLES: "What is the ex-works price of SRBs by turbine MW?" / "What is the cost breakdown for bearing manufacturing in India?" / "What is the DDP price from Germany to China?"',
+    '- regulatory_intelligence: regulations, compliance, registration, REACH, biocide rules, K-BPR, MEE Order, ANVISA, GHS, approval timelines',
+    '- opportunity_assessment: market opportunities, most attractive applications, TAM/SAM, entry barriers, growth potential, CAGR by application',
+    '- innovation_funnel: solutions universe, natural alternatives, ingredient options, best-fit scoring, shortlist, supplier landscape for actives',
+    '- scientific_landscape: scientific evidence, clinical validation, health claims, RCT, in-vitro, mechanism of action, EFSA opinions',
+    '- ip_patent: patent landscape, IP landscape, assignees, filing trends, whitespace, freedom to operate — must contain patent/IP language',
+    '- iem_monitoring: new entrants, startups, emerging companies, horizon map, TRL landscape, innovation scanning, Act/Prepare/Track',
+    '- competitor_intelligence: what a NAMED competitor is doing — strategy, R&D, certifications, moves, partnerships',
+    '- value_chain_pricing: ex-works price, DDP price, cost breakdown, manufacturing cost, make-vs-buy, component cost share, freight, tariffs',
+    '- value_chain_market: players at each node, distributor ecosystem, market structure, player roles, tier structure, supplier network',
+    '- market_sizing: market size, market volume, revenue by segment, CAGR, country-level split, growth forecast',
+    '- supply_entry: production capacity, capacity utilisation, supply footprint, trade flows, export/import data, entry barriers for new supplier',
+    '- general: none of the above clearly apply — use only as last resort',
     '',
-    '- value_chain_market: BQ asks about who are the players at each node of the value chain, distributor ecosystem, market structure, player roles, tier structure. EXAMPLES: "Who are the key players in the Indian wind bearing value chain?" / "What is the distributor ecosystem for hair care actives?"',
+    'SCOPE NOUNS — extract 3-6 specific technical or commercial terms per BQ that any good research answer MUST cover:',
+    '  For wind turbine bearing value chain India: ["spherical roller bearing", "SKF India", "Schaeffler India", "ring forging", "ex-works price"]',
+    '  For sliding bearing disruption question: ["sliding bearing", "journal bearing", "roller bearing", "total cost of ownership", "10MW wind turbine"]',
+    '  For hair fixative patents: ["acrylate polymer", "polyurethane", "IP assignee", "polysaccharide", "whitespace"]',
     '',
-    '- market_sizing: BQ asks about market size, market volume, revenue by segment, CAGR, material share %, country-level split, growth forecast. EXAMPLES: "What is the global market size for industrial gas turbines?" / "What is the CAGR for EV battery demand 2025-2030?"',
-    '',
-    '- supply_entry: BQ asks about production capacity, capacity utilisation, global supply footprint, trade flows, export/import data, grades and specifications, entry barriers for a new supplier. EXAMPLES: "Who produces PPE powder globally and at what capacity?" / "What are the trade flows for bearing steel from China?"',
-    '',
-    '- general: none of the above clearly apply — use only as last resort.',
-    '',
-    'CRITICAL: Assign bq_type to each BQ independently based on what THAT BQ asks. A single engagement can have BQs of different types. Do not default to the engagement-level type for all BQs.',
-    '',
-    'SCOPE NOUNS — these are the MOST IMPORTANT field. Extract 3-6 specific technical or commercial terms per BQ that any good research answer MUST cover. Examples:',
-    '  For "what is the value chain for wind turbine bearings in India": scope_nouns = ["spherical roller bearing", "SKF India", "Schaeffler India", "ring forging", "ex-works price"]',
-    '  For "what is the patent landscape for hair fixatives": scope_nouns = ["acrylate polymer", "polyurethane", "IP assignee", "polysaccharide", "whitespace"]',
-    '  For "what are the biocide regulations in APAC": scope_nouns = ["K-BPR", "MEE Order No.12", "registration threshold", "IECSC", "GHS classification"]',
-    '',
-    'BQs: Extract ALL explicit business questions verbatim from the proposal. If BQs are not numbered, infer them from the research scope, TOC sections, or engagement objectives. A typical proposal has 3-8 BQs.',
-    'SOURCE FIELD: Set source="extracted" if the BQ appears verbatim or near-verbatim in the proposal. Set source="inferred" if you constructed the BQ from the proposal structure, TOC, or objectives — i.e. it is implied but not explicitly stated.',
-    'MODULES: Group BQs by proposal module/section if present. If no module structure, use M1 for all.',
-    'COMPETITORS: Extract ALL named companies mentioned as competitors, benchmarks, or key players.',
+    'SOURCE FIELD: Set source="extracted" if BQ appears verbatim or near-verbatim. Set source="inferred" if you constructed it from structure or objectives.',
+    'MODULES: Group BQs by proposal module/section. If no module structure, use M1 for all. BQ0 goes in M0.',
+    'COMPETITORS: Extract ALL named companies — competitors, benchmarks, key players, named suppliers.',
     'Do not invent data. If a field is not present, use empty string or empty array.',
   ].join('\n');
 
@@ -769,9 +788,12 @@ async function extractBQsFromFile(file,extracted){
     var resp=await fetch(window.FB_PROXY_URL||'https://api.anthropic.com/v1/messages',{
       method:'POST',
       headers:{'Content-Type':'application/json','anthropic-version':'2023-06-01','x-api-key':getApiKey()},
-      body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:3000,messages:messages})
+      body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:4000,messages:messages})
     });
-    if(!resp.ok){console.error('Extraction API error:',resp.status);return null;}
+    if(!resp.ok){
+      if(resp.status===404&&window.FB_PROXY_URL) throw new Error('Proxy returned 404 — needs redeployment');
+      console.error('Extraction API error:',resp.status);return null;
+    }
 
     var _jt=new Promise(function(_,rej){setTimeout(function(){rej(new Error('timeout'));},90000);});
     var data=await Promise.race([resp.json(),_jt]);
@@ -803,6 +825,27 @@ async function extractBQsFromFile(file,extracted){
     parsed.engagement_type=parsed.engagement_type||'general';
     parsed.modules=Array.isArray(parsed.modules)&&parsed.modules.length?parsed.modules:[{id:'M1',name:'Research Scope'}];
 
+    // New fields from updated parser
+    parsed.central_decision=parsed.central_decision||'';
+    parsed.priority_outputs=Array.isArray(parsed.priority_outputs)?parsed.priority_outputs:[];
+    parsed.client_hypothesis=parsed.client_hypothesis||'';
+
+    // Ensure BQ0 exists — add it if parser missed it
+    var hasBQ0=parsed.bqs.some(function(b){return b.id==='BQ0';});
+    if(!hasBQ0&&parsed.central_decision){
+      parsed.bqs.unshift({
+        id:'BQ0',
+        module:'M0',
+        text:parsed.central_decision,
+        kw:[],
+        scope_nouns:[],
+        bq_type:parsed.engagement_type||'general',
+        gap:false,
+        source:'inferred',
+        priority:'critical'
+      });
+    }
+
     // Normalise BQs — ensure all fields present
     parsed.bqs=parsed.bqs.map(function(bq,i){
       return {
@@ -813,7 +856,8 @@ async function extractBQsFromFile(file,extracted){
         scope_nouns:Array.isArray(bq.scope_nouns)?bq.scope_nouns:[],
         bq_type:bq.bq_type||parsed.engagement_type||'general',
         gap:bq.gap||false,
-        source:bq.source||'extracted'
+        source:bq.source||'extracted',
+        priority:bq.priority||'medium'
       };
     }).filter(function(bq){return bq.text.length>5;});
 
@@ -1209,24 +1253,94 @@ function renderReview(){
     [['Client',p.client],['Practice',p.practice],['Geography',p.geography],['Period',p.period],
      ['Competitors',p.competitors.slice(0,5).join(', ')+(p.competitors.length>5?' +'+(p.competitors.length-5):'')]
     ].map(function(x){return'<div class="sb-item"><div class="sb-lbl">'+x[0]+'</div><div class="sb-val">'+(x[1]||'—')+'</div></div>';}).join('');
+
   var area=document.getElementById('bqReview'); area.innerHTML='';
+
+  // ── CENTRAL DECISION BANNER ──────────────────────────────────
+  if(p.central_decision){
+    var banner=document.createElement('div');
+    banner.style.cssText='background:#1A2B4A;border-radius:10px;padding:14px 18px;margin-bottom:14px';
+    banner.innerHTML=
+      '<div style="font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#E85520;margin-bottom:6px">Central Strategic Question</div>'+
+      '<div style="font-size:14px;font-weight:600;color:#fff;line-height:1.5;margin-bottom:'+(p.client_hypothesis?'10':'0')+'px">'+escH(p.central_decision)+'</div>'+
+      (p.client_hypothesis?'<div style="font-size:11px;color:rgba(255,255,255,.6);font-style:italic">Client hypothesis: '+escH(p.client_hypothesis)+'</div>':'')+
+      '';
+    area.appendChild(banner);
+  }
+
+  // ── PRIORITY OUTPUTS BANNER ──────────────────────────────────
+  if(p.priority_outputs&&p.priority_outputs.length){
+    var priEl=document.createElement('div');
+    priEl.style.cssText='background:#FFF5F2;border:.5px solid #E85520;border-radius:10px;padding:12px 18px;margin-bottom:14px';
+    priEl.innerHTML=
+      '<div style="font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#E85520;margin-bottom:8px">Client Priority Outputs — in order</div>'+
+      '<div style="display:flex;flex-wrap:wrap;gap:6px">'+
+      p.priority_outputs.map(function(po,i){
+        return'<span style="font-size:10px;font-weight:500;padding:3px 10px;border-radius:20px;background:#fff;border:.5px solid #E85520;color:#1A2B4A">'+
+          '<span style="color:#E85520;font-weight:700;margin-right:4px">'+(i+1)+'.</span>'+escH(po)+'</span>';
+      }).join('')+
+      '</div>';
+    area.appendChild(priEl);
+  }
+
+  // ── BQ CARDS ─────────────────────────────────────────────────
   var mods={};
   p.bqs.forEach(function(bq){if(!mods[bq.module])mods[bq.module]=[];mods[bq.module].push(bq);});
+
+  // Handle BQ0 — show in its own section at top
+  if(mods['M0']&&mods['M0'].length){
+    var sep0=document.createElement('div'); sep0.className='mod-sep';
+    sep0.innerHTML='<span style="color:#E85520;font-weight:700">Central Question</span>';
+    area.appendChild(sep0);
+    mods['M0'].forEach(function(bq){
+      var idx=p.bqs.indexOf(bq);
+      var d=document.createElement('div');
+      d.className='bq-row';
+      d.id='bqr-'+idx;
+      d.style.cssText='border-left:3px solid #E85520;background:#FFF5F2';
+      d.innerHTML='<div class="chk on" id="chk-'+idx+'" onclick="togBQ('+idx+')">✓</div>'+
+        '<div style="flex:1;min-width:0">'+
+        '<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">'+
+          '<div class="bq-id">'+bq.id+'</div>'+
+          '<span style="font-size:8px;font-weight:700;padding:2px 7px;border-radius:8px;background:#A32D2D;color:#fff">CRITICAL</span>'+
+        '</div>'+
+        '<div class="bq-text" style="font-weight:600">'+escH(bq.text)+'</div>'+
+        '<div class="bq-kws">'+(bq.kw||[]).map(function(k){return'<span class="kw">'+k+'</span>';}).join('')+'</div>'+
+        renderAIPanel(idx)+'</div>'+
+        '<div style="display:flex;flex-direction:column;gap:3px;align-items:flex-end">'+
+        '<button class="bq-edit-btn" onclick="openEditBQModal('+idx+')" title="Edit">✎ Edit</button>'+
+        '<button class="bq-del-btn" onclick="deleteBQ('+idx+')" title="Remove">✕</button>'+
+        '</div>';
+      area.appendChild(d);
+    });
+  }
+
+  // Priority colour map
+  var priColors={critical:{bg:'#A32D2D',txt:'#fff'},high:{bg:'#E85520',txt:'#fff'},medium:{bg:'#FBAE40',txt:'#633806'},low:{bg:'#F2F4F7',txt:'#6B7280'}};
+
   p.modules.forEach(function(mod){
+    if(mod.id==='M0') return; // already rendered above
     var bqs=mods[mod.id]||[]; if(!bqs.length)return;
     var sep=document.createElement('div'); sep.className='mod-sep'; sep.textContent=mod.name;
     area.appendChild(sep);
     bqs.forEach(function(bq){
       var idx=p.bqs.indexOf(bq);
+      var pri=(bq.priority||'medium').toLowerCase();
+      var pc=priColors[pri]||priColors.medium;
       var d=document.createElement('div'); d.className='bq-row'; d.id='bqr-'+idx;
       d.innerHTML='<div class="chk on" id="chk-'+idx+'" onclick="togBQ('+idx+')">✓</div>'+
-        '<div style="flex:1;min-width:0"><div class="bq-id">'+bq.id+'</div>'+
-        '<div class="bq-text">'+bq.text+'</div>'+
-        '<div class="bq-kws">'+(bq.kw||[]).map(function(k){return'<span class="kw">'+k+'</span>';}).join('')+'</div>'+
+        '<div style="flex:1;min-width:0">'+
+        '<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">'+
+          '<div class="bq-id">'+escH(bq.id)+'</div>'+
+          '<span style="font-size:8px;font-weight:700;padding:2px 7px;border-radius:8px;background:'+pc.bg+';color:'+pc.txt+'">'+pri.toUpperCase()+'</span>'+
+          (bq.bq_type&&bq.bq_type!=='general'?'<span style="font-size:8px;padding:2px 7px;border-radius:8px;background:#EEEDFE;color:#534AB7">'+escH(bq.bq_type.replace(/_/g,' '))+'</span>':'')+
+        '</div>'+
+        '<div class="bq-text">'+escH(bq.text)+'</div>'+
+        '<div class="bq-kws">'+(bq.kw||[]).map(function(k){return'<span class="kw">'+escH(k)+'</span>';}).join('')+'</div>'+
         renderAIPanel(idx)+'</div>'+
         '<div style="display:flex;flex-direction:column;gap:3px;align-items:flex-end">'+
         (bq.gap?'<span class="gap-pill">Gap likely</span>':'')+
-        (bq.source==='inferred'?'<span class="inferred-pill" title="This BQ was inferred from the proposal structure — not stated verbatim. Review and edit if needed.">⚠ Inferred BQ</span>':'')+
+        (bq.source==='inferred'?'<span class="inferred-pill" title="Inferred from proposal structure">⚠ Inferred BQ</span>':'')+
         '<button class="bq-edit-btn" onclick="openEditBQModal('+idx+')" title="Edit this BQ">✎ Edit</button>'+
         '<button class="bq-del-btn" onclick="deleteBQ('+idx+')" title="Remove this BQ">✕</button>'+
         '</div>';
@@ -1849,10 +1963,11 @@ async function callAPI(body, logFn){
   var logger=logFn||function(t,m){console.log('[callAPI]',t,m);};
   var resp,lastErr;
   var maxAttempts=5;
+  var endpoint=window.FB_PROXY_URL||'https://api.anthropic.com/v1/messages';
   for(var attempt=1;attempt<=maxAttempts;attempt++){
     try{
       logger('info','API call attempt '+attempt+'/'+maxAttempts+'...');
-      var _fp=fetch(window.FB_PROXY_URL||'https://api.anthropic.com/v1/messages',{
+      var _fp=fetch(endpoint,{
         method:'POST',
         headers:{'Content-Type':'application/json','anthropic-version':'2023-06-01','x-api-key':getApiKey()},
         body:JSON.stringify(body)
@@ -1861,6 +1976,9 @@ async function callAPI(body, logFn){
       resp=await Promise.race([_fp,_to]);
       if(resp.ok) break;
       var et=await resp.text();
+      if(resp.status===404&&window.FB_PROXY_URL){
+        throw new Error('PROXY_404: Proxy at '+window.FB_PROXY_URL+' returned 404. Redeploy the proxy or run the tool on localhost.');
+      }
       if(resp.status===529){
         logger('info','API overloaded (529) — waiting '+((attempt*15))+'s before retry '+attempt+'/'+maxAttempts+'...');
         if(attempt<maxAttempts) await new Promise(function(r){setTimeout(r,attempt*15000);});
@@ -1881,6 +1999,14 @@ async function callAPI(body, logFn){
       if(attempt<maxAttempts) await new Promise(function(r){setTimeout(r,attempt*3000);});
     }catch(e){
       if(e.message.indexOf('MONTHLY_CAP')>=0) throw e;
+      if(e.message.indexOf('PROXY_404')>=0) throw e;
+      // CORS error — happens when proxy is missing or misconfigured on hosted domain
+      if(e.message.indexOf('Failed to fetch')>=0&&window.FB_PROXY_URL){
+        throw new Error('CORS: Cannot reach proxy at '+window.FB_PROXY_URL+'. Check proxy is deployed correctly, or run on localhost.');
+      }
+      if(e.message.indexOf('Failed to fetch')>=0&&!window.FB_PROXY_URL){
+        throw new Error('CORS: Direct API calls are blocked by browser security on hosted domains. Deploy the proxy — see console for instructions.');
+      }
       lastErr=e;
       if(attempt<maxAttempts) await new Promise(function(r){setTimeout(r,attempt*3000);});
     }
@@ -4275,6 +4401,12 @@ function buildVerdictPrompt(p, allBQResults, engType) {
     '',
     'CLIENT: ' + client + '  |  ENGAGEMENT: ' + (p.title||'') + '  |  TYPE: ' + engType.replace(/_/g,' ').toUpperCase(),
     'GEOGRAPHY: ' + (p.geography||'') + '  |  PERIOD: ' + (p.period||''),
+    '',
+    '── CENTRAL STRATEGIC QUESTION ──────────────────────────────',
+    (p.central_decision ? p.central_decision : 'Not explicitly stated — infer from research evidence.'),
+    '',
+    (p.client_hypothesis ? '── CLIENT HYPOTHESIS TO TEST ───────────────────────────────\n' + p.client_hypothesis + '\n' : ''),
+    (p.priority_outputs && p.priority_outputs.length ? '── CLIENT PRIORITY OUTPUTS (in order) ──────────────────────\n' + p.priority_outputs.map(function(po,i){return (i+1)+'. '+po;}).join('\n') + '\nYour verdict must address these priority outputs in this order.\n' : ''),
     '',
     '── ALL RESEARCH EVIDENCE ────────────────────────────────',
     evidenceSummary,
