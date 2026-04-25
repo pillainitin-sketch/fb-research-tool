@@ -434,10 +434,10 @@ input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;h
   </div>
   <!-- Additional context documents -->
   <div class="ctx-zone" id="ctxZone">
-    <div class="ctx-zone-lbl">📎 Supporting documents <span style="font-size:9px;font-weight:400;color:#9CA3AF">(optional)</span></div>
-    <div class="ctx-zone-sub">Add call notes, client discussion summaries, analyst briefings, or any background documents. The tool will use these to sharpen search queries and client implications — without changing the BQ extraction.</div>
+    <div class="ctx-zone-lbl">📎 Supporting documents <span style="font-size:9px;font-weight:400;color:#9CA3AF">(optional but recommended)</span></div>
+    <div class="ctx-zone-sub">Upload prior research, expert interview transcripts, internal cost models, competitor files, or previous engagement outputs. These are injected into research context to fill gaps, sharpen findings, and improve client implications — they are <strong>not</strong> used for BQ extraction.<br><span style="font-size:10px;color:#9CA3AF;margin-top:4px;display:block">Examples: transcript from a supplier call · prior FutureBridge brief on this topic · internal pricing model · competitor annual report · analyst notes from client meeting</span></div>
     <div>
-      <button class="ctx-add-btn" onclick="document.getElementById('ctxFileIn').click()">+ Add documents</button>
+      <button class="ctx-add-btn" onclick="document.getElementById('ctxFileIn').click()">+ Add supporting documents</button>
       <input type="file" id="ctxFileIn" accept=".pdf,.docx,.pptx,.txt,.md" multiple style="display:none" onchange="handleContextFiles(this.files)">
     </div>
     <div class="ctx-file-list" id="ctxFileList"></div>
@@ -481,10 +481,10 @@ input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;h
 <div class="parse-wrap"><div class="parse-box">
   <div class="parse-title" id="parseTitle">Reading your proposal</div>
   <div class="parse-sub" id="parseSub">Extracting business questions and research parameters</div>
-  <div class="ps" id="ps1"><div class="ps-ic" id="pi1">1</div><div><div class="ps-t">Reading document structure</div><div class="ps-s">Identifying modules, sections, engagement context</div></div></div>
-  <div class="ps" id="ps2"><div class="ps-ic" id="pi2">2</div><div><div class="ps-t">Extracting business questions</div><div class="ps-s">Finding explicit and implied BQs verbatim</div></div></div>
-  <div class="ps" id="ps3"><div class="ps-ic" id="pi3">3</div><div><div class="ps-t">Identifying scope and competitors</div><div class="ps-s">Geography · time period · competitor list</div></div></div>
-  <div class="ps" id="ps4"><div class="ps-ic" id="pi4">4</div><div><div class="ps-t">Building research task map</div><div class="ps-s">One live agent per BQ · source strategy · data schema</div></div></div>
+  <div class="ps" id="ps1"><div class="ps-ic" id="pi1">1</div><div><div class="ps-t">Reading proposal document</div><div class="ps-s">Parsing PDF, PPTX, or text — extracting all content</div></div></div>
+  <div class="ps" id="ps2"><div class="ps-ic" id="pi2">2</div><div><div class="ps-t">Extracting all business questions</div><div class="ps-s">Finding every explicit and implied BQ — including BQ0 central question</div></div></div>
+  <div class="ps" id="ps3"><div class="ps-ic" id="pi3">3</div><div><div class="ps-t">Identifying strategic context</div><div class="ps-s">Central decision · client hypothesis · priority outputs · competitors · geography</div></div></div>
+  <div class="ps" id="ps4"><div class="ps-ic" id="pi4">4</div><div><div class="ps-t">Configuring research agents</div><div class="ps-s">BQ type per question · source strategy · scope nouns · priority weighting</div></div></div>
 </div></div>
 </div>
 
@@ -725,6 +725,7 @@ async function extractBQsFromFile(file,extracted){
     '      "kw": ["2-4 key search terms for this BQ"],',
     '      "scope_nouns": ["3-6 specific technical/commercial terms that MUST appear in research e.g. ex-works price, SKF India, 100Cr6 steel, K-BPR, polycarbonate ban"],',
     '      "bq_type": "one of the engagement_type values above — per BQ, can differ from engagement_type",',
+    '      "bq_category": "research | synthesis | primary_only",',
     '      "gap": false,',
     '      "source": "extracted|inferred",',
     '      "priority": "high|medium|low"',
@@ -745,6 +746,13 @@ async function extractBQsFromFile(file,extracted){
     '(5) MARK PRIORITY — BQ0 is always "critical". BQs directly related to the central decision are "high". Supporting BQs are "medium". Context BQs are "low".',
     '',
     '(6) DO NOT MERGE GEOGRAPHY-SPECIFIC BQs — if the proposal asks the same question for India AND Europe separately, these are TWO BQs not one.',
+    '',
+    '(7) CATEGORISE EVERY BQ — assign bq_category to every BQ:',
+    '  "research" — can be answered by web search. The agent searches, reads pages, extracts findings. This is the default.',
+    '  "synthesis" — CANNOT be answered by web search. Requires combining or scoring outputs of other BQs. Examples: "Rank all identified innovations by TRL" / "Score shortlisted solutions against assessment criteria" / "Which of the identified technologies best meets our requirements?" / "Prioritise the innovation list" / "What is the overall competitive positioning?" — any BQ that asks to rank, score, compare, or synthesise findings from other BQs is synthesis.',
+    '  "primary_only" — cannot be answered by web research OR synthesis. Requires direct expert interview, primary survey, or confidential data. Examples: "What is the ex-works price?" (when pricing is never public) / "What is the in-house vs outsourced split?" (when not disclosed) / "What are the internal cost drivers?" (confidential).',
+    '',
+    'SYNTHESIS BQ RULE: If a BQ asks "which of the above", "rank the identified", "score the shortlisted", "what is the overall assessment of all", "compare all identified solutions" — it is ALWAYS synthesis, never research. The web search agent cannot rank things it has not found yet.',
     '',
     'ENGAGEMENT TYPE DETECTION GUIDE — assign bq_type per BQ independently:',
     '',
@@ -768,7 +776,7 @@ async function extractBQsFromFile(file,extracted){
     '',
     'SOURCE FIELD: Set source="extracted" if BQ appears verbatim or near-verbatim. Set source="inferred" if you constructed it from structure or objectives.',
     'MODULES: Group BQs by proposal module/section. If no module structure, use M1 for all. BQ0 goes in M0.',
-    'COMPETITORS: Extract ALL named companies — competitors, benchmarks, key players, named suppliers.',
+    'COMPETITORS: Extract ALL named companies from the ENTIRE document — not just from a labelled competitors section. Scan every paragraph, table, bullet point, and list for organisations positioned as market leaders, technology benchmarks, key players, strategic reference points, or named examples. Include competitors, OEM partners, key suppliers, named startups, and academic institutions if strategically relevant. If a company appears in a strategic context anywhere in the document, include it. Do not limit to 3-5 names — extract every named organisation that matters to this engagement.',
     'Do not invent data. If a field is not present, use empty string or empty array.',
   ].join('\n');
 
@@ -846,8 +854,24 @@ async function extractBQsFromFile(file,extracted){
       });
     }
 
+    // Auto-detect synthesis and primary_only BQs
+    function isSynthesisBQ(text){
+      var t=(text||'').toLowerCase();
+      return /which of the (above|identified|shortlisted|following)|rank (the|all) (identified|shortlisted|above)|score (the|all) (shortlisted|identified)|overall (assessment|competitive positioning|comparison) of all|compare all identified|prioriti[sz]e the (innovation|solution|shortlist)|which.*scores highest|preliminary assessment card|overall shortlist|trl classification of each|categori[sz]e.*into (track|prepare|act|horizon)/.test(t);
+    }
+    function isPrimaryOnlyBQ(text){
+      var t=(text||'').toLowerCase();
+      return /ex.works price|in.house vs outsourced|make.vs.buy split|internal cost driver|proprietary pricing|supplier margin/.test(t);
+    }
+
     // Normalise BQs — ensure all fields present
     parsed.bqs=parsed.bqs.map(function(bq,i){
+      var cat=bq.bq_category||'';
+      if(!cat||cat==='research'){
+        if(isSynthesisBQ(bq.text)) cat='synthesis';
+        else if(isPrimaryOnlyBQ(bq.text)) cat='primary_only';
+        else cat='research';
+      }
       return {
         id:bq.id||('BQ'+(i+1)),
         module:bq.module||'M1',
@@ -855,6 +879,7 @@ async function extractBQsFromFile(file,extracted){
         kw:Array.isArray(bq.kw)?bq.kw:[],
         scope_nouns:Array.isArray(bq.scope_nouns)?bq.scope_nouns:[],
         bq_type:bq.bq_type||parsed.engagement_type||'general',
+        bq_category:cat,
         gap:bq.gap||false,
         source:bq.source||'extracted',
         priority:bq.priority||'medium'
@@ -862,6 +887,33 @@ async function extractBQsFromFile(file,extracted){
     }).filter(function(bq){return bq.text.length>5;});
 
     if(!parsed.bqs.length) return null;
+
+    // ── OVERLAP DETECTION ────────────────────────────────────────
+    // Flag BQs with high keyword overlap so analyst can merge/remove
+    function bqTokens(text){
+      return (text||'').toLowerCase().replace(/[^a-z0-9\s]/g,' ').split(/\s+/).filter(function(w){
+        return w.length>4 && !/which|what|where|when|does|have|will|this|that|with|from|into|across|their|between|each|also|both|only|been|more|most|some|they|than|other/.test(w);
+      });
+    }
+    function overlapScore(a,b){
+      var ta=new Set(bqTokens(a)); var tb=new Set(bqTokens(b));
+      var inter=0; ta.forEach(function(t){if(tb.has(t))inter++;});
+      var smaller=Math.min(ta.size,tb.size);
+      return smaller>0?inter/smaller:0;
+    }
+    var OVERLAP_THRESHOLD=0.55;
+    parsed.bqs.forEach(function(bq,i){
+      bq.overlaps_with=[];
+      parsed.bqs.forEach(function(other,j){
+        if(i>=j) return;
+        if(overlapScore(bq.text,other.text)>=OVERLAP_THRESHOLD){
+          bq.overlaps_with.push(other.id);
+          if(!other.overlaps_with) other.overlaps_with=[];
+          other.overlaps_with.push(bq.id);
+        }
+      });
+    });
+
     return parsed;
 
   }catch(e){
@@ -958,6 +1010,7 @@ async function handleFile(f){
   // Step 1 — read file bytes
   document.getElementById('ps1').className='ps run';
   document.getElementById('pi1').innerHTML='<span class="spin">◌</span>';
+  document.getElementById('parseSub').textContent='Reading document — extracting text from all slides and pages...';
   var extracted=await extractFileText(f);
   document.getElementById('ps1').className='ps done';
   document.getElementById('pi1').textContent='✓';
@@ -965,18 +1018,23 @@ async function handleFile(f){
   // Step 2 — extract proposal structure via API
   document.getElementById('ps2').className='ps run';
   document.getElementById('pi2').innerHTML='<span class="spin">◌</span>';
+  document.getElementById('parseSub').textContent='Analysing proposal — finding all business questions including central strategic question...';
   var extracted_proposal=await extractBQsFromFile(f,extracted);
   document.getElementById('ps2').className='ps done';
   document.getElementById('pi2').textContent=extracted_proposal?'✓':'✗';
 
   if(extracted_proposal){
     S.proposal=extracted_proposal;
-    document.getElementById('parseSub').textContent=extracted_proposal.client+' · '+(extracted_proposal.practice||'FutureBridge');
+    var bqCount=extracted_proposal.bqs.length;
+    var hasCentral=!!extracted_proposal.central_decision;
+    var hasPriority=!!(extracted_proposal.priority_outputs&&extracted_proposal.priority_outputs.length);
+    document.getElementById('parseSub').textContent=extracted_proposal.client+' · '+(extracted_proposal.practice||'FutureBridge')+' · '+bqCount+' BQs extracted';
 
     // Step 3 — scope and context
     await sl(400);
     document.getElementById('ps3').className='ps run';
     document.getElementById('pi3').innerHTML='<span class="spin">◌</span>';
+    document.getElementById('parseSub').textContent='Identifying strategic context — '+(hasCentral?'central question found':'')+(hasPriority?' · '+extracted_proposal.priority_outputs.length+' priority outputs':'')+'...';
     await sl(700);
     document.getElementById('ps3').className='ps done';
     document.getElementById('pi3').textContent='✓';
@@ -985,9 +1043,11 @@ async function handleFile(f){
     await sl(300);
     document.getElementById('ps4').className='ps run';
     document.getElementById('pi4').innerHTML='<span class="spin">◌</span>';
+    document.getElementById('parseSub').textContent='Configuring '+bqCount+' research agents — assigning BQ types, source strategy, priority weights...';
     await sl(500);
     document.getElementById('ps4').className='ps done';
     document.getElementById('pi4').textContent='✓';
+    document.getElementById('parseSub').textContent='Ready — '+bqCount+' BQs configured'+(hasCentral?' · Central question identified':'')+'.';
 
     S.selBQs=S.proposal.bqs.map(function(_,i){return i;});
     await sl(200);
@@ -1021,6 +1081,73 @@ async function handleFile(f){
 
 // ═══ PARSE ANIMATION ═════════════════════════════
 // ═══ REVIEW ══════════════════════════════════════
+// ── RESEARCH VIABILITY RATING ────────────────────────────────────
+// Instant lookup — no API call. Based on bq_type and topic keywords.
+function getViabilityRating(bq) {
+  var type = bq.bq_type || 'general';
+  var text = (bq.text || '').toLowerCase();
+  var cat = bq.bq_category || 'research';
+
+  if(cat === 'synthesis') return {rating:'N/A', color:'#7C3AED', bg:'#FAF5FF', reason:'Synthesis task — runs after research, not a web search operation.', primaryResearch:false, expert:null};
+  if(cat === 'primary_only') return {rating:'Primary only', color:'#0369A1', bg:'#F0F9FF', reason:'This question cannot be answered by web research. Requires direct expert interview or primary data collection.', primaryResearch:true, expert:'Industry expert or company insider with direct knowledge'};
+
+  // Lookup by type
+  var lookup = {
+    regulatory_intelligence: {rating:'Strong', color:'#166534', bg:'#F0FDF4', reason:'Regulations and compliance requirements are public documents. Expect solid findings.', primaryResearch:false},
+    scientific_landscape: {rating:'Strong', color:'#166534', bg:'#F0FDF4', reason:'Academic papers, clinical studies, and scientific reviews are publicly accessible.', primaryResearch:false},
+    ip_patent: {rating:'Strong', color:'#166534', bg:'#F0FDF4', reason:'Patent filings are public records. Full landscape and assignee data accessible.', primaryResearch:false},
+    value_chain_market: {rating:'Strong', color:'#166534', bg:'#F0FDF4', reason:'Player mapping and market structure are well documented in public sources.', primaryResearch:false},
+    competitor_intelligence: {rating:'Partial', color:'#92400E', bg:'#FFFBEB', reason:'Listed companies have good coverage via annual reports and investor materials. Private or regional players may have limited public disclosure.', primaryResearch:true, expert:'Industry analyst or ex-employee of named competitor'},
+    iem_monitoring: {rating:'Partial', color:'#92400E', bg:'#FFFBEB', reason:'Startup and innovation data is patchy — well-funded startups are documented, earlier-stage players may not be. Expect gaps in TRL 1-3 space.', primaryResearch:true, expert:'VC or accelerator with relevant sector focus'},
+    market_sizing: {rating:'Partial', color:'#92400E', bg:'#FFFBEB', reason:'Directional sizing is available from public sources but precise figures require paid market reports. Treat numbers as indicative only.', primaryResearch:true, expert:'Market research specialist or industry association'},
+    supply_entry: {rating:'Partial', color:'#92400E', bg:'#FFFBEB', reason:'Trade flows and import/export data are public. Production capacity and utilisation rates are rarely disclosed.', primaryResearch:true, expert:'Supply chain specialist or trade data provider'},
+    opportunity_assessment: {rating:'Partial', color:'#92400E', bg:'#FFFBEB', reason:'Market attractiveness signals are available but TAM/SAM figures for niche segments often require primary validation.', primaryResearch:true, expert:'Market development or strategy specialist'},
+    innovation_funnel: {rating:'Partial', color:'#92400E', bg:'#FFFBEB', reason:'Commercial solutions and published alternatives are findable. Proprietary formulations and unpublished R&D are not.', primaryResearch:true, expert:'R&D or formulation specialist'},
+    value_chain_pricing: {rating:'Weak', color:'#B91C1C', bg:'#FEF2F2', reason:'Pricing data is commercially sensitive and almost never publicly disclosed. Expect cost structure ratios only — not actual price points.', primaryResearch:true, expert:'Procurement specialist or supplier with direct pricing knowledge'},
+    general: {rating:'Partial', color:'#92400E', bg:'#FFFBEB', reason:'Research viability depends on topic specifics. Check findings carefully for source quality.', primaryResearch:false}
+  };
+
+  var v = lookup[type] || lookup.general;
+
+  // Override to Weak if topic-specific signals suggest low data availability
+  if(v.rating !== 'Weak') {
+    if(/ex.works|ddp price|transfer price|cost breakdown.*exact|exact.*cost|internal.*cost|in.house.*cost/.test(text)) {
+      v = {rating:'Weak', color:'#B91C1C', bg:'#FEF2F2', reason:'Specific pricing or internal cost data is commercially sensitive. Public sources will produce structure only, not actual figures.', primaryResearch:true, expert:'Industry expert with direct pricing knowledge'};
+    }
+    if(/private.*compan|unlisted|family.owned/.test(text)) {
+      v = Object.assign({}, v, {rating:'Partial', reason:v.reason+' Note: private or unlisted company — financial and operational data will be limited.'});
+    }
+  }
+
+  return v;
+}
+
+function renderViabilityPanel(idx) {
+  var bq = S.proposal && S.proposal.bqs[idx];
+  if(!bq) return '';
+  var v = getViabilityRating(bq);
+  if(v.rating === 'N/A') return ''; // synthesis — no viability panel
+
+  return '<div id="vp-'+idx+'" style="display:none;margin-top:8px;background:'+v.bg+';border:.5px solid '+v.color+';border-radius:7px;padding:10px 13px">'+
+    '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">'+
+      '<span style="font-size:9px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:'+v.color+'">Research Viability</span>'+
+      '<span style="font-size:9px;font-weight:700;padding:2px 8px;border-radius:8px;background:'+v.color+';color:#fff">'+v.rating+'</span>'+
+    '</div>'+
+    '<div style="font-size:11px;color:#374151;line-height:1.6;margin-bottom:'+(v.primaryResearch?'8':'0')+'px">'+escH(v.reason)+'</div>'+
+    (v.primaryResearch&&v.expert?'<div style="font-size:10px;font-weight:600;color:'+v.color+'">👤 Primary research recommended — '+escH(v.expert)+'</div>':'')+
+  '</div>'+
+  '<div style="margin-top:5px"><button onclick="toggleViability('+idx+')" style="font-size:9px;color:'+v.color+';background:none;border:none;cursor:pointer;padding:0;font-weight:600" id="vp-btn-'+idx+'">▸ Research viability</button></div>';
+}
+
+function toggleViability(idx) {
+  var panel = document.getElementById('vp-'+idx);
+  var btn = document.getElementById('vp-btn-'+idx);
+  if(!panel) return;
+  var open = panel.style.display === 'block';
+  panel.style.display = open ? 'none' : 'block';
+  if(btn) btn.textContent = (open ? '▸' : '▾') + ' Research viability';
+}
+
 function renderAIPanel(idx){
   return '<div class="ai-panel" id="aip-'+idx+'">' +
     '<div class="ai-panel-hdr" onclick="toggleAIPanel('+idx+')"><span>⚙ Research Focus</span><span id="aip-arr-'+idx+'">▸</span></div>' +
@@ -1318,6 +1445,13 @@ function renderReview(){
   // Priority colour map
   var priColors={critical:{bg:'#A32D2D',txt:'#fff'},high:{bg:'#E85520',txt:'#fff'},medium:{bg:'#FBAE40',txt:'#633806'},low:{bg:'#F2F4F7',txt:'#6B7280'}};
 
+  // Category config
+  var catConfig={
+    research:{border:'',bg:'',label:'',labelBg:'',labelTxt:''},
+    synthesis:{border:'2px solid #7C3AED',bg:'#FAF5FF',label:'⚡ Synthesis task',labelBg:'#7C3AED',labelTxt:'#fff',note:'Runs automatically after research — not a web search task'},
+    primary_only:{border:'2px solid #0369A1',bg:'#F0F9FF',label:'👤 Primary research only',labelBg:'#0369A1',labelTxt:'#fff',note:'Cannot be answered by web search — requires expert interview or primary data'}
+  };
+
   p.modules.forEach(function(mod){
     if(mod.id==='M0') return; // already rendered above
     var bqs=mods[mod.id]||[]; if(!bqs.length)return;
@@ -1327,17 +1461,38 @@ function renderReview(){
       var idx=p.bqs.indexOf(bq);
       var pri=(bq.priority||'medium').toLowerCase();
       var pc=priColors[pri]||priColors.medium;
-      var d=document.createElement('div'); d.className='bq-row'; d.id='bqr-'+idx;
-      d.innerHTML='<div class="chk on" id="chk-'+idx+'" onclick="togBQ('+idx+')">✓</div>'+
+      var cat=bq.bq_category||'research';
+      var cc=catConfig[cat]||catConfig.research;
+      var isSynthOrPrimary=(cat==='synthesis'||cat==='primary_only');
+
+      var d=document.createElement('div');
+      d.className='bq-row'+(isSynthOrPrimary?' excl':'');
+      d.id='bqr-'+idx;
+      if(cc.border) d.style.cssText='border:'+cc.border+';background:'+cc.bg;
+
+      // For synthesis and primary_only — auto-deselect from research run
+      if(isSynthOrPrimary && S.selBQs.indexOf(idx)>=0){
+        S.selBQs=S.selBQs.filter(function(x){return x!==idx;});
+      }
+
+      var chkHtml = isSynthOrPrimary
+        ? '<div class="chk" id="chk-'+idx+'" style="background:#E5E7EB;border-color:#E5E7EB;cursor:default" title="'+cc.note+'">—</div>'
+        : '<div class="chk on" id="chk-'+idx+'" onclick="togBQ('+idx+')">✓</div>';
+
+      d.innerHTML=chkHtml+
         '<div style="flex:1;min-width:0">'+
-        '<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">'+
+        '<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;flex-wrap:wrap">'+
           '<div class="bq-id">'+escH(bq.id)+'</div>'+
           '<span style="font-size:8px;font-weight:700;padding:2px 7px;border-radius:8px;background:'+pc.bg+';color:'+pc.txt+'">'+pri.toUpperCase()+'</span>'+
           (bq.bq_type&&bq.bq_type!=='general'?'<span style="font-size:8px;padding:2px 7px;border-radius:8px;background:#EEEDFE;color:#534AB7">'+escH(bq.bq_type.replace(/_/g,' '))+'</span>':'')+
+          (cc.label?'<span style="font-size:8px;font-weight:700;padding:2px 8px;border-radius:8px;background:'+cc.labelBg+';color:'+cc.labelTxt+'">'+cc.label+'</span>':'')+
+          (bq.overlaps_with&&bq.overlaps_with.length?'<span style="font-size:8px;font-weight:700;padding:2px 8px;border-radius:8px;background:#FEF3C7;color:#92400E" title="High content overlap with '+bq.overlaps_with.join(', ')+'">⚠ Overlaps '+bq.overlaps_with.join(', ')+'</span>':'')+
         '</div>'+
         '<div class="bq-text">'+escH(bq.text)+'</div>'+
+        (cc.note?'<div style="font-size:10px;color:'+( cat==='synthesis'?'#7C3AED':'#0369A1')+';margin-top:4px;font-style:italic">'+cc.note+'</div>':'')+
         '<div class="bq-kws">'+(bq.kw||[]).map(function(k){return'<span class="kw">'+escH(k)+'</span>';}).join('')+'</div>'+
-        renderAIPanel(idx)+'</div>'+
+        (cat==='research'?renderAIPanel(idx)+renderViabilityPanel(idx):'')+
+        '</div>'+
         '<div style="display:flex;flex-direction:column;gap:3px;align-items:flex-end">'+
         (bq.gap?'<span class="gap-pill">Gap likely</span>':'')+
         (bq.source==='inferred'?'<span class="inferred-pill" title="Inferred from proposal structure">⚠ Inferred BQ</span>':'')+
@@ -3739,12 +3894,13 @@ function renderResults(){
     if(gaps.length){
       html+='<div class="bq-gaps">'+
         '<div class="gaps-lbl">🎤 Gaps: Primary Research Required</div>'+
-        '<div style="font-size:11px;color:#92400E;margin-bottom:10px">These gaps cannot be filled by web research. Each requires a targeted expert interview.</div>'+
-        gaps.map(function(g){
+        '<div style="font-size:11px;color:#92400E;margin-bottom:10px">These gaps cannot be filled by web research. Each requires a targeted expert interview. If you already have relevant information, upload it below to partially close the gap.</div>'+
+        gaps.map(function(g,gi){
+          var gapKey=bq.id+'-gap-'+gi;
           var pri=(g.priority||'HIGH').toUpperCase();
           var priBg=pri==='CRITICAL'?'#A32D2D':pri==='HIGH'?'#E85520':'#FBAE40';
           var qs=Array.isArray(g.questions)?g.questions:(g.questions?[g.questions]:[]);
-          return '<div class="gap-card">'+
+          return '<div class="gap-card" id="gc-'+gapKey+'">'+
             '<div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:8px">'+
               '<span class="gap-priority" style="background:'+priBg+';color:#fff;flex-shrink:0">'+escH(pri)+'</span>'+
               '<div class="gap-title">'+escH(g.gap||g.title||'')+'</div>'+
@@ -3764,6 +3920,17 @@ function renderResults(){
               }).join('')+
             '</div>':'')+
             (g.hypothesis?'<div style="font-size:11px;color:#6B7280;font-style:italic;padding-top:6px;border-top:.5px solid #FDE68A">Hypothesis to test: '+escH(g.hypothesis)+'</div>':'')+
+            // Gap-specific upload area
+            '<div style="margin-top:10px;padding-top:10px;border-top:.5px solid #FDE68A">'+
+              '<button onclick="toggleGapUpload(\''+gapKey+'\')" style="font-size:10px;font-weight:600;color:#92400E;background:#FEF3C7;border:.5px solid #FCD34D;border-radius:6px;padding:5px 12px;cursor:pointer">'+
+                '📎 I have information on this gap</button>'+
+              '<div id="gap-upload-'+gapKey+'" style="display:none;margin-top:8px">'+
+                '<div style="font-size:10px;color:#92400E;margin-bottom:6px">Upload a document, transcript, or data file to partially close this gap. The system will re-synthesise this gap using your document.</div>'+
+                '<input type="file" id="gap-file-'+gapKey+'" accept=".pdf,.docx,.pptx,.txt,.md,.csv" style="font-size:11px;margin-bottom:6px">'+
+                '<button onclick="runGapSynthesis(\''+gapKey+'\',\''+bq.id+'\','+gi+')" style="font-size:10px;font-weight:600;color:#fff;background:#92400E;border:none;border-radius:6px;padding:6px 14px;cursor:pointer">Analyse document →</button>'+
+                '<div id="gap-result-'+gapKey+'" style="display:none;margin-top:8px;background:#fff;border:.5px solid #FCD34D;border-radius:6px;padding:10px 12px;font-size:11px;color:#1A2B4A;line-height:1.7"></div>'+
+              '</div>'+
+            '</div>'+
           '</div>';
         }).join('')+
       '</div>';
@@ -4353,9 +4520,74 @@ function reset(){
 
 
 
-// ═══════════════════════════════════════════════════════════════
-// LAYER 2 — CROSS-BQ SYNTHESIS (auto-runs after all BQs complete)
-// ═══════════════════════════════════════════════════════════════
+// ── GAP-SPECIFIC TARGETED RE-SYNTHESIS ──────────────────────────
+function toggleGapUpload(gapKey){
+  var div=document.getElementById('gap-upload-'+gapKey);
+  if(div) div.style.display=div.style.display==='none'?'block':'none';
+}
+
+async function runGapSynthesis(gapKey, bqId, gapIdx){
+  var fileInput=document.getElementById('gap-file-'+gapKey);
+  var resultDiv=document.getElementById('gap-result-'+gapKey);
+  if(!fileInput||!fileInput.files||!fileInput.files[0]){
+    alert('Please select a file first');return;
+  }
+  var file=fileInput.files[0];
+  var p=S.proposal;
+  var bqData=S.bqResults[bqId];
+  var gap=bqData&&bqData.primary_research_gaps&&bqData.primary_research_gaps[gapIdx];
+  if(!gap){alert('Gap data not found');return;}
+
+  resultDiv.style.display='block';
+  resultDiv.innerHTML='<span style="color:#92400E">Reading document and re-analysing gap...</span>';
+
+  try{
+    // Read file as text or base64
+    var fileContent=await new Promise(function(resolve){
+      var reader=new FileReader();
+      var ext=(file.name.split('.').pop()||'').toLowerCase();
+      if(ext==='pdf'){
+        reader.onload=function(e){resolve({type:'pdf',data:e.target.result.split(',')[1]});};
+        reader.readAsDataURL(file);
+      } else {
+        reader.onload=function(e){resolve({type:'text',text:e.target.result});};
+        reader.readAsText(file);
+      }
+    });
+
+    var gapContext='GAP BEING ADDRESSED: '+gap.gap+'\n'+
+      'WHY WEB RESEARCH COULD NOT ANSWER THIS: '+(gap.why_impossible||'Not publicly available')+'\n'+
+      'ORIGINAL HYPOTHESIS: '+(gap.hypothesis||'Not stated')+'\n\n'+
+      'EXISTING BQ SUMMARY: '+(bqData.executive_summary||'').slice(0,300);
+
+    var messages;
+    if(fileContent.type==='pdf'){
+      messages=[{role:'user',content:[
+        {type:'document',source:{type:'base64',media_type:'application/pdf',data:fileContent.data}},
+        {type:'text',text:'You are a senior FutureBridge research analyst.\n\n'+gapContext+'\n\nThe analyst has uploaded a document that may contain information to close this gap.\n\nAnalyse the document and answer:\n1. Does this document contain information relevant to the gap? If yes, what specifically?\n2. What does it tell us about: '+gap.gap+'?\n3. Does it confirm, partially address, or contradict the hypothesis?\n4. What remains unanswered even after reading this document?\n\nBe specific. Quote or paraphrase actual content from the document. If the document does not address the gap, say so directly.'}
+      ]}];
+    } else {
+      messages=[{role:'user',content:'You are a senior FutureBridge research analyst.\n\n'+gapContext+'\n\nDOCUMENT CONTENT:\n'+(fileContent.text||'').slice(0,8000)+'\n\nAnalyse the document and answer:\n1. Does this document contain information relevant to the gap? If yes, what specifically?\n2. What does it tell us about: '+gap.gap+'?\n3. Does it confirm, partially address, or contradict the hypothesis?\n4. What remains unanswered even after reading this document?\n\nBe specific. Quote or paraphrase actual content from the document. If the document does not address the gap, say so directly.'}];
+    }
+
+    var resp=await callAPI({
+      model:'claude-sonnet-4-6',
+      max_tokens:1500,
+      system:'You are a senior FutureBridge research analyst. Analyse the uploaded document against the specific gap. Be concise and specific.',
+      messages:messages
+    });
+
+    var text=(resp.content||[]).filter(function(b){return b.type==='text';}).map(function(b){return b.text;}).join('');
+    resultDiv.innerHTML=
+      '<div style="font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#166534;margin-bottom:6px">📄 Gap analysis from uploaded document</div>'+
+      '<div style="font-size:11px;color:#1A2B4A;line-height:1.7">'+escH(text)+'</div>';
+
+  }catch(err){
+    resultDiv.innerHTML='<span style="color:#B91C1C">Error: '+escH(err.message)+'</span>';
+  }
+}
+
+// ── END GAP SYNTHESIS ────────────────────────────────────────────
 
 function buildVerdictPrompt(p, allBQResults, engType) {
   var client = p.client || 'the client';
