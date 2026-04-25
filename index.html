@@ -592,7 +592,7 @@ input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;h
 <script>
 // ═══ STATE ═══════════════════════════════════════
 // ── PROXY & API KEY ──────────────────────────────────────────
-window.FB_PROXY_URL='';
+window.FB_PROXY_URL='https://fb-proxy-swart.vercel.app/api/proxy';
 var FB_API_KEY='';
 try{FB_API_KEY=localStorage.getItem('fb_api_key')||'';}catch(e){}
 function getApiKey(){try{return(localStorage.getItem('fb_api_key')||'').trim();}catch(e){return FB_API_KEY.trim();}}
