@@ -540,12 +540,22 @@ input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;h
   </div>
   <div class="exec-box"><div class="ex-lbl">Research Brief</div><div class="ex-txt" id="exTxt"></div></div>
   <div class="tabs">
-    <div class="tab active" onclick="showTab('findings',this)">Findings by BQ</div>
+    <div class="tab active" id="tab-verdict" onclick="showTab('verdict',this)">⚡ Intelligence Summary <span id="verdictBadge" style="display:none;font-size:9px;background:#E85520;color:#fff;padding:1px 6px;border-radius:10px;margin-left:4px">new</span></div>
+    <div class="tab" onclick="showTab('findings',this)">Findings by BQ</div>
     <div class="tab" id="tab-sections" onclick="showTab('sections',this)">Section view <span id="secBadge" style="display:none;font-size:9px;background:#534AB7;color:#fff;padding:1px 6px;border-radius:10px;margin-left:4px">new</span></div>
     <div class="tab" onclick="showTab('profiles',this)">Profiles (<span id="pcnt">0</span>)</div>
     <div class="tab" onclick="showTab('sources',this)">Source log (<span id="scnt">0</span>)</div>
   </div>
-  <div class="tab-panel active" id="panel-findings"><div class="bq-acc" id="bqAcc"></div></div>
+  <div class="tab-panel active" id="panel-verdict">
+    <div id="verdictContainer">
+      <div style="text-align:center;padding:60px 20px;color:var(--mgray)">
+        <div style="font-size:40px;margin-bottom:14px">⟳</div>
+        <div style="font-size:13px;font-weight:500;color:var(--dark);margin-bottom:6px">Building Intelligence Summary...</div>
+        <div style="font-size:12px;color:var(--mgray)">This runs automatically after research completes</div>
+      </div>
+    </div>
+  </div>
+  <div class="tab-panel" id="panel-findings"><div class="bq-acc" id="bqAcc"></div></div>
   <div class="tab-panel" id="panel-sections"><div id="sectionsContainer"><div style="text-align:center;padding:40px 20px;color:var(--mgray)"><div style="font-size:32px;margin-bottom:12px">⚡</div><div style="font-size:13px;font-weight:500;color:var(--dark);margin-bottom:6px">Section view not yet generated</div><div style="font-size:12px;color:var(--mgray)">Complete BQ research first, then click the Synthesise button above</div></div></div></div>
   <div class="tab-panel" id="panel-profiles"><div class="profiles-grid" id="profilesGrid"></div></div>
   <div class="tab-panel" id="panel-sources">
@@ -582,7 +592,7 @@ input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;h
 <script>
 // ═══ STATE ═══════════════════════════════════════
 // ── PROXY & API KEY ──────────────────────────────────────────
-window.FB_PROXY_URL='https://fb-proxy-swart.vercel.app/api/proxy';
+window.FB_PROXY_URL='';
 var FB_API_KEY='';
 try{FB_API_KEY=localStorage.getItem('fb_api_key')||'';}catch(e){}
 function getApiKey(){try{return(localStorage.getItem('fb_api_key')||'').trim();}catch(e){return FB_API_KEY.trim();}}
@@ -1490,6 +1500,9 @@ function buildSynthesisResearchPrompt(bq, p, plan, allResearch, client, analystI
     '  "executive_summary": "3-4 sentences. Named companies + specific numbers + implication for '+client+'.",',
     '  "engagement_type": "'+engType+'",',
     '  "stats": [{"value":"","label":"","confidence":"web-verified|estimated|paid-source|primary-required","source_name":"","source_url":""}],',
+    '  "profiles": [{"name":"","hq":"","founded":null,"type":"competitor|startup|supplier","role":"","geography":"","key_product":"","key_fact":"","client_relevance":"","source_url":""}],',
+    '  "disruption_signals": [{"signal":"","company":"","date":"","type":"","client_implication":""}],',
+    '  "client_decision_frame": {"option_a":"","option_b":"","key_condition":""},',
     '  "findings": [',
     '    {',
     '      "evidence_id": "E001",',
@@ -1507,10 +1520,7 @@ function buildSynthesisResearchPrompt(bq, p, plan, allResearch, client, analystI
     '      "trl_label": null,',
     '      "assessment": null',
     '    }',
-    '  ],',
-    '  "disruption_signals": [{"signal":"","company":"","date":"","type":"","client_implication":""}],',
-    '  "client_decision_frame": {"option_a":"","option_b":"","key_condition":""},',
-    '  "profiles": [{"name":"","hq":"","founded":null,"type":"competitor|startup|supplier","role":"","geography":"","key_product":"","key_fact":"","client_relevance":"","source_url":""}]',
+    '  ]',
     (analystInput&&analystInput.scientific ? ',  "specialist_scientific": {"state_of_evidence":"","strongest_findings":[{"what":"","study_type":"","year":"","replicated":false}],"contested":"","regulatory_acceptance":"","recency_signal":"","evidence_gaps":""}' : ''),
     (analystInput&&analystInput.patent ? ',  "specialist_patent": {"top_assignees":[{"name":"","filing_volume":"","strategic_posture":"","key_claim_area":""}],"technology_evolution":"","whitespace":["specific area with no meaningful IP"],"recent_signals":[{"assignee":"","filing_date":"","technology":"","significance":""}],"fto_flags":[{"concern":"","assignee":"","patent_ref":"","expiry":""}],"geography_gaps":""}' : ''),
     (analystInput&&analystInput.regulatory ? ',  "specialist_regulatory": {"status_by_jurisdiction":[{"jurisdiction":"","status":"approved|permitted|restricted|under review|no data","detail":"","authority":"","year":""}],"critical_thresholds":[{"parameter":"","value":"","regulation":"","jurisdiction":""}],"trajectory":"","jurisdiction_divergence":"","compliance_pathway":"","regulatory_gaps":""}' : ''),
@@ -1651,6 +1661,12 @@ function buildResearchPrompt(bq, p, plan) {
     '  "executive_summary": "3-4 sentences, named companies + numbers + client implication",',
     '  "engagement_type": "'+engType+'",',
     '  "stats": [{"value":"","label":"","confidence":"","source_name":"","source_url":""}],',
+    '  "profiles": [{"name":"","hq":"","founded":null,"type":"competitor|startup|supplier","role":"","geography":"","key_product":"","key_fact":"","client_relevance":"","source_url":""}],',
+    '  "disruption_signals": [{"signal":"","company":"","date":"","type":"","client_implication":""}],',
+    '  "client_decision_frame": {"option_a":"","option_b":"","key_condition":""},',
+    '  "paid_source_flags": [{"source":"","what_it_unlocks":"","why_needed":"","priority":""}],',
+    '  "primary_research_gaps": [{"gap":"","why_impossible":"","expert_profile":"","questions":[],"hypothesis":"","priority":"high|medium|low"}],',
+    '  "creative_angles": [{"angle_title":"","parallel_industry":"","insight":"","why_relevant_to_client":""}],',
     '  "findings": [',
     '    {',
     '      "evidence_id": "E001",',
@@ -1665,13 +1681,7 @@ function buildResearchPrompt(bq, p, plan) {
     '      "source_name": "publication or company name",',
     '      "source_url": "https://..."',
     '    }',
-    '  ],',
-    '  "disruption_signals": [{"signal":"","company":"","date":"","type":"","client_implication":""}],',
-    '  "client_decision_frame": {"option_a":"","option_b":"","key_condition":""},',
-    '  "paid_source_flags": [{"source":"","what_it_unlocks":"","why_needed":"","priority":""}],',
-    '  "primary_research_gaps": [{"gap":"","why_impossible":"","expert_profile":"","questions":[],"hypothesis":"","priority":"high|medium|low"}],',
-    '  "creative_angles": [{"angle_title":"","parallel_industry":"","insight":"","why_relevant_to_client":""}],',
-    '  "profiles": [{"name":"","hq":"","founded":null,"type":"competitor|startup|supplier","role":"","geography":"","key_product":"","key_fact":"","client_relevance":"","source_url":""}]',
+    '  ]',
     '}',
     '',
     'RULES:',
@@ -2109,7 +2119,7 @@ async function researchBQ(bq, p, onLog, analystInput){
 
     var planData=await callAPI({
       model:'claude-sonnet-4-6',
-      max_tokens:1800,
+      max_tokens:3000,
       messages:[{role:'user',content:planPrompt+specialistBlock+getContextBlock()}]
     }, onLog);
 
@@ -2179,11 +2189,24 @@ async function researchBQ(bq, p, onLog, analystInput){
       plan.direct_urls.forEach(function(u){pass2Urls.push(u);});
     }
 
-    // Deduplicate
+    // Deduplicate URLs
     pass2Urls=[...new Set(pass2Urls)];
 
+    // Domain-level deduplication — max 2 URLs per domain, 4 for document-rich exceptions
+    var domainHits={};
+    var DOMAIN_CAP=2;
+    var DOMAIN_CAP_EXCEPTIONS=['eur-lex.europa.eu','sciencedirect.com','patents.google.com','espacenet.com','worldwide.espacenet.com','mnre.gov.in','pib.gov.in','bse.com','nseindia.com','sec.gov','epa.gov','echa.europa.eu','pubmed.ncbi.nlm.nih.gov'];
+    pass2Urls=pass2Urls.filter(function(url){
+      var domain=url.replace(/^https?:\/\//,'').split('/')[0].replace(/^www\./,'');
+      var cap=DOMAIN_CAP_EXCEPTIONS.some(function(d){return domain.includes(d);})?4:DOMAIN_CAP;
+      domainHits[domain]=(domainHits[domain]||0);
+      if(domainHits[domain]>=cap) return false;
+      domainHits[domain]++;
+      return true;
+    });
+
     // BLOCKED domains — never fetch these
-    var BLOCKED=/reddit\.com|wikipedia\.org|quora\.com|twitter\.com|x\.com|facebook\.com|instagram\.com|linkedin\.com|youtube\.com|medium\.com|substack\.com|yahoo\.com|msn\.com|flipboard|marketsandmarkets|grandviewresearch|mordorintelligence|alliedmarketresearch|persistencemarketresearch|futuremarketinsights|technavio\.com|imarcgroup|transparencymarketresearch|verifiedmarketresearch|prnewswire|businesswire|globenewswire|einpresswire|slideshare|researchgate\.net|stackoverflow|quora|glassdoor|trustpilot|g2\.com/i;
+    var BLOCKED=/reddit\.com|wikipedia\.org|quora\.com|twitter\.com|x\.com|facebook\.com|instagram\.com|linkedin\.com|youtube\.com|medium\.com|substack\.com|yahoo\.com|msn\.com|flipboard|marketsandmarkets|grandviewresearch|mordorintelligence|alliedmarketresearch|persistencemarketresearch|futuremarketinsights|technavio\.com|imarcgroup|transparencymarketresearch|verifiedmarketresearch|prnewswire|businesswire|globenewswire|einpresswire|slideshare|researchgate\.net|stackoverflow|quora|glassdoor|trustpilot|g2\.com|valuates\.com|researchandmarkets\.com|cognitivemarketresearch|globalgrowthinsights|intelmarketresearch|reanin\.com|arizton\.com|hdinresearch|marketgrowthreports|industryresearch\.biz|wiseguyreports|dirmarketresearch|indiamart\.com|tradeindia\.com|alibaba\.com|ainvest\.com|share\.market|expo21xx|konexionetwork|bizdevelopmentnews|screener\.in|pitchbook\.com|crunchbase\.com|owler\.com|zoominfo\.com|dnb\.com|statista\.com\/outlook|businessresearchinsights|kingpinresearch|360researchreports|custommarketinsights|coherentmarketinsights|polarimarketresearch|straitsresearch|precedenceresearch|skyquestt\.com/i;
 
     // HIGH-VALUE domains — always fetch these in full
     var HIGH_VALUE=/annual.report|investor|investors\.|ir\.|financials|results|earnings|report|filing|publication|data|database|statistics|regulatory|authority|patent|espacenet|patents\.google|ppubs\.uspto|gov\.|europa\.eu|oecd\.org|worldbank\.org|trademap\.org|comtrade|imf\.org|who\.int|fda\.gov|echa\.europa|epa\.gov|bse\.com|nseindia|sec\.gov|companieshouse\.gov|edgaronline|bundesanzeiger|eur-lex|bis\.org|schaeffler|skf\.com|timken|ntn-|nsk\.com|bharat.forge|rolex.rings|basf\.com|dow\.com|evonik|lanxess|solvay|henkel\.com|beiersdorf|ashland|clariant|dsm\.com|evonik|covestro|wacker|arkema|loreal|unilever|procter|colgate|reckitt|suzlon|inox.wind|siemens-gamesa|vestas|nordex|enercon|goldwind|miba\.at|tata.steel|sail\.co|jsw|hindalco|omya|imerys|mineral.technologies|cabot|croda/i;
@@ -2433,7 +2456,7 @@ async function runResearch(){
       continue;
     }
 
-    allResults[i]={bq:bq.id,data:r.result};
+    allResults[i]={bq:bq.id,data:postProcessResult(r.result)};
     allSources=allSources.concat(r.sources);
     document.getElementById('progFill').style.width=Math.round((i+1)/sel.length*100)+'%';
     card.className='agent-card done';
@@ -2468,6 +2491,42 @@ async function runResearch(){
   });
   S.allSources=allSources;
 
+  // ── POST-PROCESSING: fix number spacing and filter low-confidence stats ──
+  function fixNumberSpacing(text){
+    if(!text) return text;
+    // Fix "5. 24" → "5.24", "6. 4%" → "6.4%"
+    return text.replace(/(\d)\.\s+(\d)/g,'$1.$2');
+  }
+
+  // Apply number spacing fix to all text fields in result
+  function postProcessResult(r){
+    if(!r) return r;
+    if(r.executive_summary) r.executive_summary=fixNumberSpacing(r.executive_summary);
+    // Fix 7 — Stats confidence gate: move non-web-verified stats to paid_source_flags
+    if(r.stats&&r.stats.length){
+      var cleanStats=[];
+      r.paid_source_flags=r.paid_source_flags||[];
+      r.stats.forEach(function(s){
+        if(!s.confidence||s.confidence==='web-verified'){
+          cleanStats.push(s);
+        } else if(s.confidence==='estimated'&&s.source_name&&!/(technavio|valuates|researchandmarkets|imarcgroup|mordor|grandview|alliedmarket|intelmarket|cognitivemarkt|globalgrowth|reanin|arizton|hdinresearch|marketgrowthreports|wiseguyreports)/i.test(s.source_name)){
+          // Keep estimated stats from non-aggregator sources
+          cleanStats.push(s);
+        } else {
+          // Move aggregator stats to paid source flags
+          r.paid_source_flags.push({
+            source:s.source_name||'Market aggregator',
+            what_it_unlocks:'Validated figure for: '+s.label,
+            why_needed:'Stat from aggregator source requires primary validation — figure is: '+s.value,
+            priority:'HIGH'
+          });
+        }
+      });
+      r.stats=cleanStats;
+    }
+    return r;
+  }
+
   // Build exec summary from BQ summaries
   var parts=allResults.filter(Boolean).map(function(r){
     var s=r.data.executive_summary||r.data.summary||'';
@@ -2478,7 +2537,7 @@ async function runResearch(){
   console.log('Summary parts count:', parts.length, 'parts:', parts.map(function(p){return p.slice(0,50);}));
   // Use full executive summaries joined, not just 2 sentences each
   var fullParts=allResults.filter(Boolean).map(function(r){
-    return r.data.executive_summary||r.data.summary||'';
+    return fixNumberSpacing(r.data.executive_summary||r.data.summary||'');
   }).filter(Boolean);
   S.summary=fullParts.length
     ? fullParts[0] + (fullParts.length>1 ? ' ' + fullParts.slice(1).map(function(s){var m=s.match(/[^.!?]+[.!?]+/);return m?m[0]:'';}).filter(Boolean).join(' ') : '')
@@ -2487,10 +2546,28 @@ async function runResearch(){
   // Store detected engagement type from first successful result
   var firstResult = allResults.find(function(r){return r&&r.data&&r.data.engagement_type;});
   S.detectedEngType = (firstResult&&firstResult.data.engagement_type) || detectEngagementType(p, sel[0]||{});
-  // Show the new badge on section tab
   var badge = document.getElementById('secBadge');
   if(badge) badge.style.display='inline';
   goTo(5); renderResults();
+
+  // AUTO-RUN CROSS-BQ SYNTHESIS after BQs complete
+  try {
+    var subEl = document.getElementById('runSub');
+    // Update header to show synthesis running
+    var synthNotice = document.createElement('div');
+    synthNotice.id = 'autoSynthNotice';
+    synthNotice.style.cssText = 'background:#EEEDFE;border:.5px solid #7F77DD;border-radius:8px;padding:12px 16px;margin:12px 0;display:flex;align-items:center;gap:10px;font-size:12px;color:#534AB7';
+    synthNotice.innerHTML = '<span style="animation:spin .8s linear infinite;display:inline-block;font-size:16px">⟳</span> <span>Building Intelligence Summary — synthesising all research into decision-ready view...</span>';
+    var fc = document.getElementById('findingsContainer');
+    if(fc) fc.insertBefore(synthNotice, fc.firstChild);
+    await runCrossBQSynthesis(p, allResults, S.detectedEngType);
+    var n = document.getElementById('autoSynthNotice');
+    if(n) n.remove();
+  } catch(synthErr) {
+    console.warn('Auto-synthesis failed:', synthErr.message);
+    var n = document.getElementById('autoSynthNotice');
+    if(n) n.remove();
+  }
 }
 
 function showApiError(bqId, msg){
@@ -3752,6 +3829,8 @@ function showTab(n,el){
   document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('active');});
   document.getElementById('panel-'+n).classList.add('active');
   el.classList.add('active');
+  // Hide verdict badge when user clicks on it
+  if(n==='verdict'){var vb=document.getElementById('verdictBadge');if(vb)vb.style.display='none';}
 }
 function toggleMore(gk){var p=document.getElementById('more-'+gk);p.classList.toggle('open');if(p.classList.contains('open'))document.getElementById('moreq-'+gk).focus();}
 
@@ -4149,7 +4228,491 @@ function reset(){
 
 
 // ═══════════════════════════════════════════════════════════════
-// PASS 2 — SECTION SYNTHESIS
+// LAYER 2 — CROSS-BQ SYNTHESIS (auto-runs after all BQs complete)
+// ═══════════════════════════════════════════════════════════════
+
+function buildVerdictPrompt(p, allBQResults, engType) {
+  var client = p.client || 'the client';
+
+  // Compact summary of all BQ evidence
+  var evidenceSummary = allBQResults.map(function(r) {
+    if (!r || !r.data) return '';
+    var d = r.data;
+    var lines = ['=== ' + (r.bq||'') + ': ' + (r.bqText||'').slice(0,100) + ' ==='];
+    if (d.executive_summary) lines.push(d.executive_summary.slice(0,250));
+    (d.findings||[]).slice(0,5).forEach(function(f) {
+      lines.push('• ['+( f.evidence_type||'FINDING')+'] ' + (f.headline||'') + (f.geo?' ['+f.geo+']':''));
+    });
+    (d.stats||[]).slice(0,3).forEach(function(s) {
+      lines.push('★ ' + s.value + ' — ' + s.label + ' ['+( s.confidence||'')+']');
+    });
+    (d.primary_research_gaps||[]).slice(0,2).forEach(function(g) {
+      lines.push('GAP: ' + g.gap + ' [' + (g.priority||'medium') + ']');
+    });
+    if (d.client_decision_frame && d.client_decision_frame.option_a) {
+      lines.push('DECISION: ' + d.client_decision_frame.option_a + ' vs ' + (d.client_decision_frame.option_b||''));
+    }
+    return lines.join('\n');
+  }).filter(Boolean).join('\n\n');
+
+  // Engagement-type specific visualisation schema
+  var visSchema = {
+    value_chain_pricing: '"value_chain_nodes": [{"node":"node name","order":1,"key_players_global":[],"key_players_client_geography":[],"cost_share_pct":"XX-XX%","control_type":"integrated|outsourced|commodity","entry_barrier":"High|Medium|Low","client_position":"present|buyer|not present|opportunity","strategic_note":"one sentence specific to '+client+'"}]',
+    value_chain_market: '"value_chain_nodes": [{"node":"node name","order":1,"key_players_global":[],"key_players_client_geography":[],"cost_share_pct":"XX-XX%","control_type":"integrated|outsourced|commodity","entry_barrier":"High|Medium|Low","client_position":"present|buyer|not present|opportunity","strategic_note":"one sentence"}]',
+    iem_monitoring: '"technology_signals": [{"signal":"technology name","trl":5,"trl_label":"Piloting","verdict":"Act Now|Monitor|Watch|Ignore","key_players":[],"client_relevance":"High|Medium|Low","horizon":"H1 (0-2yr)|H2 (2-5yr)|H3 (5yr+)","rationale":"one sentence"}]',
+    competitor_intelligence: '"competitive_positioning": [{"competitor":"name","dimension_1_label":"relevant axis e.g. India presence","dimension_1_score":7,"dimension_2_label":"relevant axis e.g. technology depth","dimension_2_score":5,"strategic_intent":"one sentence","threat_level":"High|Medium|Low","recent_move":"most significant 2024-2025 move"}]',
+    opportunity_assessment: '"market_segments": [{"segment":"segment name","attractiveness":"High|Medium|Low","ease_of_entry":"High|Medium|Low","size_indication":"value or range","cagr":"percentage","recommended":true,"rationale":"one sentence specific to '+client+'"}]',
+    market_sizing: '"market_segments": [{"segment":"segment name","attractiveness":"High|Medium|Low","ease_of_entry":"High|Medium|Low","size_indication":"value or range","cagr":"percentage","recommended":true,"rationale":"one sentence"}]',
+    ip_patent: '"ip_landscape": [{"technology_area":"area name","patent_density":"High|Medium|Low","key_assignees":[],"whitespace":true,"fto_risk":"High|Medium|Low","client_opportunity":"one sentence"}]',
+    regulatory_intelligence: '"regulatory_matrix": [{"jurisdiction":"country or region","status":"Compliant|Action required|Unknown|Exempt","key_regulation":"name","deadline":"date or timeline","urgency":"Critical|High|Medium|Low","action_for_client":"one sentence"}]',
+    scientific_landscape: '"evidence_pyramid": [{"claim":"health or performance claim","evidence_level":"RCT|Observational|In-vitro|Pre-clinical","strength":"Strong|Moderate|Weak","commercial_status":"Deployed|Emerging|Concept","client_opportunity":"one sentence"}]',
+    general: '"opportunity_areas": [{"area":"opportunity name","attractiveness":"High|Medium|Low","timing":"Now|Near|Later","rationale":"one sentence"}]'
+  };
+  var visField = visSchema[engType] || visSchema.general;
+
+  return [
+    'You are a senior FutureBridge engagement director presenting final research findings to ' + client + ' leadership.',
+    '',
+    'CLIENT: ' + client + '  |  ENGAGEMENT: ' + (p.title||'') + '  |  TYPE: ' + engType.replace(/_/g,' ').toUpperCase(),
+    'GEOGRAPHY: ' + (p.geography||'') + '  |  PERIOD: ' + (p.period||''),
+    '',
+    '── ALL RESEARCH EVIDENCE ────────────────────────────────',
+    evidenceSummary,
+    '',
+    '── YOUR TASK ────────────────────────────────────────────',
+    'You are NOT summarising the research. You are delivering a verdict.',
+    'Think like a senior partner who has read everything and must tell ' + client + ' what to do.',
+    '',
+    'Respond ONLY with valid JSON — no markdown, no text before or after:',
+    '{',
+    '  "strategic_verdict": {',
+    '    "headline": "One sentence — the direct answer to what ' + client + ' should do or decide. Take a position. No hedging.",',
+    '    "verdict": "Proceed|Proceed with conditions|Caution|Do not proceed|Investigate further",',
+    '    "confidence": "High|Medium|Low",',
+    '    "rationale": "2-3 sentences. Why this verdict — specific evidence, specific companies, specific numbers. Not generic.",',
+    '    "time_sensitivity": "Immediate (act now)|Near-term (3-12 months)|Medium-term (1-3 years)|Long-term",',
+    '    "time_rationale": "One sentence — why this timing matters. What closes the window or creates urgency."',
+    '  },',
+    '  "key_findings_for_decision": [',
+    '    {',
+    '      "finding": "Specific finding — named company, number, trend",',
+    '      "supports_or_challenges": "Supports verdict|Challenges verdict|Context",',
+    '      "weight": "Critical|Important|Informational",',
+    '      "source_bq": "BQ ID"',
+    '    }',
+    '  ],',
+    '  "strategic_options": [',
+    '    {',
+    '      "option": "Option label — short",',
+    '      "description": "What this means in practice for ' + client + '",',
+    '      "timing": "Now|Near (3-12m)|Medium (1-3yr)",',
+    '      "upside": "Specific benefit",',
+    '      "risk": "Specific risk or condition that must be true",',
+    '      "recommended": true',
+    '    }',
+    '  ],',
+    '  "critical_gaps": [',
+    '    {',
+    '      "gap": "What is unknown",',
+    '      "decision_impact": "How this gap affects the verdict — what changes if answer is X vs Y",',
+    '      "expert_type": "Who can answer this",',
+    '      "priority": "Critical|Important|Nice to have",',
+    '      "questions": ["Q1", "Q2", "Q3"]',
+    '    }',
+    '  ],',
+    '  "visualisation_data": {',
+    '    ' + visField,
+    '  }',
+    '}',
+    '',
+    'RULES:',
+    '  - strategic_verdict.headline: one sentence, take a clear position. "' + client + ' should X because Y" format.',
+    '  - key_findings_for_decision: 4-6 entries. Only findings that directly affect the decision.',
+    '  - strategic_options: 2-3 options maximum. recommended:true on only one.',
+    '  - critical_gaps: 2-4 entries only. Prioritised. questions must be specific and expert-ready.',
+    '  - visualisation_data: populate with specific named data from the research. Min 3 items per array.',
+    '  - Every field must contain real extracted data — not placeholders.',
+    '  - APOSTROPHES: escape with backslash. No trailing commas. Double quotes only.',
+  ].join('\n');
+}
+
+async function runCrossBQSynthesis(p, allResults, engType) {
+  var sel = S.selBQs.map(function(i){ return p.bqs[i]; });
+  var allBQResults = allResults.filter(Boolean).map(function(r, i) {
+    var bq = sel[i] || {};
+    var d = normaliseResult(r.data);
+    if (!d) return null;
+    return { bq: r.bq, bqText: bq.text||'', data: d };
+  }).filter(Boolean);
+
+  if (allBQResults.length === 0) return;
+
+  var verdictPrompt = buildVerdictPrompt(p, allBQResults, engType);
+
+  var resp = await callAPI({
+    model: 'claude-sonnet-4-6',
+    max_tokens: 6000,
+    system: 'You are a senior FutureBridge engagement director. Deliver a strategic verdict. Respond ONLY with valid JSON. Escape apostrophes with backslash.',
+    messages: [{ role: 'user', content: verdictPrompt }]
+  });
+
+  var text = (resp.content||[]).filter(function(b){return b.type==='text';}).map(function(b){return b.text;}).join('');
+  var verdict = parseSynthesis(text);
+  if (!verdict) { console.warn('Cross-BQ verdict parse failed'); return; }
+
+  S.verdict = verdict;
+
+  // Also run the existing section synthesis
+  var synthPrompt = buildSynthesisPrompt(p, allBQResults, engType);
+  var synthResp = await callAPI({
+    model: 'claude-sonnet-4-6',
+    max_tokens: 10000,
+    system: 'You are a senior FutureBridge consultant. Synthesise research into structured deliverable sections. Respond ONLY with valid JSON. Escape apostrophes with backslash. Be concise.',
+    messages: [{ role: 'user', content: synthPrompt }]
+  });
+
+  var synthText = (synthResp.content||[]).filter(function(b){return b.type==='text';}).map(function(b){return b.text;}).join('');
+  var synthParsed = parseSynthesis(synthText);
+  if (synthParsed) {
+    S.synthesis = synthParsed;
+  }
+
+  // Render both
+  renderVerdictView(verdict);
+  if (synthParsed) renderSectionView(synthParsed);
+  renderResults(); // Refresh exec box with key_insight
+
+  // Show verdict badge
+  var vBadge = document.getElementById('verdictBadge');
+  var secBadge = document.getElementById('secBadge');
+  if (vBadge) vBadge.style.display='inline';
+  if (secBadge) secBadge.style.display='inline';
+
+  // Switch to Verdict tab automatically
+  document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('active');});
+  document.querySelectorAll('.tab-panel').forEach(function(tp){tp.classList.remove('active');});
+  var vTab = document.getElementById('tab-verdict');
+  var vPanel = document.getElementById('panel-verdict');
+  if (vTab) { vTab.classList.add('active'); if(vBadge) vBadge.style.display='none'; }
+  if (vPanel) vPanel.classList.add('active');
+
+  // Update button state
+  var btn = document.getElementById('synthBtn');
+  var statusEl = document.getElementById('synthStatus');
+  if (btn) { btn.disabled = false; btn.textContent = '⟳ Re-synthesise'; }
+  if (statusEl) statusEl.textContent = 'Intelligence Summary complete';
+}
+
+function renderVerdictView(verdict) {
+  var container = document.getElementById('verdictContainer');
+  if (!container) return;
+  container.innerHTML = '';
+  if (!verdict) return;
+
+  var p = S.proposal || {};
+  var client = p.client || 'the client';
+  var sv = verdict.strategic_verdict || {};
+  var findings = verdict.key_findings_for_decision || [];
+  var options = verdict.strategic_options || [];
+  var gaps = verdict.critical_gaps || [];
+  var vis = verdict.visualisation_data || {};
+  var engType = S.detectedEngType || 'general';
+
+  // Verdict colours
+  var vColors = {
+    'Proceed': {bg:'#052e16', accent:'#22c55e', badge:'#dcfce7', badgeTxt:'#15803d'},
+    'Proceed with conditions': {bg:'#422006', accent:'#f59e0b', badge:'#fef3c7', badgeTxt:'#92400e'},
+    'Caution': {bg:'#7c2d12', accent:'#f97316', badge:'#ffedd5', badgeTxt:'#9a3412'},
+    'Do not proceed': {bg:'#450a0a', accent:'#ef4444', badge:'#fee2e2', badgeTxt:'#b91c1c'},
+    'Investigate further': {bg:'#1e1b4b', accent:'#818cf8', badge:'#e0e7ff', badgeTxt:'#3730a3'}
+  };
+  var vc = vColors[sv.verdict] || {bg:'#1A2B4A', accent:'#E85520', badge:'#FFF5F2', badgeTxt:'#C94410'};
+  var confColors = {High:'#22c55e', Medium:'#f59e0b', Low:'#ef4444'};
+  var confColor = confColors[sv.confidence] || '#9CA3AF';
+
+  // ── SECTION 1: STRATEGIC VERDICT ─────────────────────────────
+  var verdictEl = document.createElement('div');
+  verdictEl.style.cssText = 'background:'+vc.bg+';border-radius:12px;padding:24px 28px;margin-bottom:16px';
+  verdictEl.innerHTML =
+    '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:14px;flex-wrap:wrap">' +
+      '<div>' +
+        '<div style="font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:'+vc.accent+';margin-bottom:8px">Strategic Verdict — ' + escH(client) + '</div>' +
+        '<div style="font-size:20px;font-weight:700;color:#fff;line-height:1.35;max-width:680px">' + escH(sv.headline||'') + '</div>' +
+      '</div>' +
+      '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0">' +
+        '<span style="font-size:11px;font-weight:700;padding:5px 14px;border-radius:20px;background:'+vc.badge+';color:'+vc.badgeTxt+'">' + escH(sv.verdict||'') + '</span>' +
+        '<span style="font-size:10px;font-weight:600;padding:3px 10px;border-radius:20px;background:rgba(255,255,255,.1);color:'+confColor+'">Confidence: ' + escH(sv.confidence||'') + '</span>' +
+      '</div>' +
+    '</div>' +
+    (sv.rationale ? '<div style="font-size:13px;color:rgba(255,255,255,.85);line-height:1.75;margin-bottom:14px;padding-bottom:14px;border-bottom:1px solid rgba(255,255,255,.1)">' + escH(sv.rationale) + '</div>' : '') +
+    (sv.time_sensitivity ? '<div style="display:flex;align-items:center;gap:10px">' +
+      '<span style="font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:'+vc.accent+'">Timing</span>' +
+      '<span style="font-size:11px;font-weight:600;color:rgba(255,255,255,.9)">'+escH(sv.time_sensitivity)+'</span>' +
+      (sv.time_rationale?'<span style="font-size:11px;color:rgba(255,255,255,.55)">— '+escH(sv.time_rationale)+'</span>':'') +
+    '</div>' : '');
+  container.appendChild(verdictEl);
+
+  // ── SECTION 2: ENGAGEMENT VISUALISATION ─────────────────────
+  var visHtml = renderEngagementVisualisation(vis, engType, client, p);
+  if (visHtml) {
+    var visEl = document.createElement('div');
+    visEl.style.cssText = 'margin-bottom:16px';
+    visEl.innerHTML = visHtml;
+    container.appendChild(visEl);
+  }
+
+  // ── SECTION 3: KEY FINDINGS FOR DECISION ─────────────────────
+  if (findings.length) {
+    var findEl = document.createElement('div');
+    findEl.style.cssText = 'background:#fff;border:.5px solid #DBDBDD;border-radius:12px;overflow:hidden;margin-bottom:16px';
+    var findHd = '<div style="padding:12px 18px;background:#1A2B4A;display:flex;align-items:center;justify-content:space-between">' +
+      '<div style="font-size:13px;font-weight:700;color:#fff">Key Findings for Decision</div>' +
+      '<div style="font-size:10px;color:#6B7280">' + findings.length + ' findings assessed</div>' +
+    '</div>';
+    var findBody = findings.map(function(f) {
+      var wBg = f.weight==='Critical'?'#fee2e2':f.weight==='Important'?'#fef3c7':'#f3f4f6';
+      var wTx = f.weight==='Critical'?'#b91c1c':f.weight==='Important'?'#92400e':'#6b7280';
+      var sBg = f.supports_or_challenges==='Supports verdict'?'#dcfce7':f.supports_or_challenges==='Challenges verdict'?'#fee2e2':'#f3f4f6';
+      var sTx = f.supports_or_challenges==='Supports verdict'?'#15803d':f.supports_or_challenges==='Challenges verdict'?'#b91c1c':'#6b7280';
+      return '<div style="padding:12px 18px;border-bottom:.5px solid #F2F4F7;display:flex;gap:12px;align-items:flex-start">' +
+        '<div style="flex:1">' +
+          '<div style="font-size:12px;font-weight:600;color:#1A2B4A;margin-bottom:5px;line-height:1.4">'+escH(f.finding||'')+'</div>' +
+          '<div style="display:flex;gap:6px;flex-wrap:wrap">' +
+            '<span style="font-size:9px;font-weight:700;padding:2px 8px;border-radius:8px;background:'+wBg+';color:'+wTx+'">'+escH(f.weight||'')+'</span>' +
+            '<span style="font-size:9px;font-weight:600;padding:2px 8px;border-radius:8px;background:'+sBg+';color:'+sTx+'">'+escH(f.supports_or_challenges||'')+'</span>' +
+            (f.source_bq?'<span style="font-size:9px;color:#9CA3AF;font-family:monospace">'+escH(f.source_bq)+'</span>':'') +
+          '</div>' +
+        '</div>' +
+      '</div>';
+    }).join('');
+    findEl.innerHTML = findHd + '<div>' + findBody + '</div>';
+    container.appendChild(findEl);
+  }
+
+  // ── SECTION 4: STRATEGIC OPTIONS ─────────────────────────────
+  if (options.length) {
+    var optEl = document.createElement('div');
+    optEl.style.cssText = 'margin-bottom:16px';
+    optEl.innerHTML = '<div style="font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#6B7280;margin-bottom:10px">Strategic Options</div>';
+    var optGrid = document.createElement('div');
+    optGrid.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:10px';
+    options.forEach(function(opt) {
+      var isRec = opt.recommended;
+      var card = document.createElement('div');
+      card.style.cssText = 'background:#fff;border:'+(isRec?'2px solid #E85520':'.5px solid #DBDBDD')+';border-radius:10px;padding:16px 18px;position:relative';
+      card.innerHTML =
+        (isRec?'<div style="position:absolute;top:-1px;right:12px;background:#E85520;color:#fff;font-size:9px;font-weight:700;padding:2px 10px;border-radius:0 0 6px 6px;letter-spacing:.5px">RECOMMENDED</div>':'') +
+        '<div style="font-size:13px;font-weight:700;color:#1A2B4A;margin-bottom:6px;margin-top:'+(isRec?'8':'0')+'px">'+escH(opt.option||'')+'</div>' +
+        (opt.timing?'<span style="font-size:9px;font-weight:600;padding:2px 8px;border-radius:8px;background:#F2F4F7;color:#4B607A;display:inline-block;margin-bottom:8px">'+escH(opt.timing)+'</span>':'') +
+        (opt.description?'<div style="font-size:12px;color:#374151;line-height:1.6;margin-bottom:10px">'+escH(opt.description)+'</div>':'') +
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">' +
+          (opt.upside?'<div style="background:#F0FDF4;border-radius:6px;padding:8px 10px"><div style="font-size:8px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#166534;margin-bottom:4px">Upside</div><div style="font-size:11px;color:#14532D">'+escH(opt.upside)+'</div></div>':'') +
+          (opt.risk?'<div style="background:#FFF5F5;border-radius:6px;padding:8px 10px"><div style="font-size:8px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#A32D2D;margin-bottom:4px">Risk</div><div style="font-size:11px;color:#7F1D1D">'+escH(opt.risk)+'</div></div>':'') +
+        '</div>';
+      optGrid.appendChild(card);
+    });
+    optEl.appendChild(optGrid);
+    container.appendChild(optEl);
+  }
+
+  // ── SECTION 5: CRITICAL GAPS / RESEARCH AGENDA ───────────────
+  if (gaps.length) {
+    var gapEl = document.createElement('div');
+    gapEl.style.cssText = 'background:#FFFBEB;border:.5px solid #FCD34D;border-radius:12px;overflow:hidden;margin-bottom:16px';
+    gapEl.innerHTML = '<div style="padding:12px 18px;background:#92400E;display:flex;align-items:center;justify-content:space-between">' +
+      '<div style="font-size:13px;font-weight:700;color:#fff">Primary Research Agenda</div>' +
+      '<div style="font-size:10px;color:rgba(255,255,255,.6)">What web research could not answer</div>' +
+    '</div>';
+    var gapBody = document.createElement('div');
+    gapBody.style.cssText = 'padding:14px 18px';
+    gaps.forEach(function(g) {
+      var priBg = (g.priority||'').toUpperCase()==='CRITICAL'?'#A32D2D':(g.priority||'').toUpperCase()==='IMPORTANT'?'#E85520':'#FBAE40';
+      var gCard = document.createElement('div');
+      gCard.style.cssText = 'border:1px solid #FCD34D;border-radius:8px;padding:14px 16px;margin-bottom:10px;background:#fff';
+      var qs = Array.isArray(g.questions)?g.questions:(g.questions?[g.questions]:[]);
+      gCard.innerHTML =
+        '<div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:8px">' +
+          '<span style="font-size:9px;font-weight:700;padding:2px 8px;border-radius:4px;background:'+priBg+';color:#fff;flex-shrink:0">'+escH((g.priority||'HIGH').toUpperCase())+'</span>' +
+          '<div style="font-size:13px;font-weight:600;color:#1A2B4A;line-height:1.4">'+escH(g.gap||'')+'</div>' +
+        '</div>' +
+        (g.decision_impact?'<div style="font-size:11px;color:#92400E;margin-bottom:8px;padding:6px 10px;background:#FEF3C7;border-radius:5px"><strong>Decision impact:</strong> '+escH(g.decision_impact)+'</div>':'') +
+        (g.expert_type?'<div style="font-size:11px;font-weight:600;color:#1A2B4A;margin-bottom:8px">Expert: '+escH(g.expert_type)+'</div>':'') +
+        (qs.length?'<div style="background:#F0FDF4;border-radius:6px;padding:8px 12px">' +
+          '<div style="font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#166534;margin-bottom:6px">Questions to ask</div>' +
+          qs.map(function(q,i){return '<div style="display:flex;gap:8px;margin-bottom:5px"><span style="font-size:10px;font-weight:700;color:#166534;flex-shrink:0">'+(i+1)+'.</span><span style="font-size:11px;color:#14532D;line-height:1.5">'+escH(q)+'</span></div>';}).join('') +
+        '</div>':'');
+      gapBody.appendChild(gCard);
+    });
+    gapEl.appendChild(gapBody);
+    container.appendChild(gapEl);
+  }
+}
+
+function renderEngagementVisualisation(vis, engType, client, p) {
+  if (!vis) return '';
+
+  // VALUE CHAIN visualisation
+  if ((engType==='value_chain_pricing'||engType==='value_chain_market') && vis.value_chain_nodes && vis.value_chain_nodes.length) {
+    var nodes = vis.value_chain_nodes.sort(function(a,b){return (a.order||0)-(b.order||0);});
+    var barrierColors = {High:'#fee2e2', Medium:'#fef3c7', Low:'#dcfce7'};
+    var barrierTxt = {High:'#b91c1c', Medium:'#92400e', Low:'#166534'};
+    var posColors = {'present':'#0F6E56','buyer':'#1A2B4A','not present':'#9CA3AF','opportunity':'#E85520'};
+
+    var html = '<div style="background:#fff;border:.5px solid #DBDBDD;border-radius:12px;overflow:hidden;margin-bottom:16px">';
+    html += '<div style="padding:12px 18px;background:#1A2B4A;display:flex;align-items:center;justify-content:space-between">';
+    html += '<div style="font-size:13px;font-weight:700;color:#fff">Value Chain Map</div>';
+    html += '<div style="display:flex;gap:8px">';
+    ['present','buyer','opportunity','not present'].forEach(function(p) {
+      html += '<span style="font-size:9px;padding:2px 8px;border-radius:8px;background:rgba(255,255,255,.1);color:rgba(255,255,255,.7)">● '+p+'</span>';
+    });
+    html += '</div></div>';
+    html += '<div style="padding:16px 18px;overflow-x:auto">';
+    html += '<div style="display:flex;gap:0;align-items:stretch;min-width:'+Math.max(nodes.length*180,600)+'px">';
+
+    nodes.forEach(function(node, ni) {
+      var isLast = ni === nodes.length-1;
+      var bBg = barrierColors[node.entry_barrier] || '#f3f4f6';
+      var bTx = barrierTxt[node.entry_barrier] || '#6b7280';
+      var posColor = posColors[node.client_position] || '#9CA3AF';
+      var isClientPresent = node.client_position==='present'||node.client_position==='opportunity';
+
+      html += '<div style="flex:1;min-width:160px;position:relative">';
+      // Node card
+      html += '<div style="background:'+(isClientPresent?'#F0FDF4':'#FAFAFA')+';border:' + (isClientPresent?'2px solid '+posColor:'.5px solid #E5E9F0')+';border-radius:8px;padding:12px;height:100%;box-sizing:border-box;margin-right:'+(isLast?'0':'8px')+'">';
+      // Node name
+      html += '<div style="font-size:12px;font-weight:700;color:#1A2B4A;margin-bottom:6px;line-height:1.3">'+escH(node.node||'')+'</div>';
+      // Cost share
+      if(node.cost_share_pct) html += '<div style="font-size:10px;color:#E85520;font-weight:600;margin-bottom:6px">'+escH(node.cost_share_pct)+' of cost</div>';
+      // Entry barrier badge
+      html += '<span style="font-size:8px;font-weight:700;padding:2px 6px;border-radius:8px;background:'+bBg+';color:'+bTx+';display:inline-block;margin-bottom:6px">'+escH((node.entry_barrier||''))+' barrier</span>';
+      // Client position
+      html += '<div style="font-size:9px;font-weight:700;padding:2px 8px;border-radius:4px;background:rgba(0,0,0,.06);color:'+posColor+';display:inline-block;margin-bottom:8px;margin-left:4px">'+escH(node.client_position||'')+'</div>';
+      // Players
+      var players = (node.key_players_client_geography||node.key_players_global||[]).slice(0,3);
+      if(players.length) {
+        html += '<div style="font-size:9px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:#9CA3AF;margin-bottom:4px">Key players</div>';
+        html += '<div style="font-size:10px;color:#374151;line-height:1.6">'+players.map(function(pl){return escH(pl);}).join('<br>')+'</div>';
+      }
+      // Strategic note
+      if(node.strategic_note) html += '<div style="font-size:10px;color:#6B7280;font-style:italic;margin-top:8px;padding-top:8px;border-top:.5px solid #E5E9F0;line-height:1.5">'+escH(node.strategic_note)+'</div>';
+      html += '</div>';
+      // Arrow connector
+      if(!isLast) html += '<div style="position:absolute;right:-16px;top:50%;transform:translateY(-50%);z-index:2;font-size:18px;color:#9CA3AF;font-weight:700">→</div>';
+      html += '</div>';
+    });
+    html += '</div></div></div>';
+    return html;
+  }
+
+  // TECHNOLOGY SIGNALS visualisation (Innovation Scouting)
+  if (engType==='iem_monitoring' && vis.technology_signals && vis.technology_signals.length) {
+    var signals = vis.technology_signals;
+    var verdictColors = {'Act Now':{bg:'#052e16',txt:'#22c55e'},'Monitor':{bg:'#1e3a5f',txt:'#60a5fa'},'Watch':{bg:'#422006',txt:'#f59e0b'},'Ignore':{bg:'#1f2937',txt:'#9ca3af'}};
+    var relevColors = {High:'#dcfce7;color:#15803d',Medium:'#fef3c7;color:#92400e',Low:'#f3f4f6;color:#6b7280'};
+
+    var html = '<div style="background:#fff;border:.5px solid #DBDBDD;border-radius:12px;overflow:hidden;margin-bottom:16px">';
+    html += '<div style="padding:12px 18px;background:#0F172A"><div style="font-size:13px;font-weight:700;color:#fff">Technology Signal Radar</div><div style="font-size:10px;color:#6B7280;margin-top:3px">'+signals.length+' signals assessed — TRL, strategic relevance, recommended action</div></div>';
+    html += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;padding:16px 18px">';
+
+    signals.forEach(function(sig) {
+      var vc2 = verdictColors[sig.verdict] || {bg:'#1f2937',txt:'#9ca3af'};
+      var trl = parseInt(sig.trl)||0;
+      var trlLabel = trl<=3?'Early stage':trl<=6?'Piloting':'Near commercial';
+      html += '<div style="background:#0F172A;border-radius:8px;padding:14px">';
+      html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">';
+      html += '<span style="font-size:10px;font-weight:700;padding:3px 10px;border-radius:20px;background:'+vc2.bg+';color:'+vc2.txt+'">'+escH(sig.verdict||'')+'</span>';
+      html += '<span style="font-size:9px;color:#6B7280">TRL '+trl+' · '+trlLabel+'</span>';
+      html += '</div>';
+      html += '<div style="font-size:12px;font-weight:700;color:#fff;margin-bottom:5px;line-height:1.3">'+escH(sig.signal||'')+'</div>';
+      html += '<div style="font-size:9px;font-weight:600;padding:2px 8px;border-radius:8px;background:'+( relevColors[sig.client_relevance]||'#f3f4f6;color:#6b7280')+';display:inline-block;margin-bottom:8px">'+escH(sig.client_relevance||'')+' relevance</div>';
+      if(sig.horizon) html += '<div style="font-size:9px;color:#6B7280;margin-bottom:6px">'+escH(sig.horizon)+'</div>';
+      if(sig.key_players&&sig.key_players.length) html += '<div style="font-size:9px;color:#9CA3AF">'+sig.key_players.slice(0,2).map(escH).join(' · ')+'</div>';
+      if(sig.rationale) html += '<div style="font-size:10px;color:rgba(255,255,255,.5);margin-top:8px;font-style:italic;line-height:1.4">'+escH(sig.rationale)+'</div>';
+      html += '</div>';
+    });
+    html += '</div></div>';
+    return html;
+  }
+
+  // COMPETITIVE POSITIONING visualisation
+  if (engType==='competitor_intelligence' && vis.competitive_positioning && vis.competitive_positioning.length) {
+    var comps = vis.competitive_positioning;
+    var threatColors = {High:'#fee2e2', Medium:'#fef3c7', Low:'#dcfce7'};
+    var threatTxt = {High:'#b91c1c', Medium:'#92400e', Low:'#166534'};
+
+    var html = '<div style="background:#fff;border:.5px solid #DBDBDD;border-radius:12px;overflow:hidden;margin-bottom:16px">';
+    html += '<div style="padding:12px 18px;background:#1A2B4A"><div style="font-size:13px;font-weight:700;color:#fff">Competitive Positioning</div></div>';
+    html += '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12px">';
+    html += '<thead><tr style="background:#F8FAFD">';
+    ['Competitor','Strategic Intent','Threat Level','Recent Move'].forEach(function(h){
+      html += '<th style="padding:10px 14px;text-align:left;font-size:9px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:#6B7280;border-bottom:.5px solid #E5E9F0">'+h+'</th>';
+    });
+    html += '</tr></thead><tbody>';
+    comps.forEach(function(comp, ci) {
+      var tBg = threatColors[comp.threat_level]||'#f3f4f6';
+      var tTx = threatTxt[comp.threat_level]||'#6b7280';
+      html += '<tr style="background:'+(ci%2===0?'#fff':'#FAFAFA')+'">';
+      html += '<td style="padding:10px 14px;border-bottom:.5px solid #F2F4F7;font-weight:600;color:#1A2B4A">'+escH(comp.competitor||'')+'</td>';
+      html += '<td style="padding:10px 14px;border-bottom:.5px solid #F2F4F7;color:#374151">'+escH(comp.strategic_intent||'')+'</td>';
+      html += '<td style="padding:10px 14px;border-bottom:.5px solid #F2F4F7"><span style="font-size:9px;font-weight:700;padding:2px 8px;border-radius:8px;background:'+tBg+';color:'+tTx+'">'+escH(comp.threat_level||'')+'</span></td>';
+      html += '<td style="padding:10px 14px;border-bottom:.5px solid #F2F4F7;font-size:11px;color:#6B7280">'+escH(comp.recent_move||'')+'</td>';
+      html += '</tr>';
+    });
+    html += '</tbody></table></div></div>';
+    return html;
+  }
+
+  // MARKET SEGMENTS visualisation
+  if ((engType==='opportunity_assessment'||engType==='market_sizing') && vis.market_segments && vis.market_segments.length) {
+    var segs = vis.market_segments;
+    var attColors = {High:{bg:'#dcfce7',txt:'#15803d'},Medium:{bg:'#fef3c7',txt:'#92400e'},Low:{bg:'#fee2e2',txt:'#b91c1c'}};
+
+    var html = '<div style="background:#fff;border:.5px solid #DBDBDD;border-radius:12px;overflow:hidden;margin-bottom:16px">';
+    html += '<div style="padding:12px 18px;background:#1A2B4A"><div style="font-size:13px;font-weight:700;color:#fff">Market Segment Attractiveness</div></div>';
+    html += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;padding:16px 18px">';
+    segs.forEach(function(seg) {
+      var ac = attColors[seg.attractiveness] || {bg:'#f3f4f6',txt:'#6b7280'};
+      var isRec = seg.recommended;
+      html += '<div style="border:'+(isRec?'2px solid #E85520':'.5px solid #E5E9F0')+';border-radius:8px;padding:14px;background:'+(isRec?'#FFF5F2':'#FAFAFA')+'">';
+      html += '<div style="font-size:12px;font-weight:700;color:#1A2B4A;margin-bottom:8px">'+escH(seg.segment||'')+(isRec?' <span style="font-size:8px;background:#E85520;color:#fff;padding:1px 6px;border-radius:4px">FOCUS</span>':'')+'</div>';
+      html += '<div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px">';
+      html += '<span style="font-size:9px;font-weight:700;padding:2px 8px;border-radius:8px;background:'+ac.bg+';color:'+ac.txt+'">'+escH(seg.attractiveness||'')+' attract.</span>';
+      if(seg.cagr) html += '<span style="font-size:9px;padding:2px 8px;border-radius:8px;background:#EEF2FF;color:#3730a3">'+escH(seg.cagr)+'</span>';
+      html += '</div>';
+      if(seg.size_indication) html += '<div style="font-size:11px;color:#374151;margin-bottom:6px">'+escH(seg.size_indication)+'</div>';
+      if(seg.rationale) html += '<div style="font-size:10px;color:#6B7280;font-style:italic;line-height:1.4">'+escH(seg.rationale)+'</div>';
+      html += '</div>';
+    });
+    html += '</div></div>';
+    return html;
+  }
+
+  // REGULATORY MATRIX visualisation
+  if (engType==='regulatory_intelligence' && vis.regulatory_matrix && vis.regulatory_matrix.length) {
+    var regs = vis.regulatory_matrix;
+    var statColors = {'Compliant':{bg:'#dcfce7',txt:'#15803d'},'Action required':{bg:'#fee2e2',txt:'#b91c1c'},'Unknown':{bg:'#f3f4f6',txt:'#6b7280'},'Exempt':{bg:'#e0e7ff',txt:'#3730a3'}};
+
+    var html = '<div style="background:#fff;border:.5px solid #DBDBDD;border-radius:12px;overflow:hidden;margin-bottom:16px">';
+    html += '<div style="padding:12px 18px;background:#166534"><div style="font-size:13px;font-weight:700;color:#fff">Regulatory Status Matrix</div></div>';
+    html += '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12px">';
+    html += '<thead><tr style="background:#F0FDF4"><th style="padding:10px 14px;font-size:9px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:#166534;border-bottom:.5px solid #86EFAC;text-align:left">Jurisdiction</th><th style="padding:10px 14px;font-size:9px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:#166534;border-bottom:.5px solid #86EFAC;text-align:left">Status</th><th style="padding:10px 14px;font-size:9px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:#166534;border-bottom:.5px solid #86EFAC;text-align:left">Key Regulation</th><th style="padding:10px 14px;font-size:9px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:#166534;border-bottom:.5px solid #86EFAC;text-align:left">Action Required</th></tr></thead><tbody>';
+    regs.forEach(function(reg, ri) {
+      var sc = statColors[reg.status]||{bg:'#f3f4f6',txt:'#6b7280'};
+      var urgBg = (reg.urgency||'').toUpperCase()==='CRITICAL'?'#A32D2D':(reg.urgency||'').toUpperCase()==='HIGH'?'#E85520':'transparent';
+      html += '<tr style="background:'+(ri%2===0?'#fff':'#FAFAFA')+'">';
+      html += '<td style="padding:10px 14px;border-bottom:.5px solid #F2F4F7;font-weight:600;color:#166534">'+escH(reg.jurisdiction||'')+'</td>';
+      html += '<td style="padding:10px 14px;border-bottom:.5px solid #F2F4F7"><span style="font-size:9px;font-weight:700;padding:2px 8px;border-radius:8px;background:'+sc.bg+';color:'+sc.txt+'">'+escH(reg.status||'')+'</span></td>';
+      html += '<td style="padding:10px 14px;border-bottom:.5px solid #F2F4F7;font-size:11px;color:#374151">'+escH(reg.key_regulation||'')+(reg.deadline?'<div style="font-size:9px;color:#9CA3AF;margin-top:2px">Deadline: '+escH(reg.deadline)+'</div>':'')+'</td>';
+      html += '<td style="padding:10px 14px;border-bottom:.5px solid #F2F4F7;font-size:11px;color:#374151">'+escH(reg.action_for_client||'')+'</td>';
+      html += '</tr>';
+    });
+    html += '</tbody></table></div></div>';
+    return html;
+  }
+
+  return '';
+}
+
 // ═══════════════════════════════════════════════════════════════
 
 // Section templates per engagement type
@@ -4357,63 +4920,25 @@ async function runSynthesis() {
   var engType = S.detectedEngType || 'general';
   var sel = S.selBQs.map(function(i){ return p.bqs[i]; });
 
-  // Build allBQResults with BQ text attached
+  // Use runCrossBQSynthesis which handles both verdict and section synthesis
   var allBQResults = sel.map(function(bq) {
     var d = normaliseResult(S.bqResults[bq.id]);
     if (!d) return null;
-    return { bq: bq.id, bqText: bq.text, data: d };
+    return { bq: bq.id, data: d };
   }).filter(Boolean);
 
   if (allBQResults.length === 0) {
     if (statusEl) statusEl.textContent = 'No BQ results to synthesise yet.';
-    if (btn) { btn.disabled = false; btn.textContent = '⚡ Synthesise into sections'; }
+    if (btn) { btn.disabled = false; btn.textContent = '⚡ Build Intelligence Summary'; }
     return;
   }
 
-  var prompt = buildSynthesisPrompt(p, allBQResults, engType);
-
   try {
-    var resp = await fetch(window.FB_PROXY_URL||'https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers:{'Content-Type':'application/json','anthropic-version':'2023-06-01','x-api-key':getApiKey()},
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-6',
-        max_tokens: 10000,
-        system: 'You are a senior FutureBridge consultant. Synthesise research into structured deliverable sections. Respond ONLY with valid JSON. Escape all apostrophes with backslash. No markdown fences. Be concise — each synthesis field max 2 sentences, each bullet_point max 20 words.',
-        messages: [{ role: 'user', content: prompt }]
-      })
-    });
-
-    if (!resp.ok) throw new Error('API ' + resp.status);
-    var data = await resp.json();
-    var text = (data.content||[]).filter(function(b){return b.type==='text';}).map(function(b){return b.text;}).join('');
-    var parsed = parseSynthesis(text);
-
-    if (!parsed) {
-      console.error('parseSynthesis failed. text length:', text.length, 'first 300:', text.slice(0,300));
-      throw new Error('Could not parse synthesis response');
-    }
-
-    S.synthesis = parsed;
-    S.detectedEngType = parsed.engagement && parsed.engagement.type ? parsed.engagement.type : engType;
-    renderSectionView(parsed);
-    renderResults(); // Update Research Brief with key_insight now that synthesis is available
-
-    // Switch to section tab
-    document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('active');});
-    document.querySelectorAll('.tab-panel').forEach(function(tp){tp.classList.remove('active');});
-    var secTab = document.getElementById('tab-sections');
-    var secPanel = document.getElementById('panel-sections');
-    if (secTab) secTab.classList.add('active');
-    if (secPanel) secPanel.classList.add('active');
-
-    if (statusEl) statusEl.textContent = 'Synthesis complete — ' + (parsed.sections||[]).length + ' sections';
-    if (btn) { btn.disabled = false; btn.textContent = '⟳ Re-synthesise'; }
-
+    await runCrossBQSynthesis(p, allBQResults, engType);
   } catch(err) {
     console.error('Synthesis error:', err);
     if (statusEl) statusEl.textContent = 'Synthesis failed: ' + err.message;
-    if (btn) { btn.disabled = false; btn.textContent = '⚡ Synthesise into sections'; }
+    if (btn) { btn.disabled = false; btn.textContent = '⚡ Build Intelligence Summary'; }
   }
 }
 
